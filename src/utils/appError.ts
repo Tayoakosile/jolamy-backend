@@ -6,8 +6,8 @@ export class AppError extends Error {
 
     constructor(message: string, statusCode: number = 400, isOperational = true) {
       super(message);
-
-      Object.setPrototypeOf(this, new.target.prototype); // restore prototype chain
+      Object.setPrototypeOf(this, new.target.prototype);
+      this.message = message;
       this.statusCode = statusCode;
       this.isOperational = isOperational;
 

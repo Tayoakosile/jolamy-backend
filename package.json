@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@mailerlite/mailerlite-nodejs": "^1.4.1",
     "bcryptjs": "^3.0.2",
     "concurrently": "^9.2.0",
     "cors": "^2.8.5",

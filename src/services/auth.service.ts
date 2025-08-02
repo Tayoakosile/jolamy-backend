@@ -1,6 +1,7 @@
 import User, { IUser } from "../models/User";
 
 import bcrypt from "bcryptjs";
+import { AppError } from "../utils/appError";
 
 export const signupService = async (
   req: any,
@@ -8,7 +9,7 @@ export const signupService = async (
 ): Promise<IUser> => {
   const existingUser = await User.findOne({ email: req.email });
   if (existingUser) {
-    throw new Error("Email already in use");
+    throw new AppError("Email already in use",400);
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);

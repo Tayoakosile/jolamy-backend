@@ -1,6 +1,11 @@
 import { Schema, model, Document, Types } from "mongoose";
 // Optional: enums for role and approval status
-export type ApprovalStatus = "pending" | "approved" | "rejected";
+export type ApprovalStatus =
+  | "pending_for_documents"
+  | "submitted_for_review"
+  | "pending"
+  | "approved"
+  | "rejected";
 export type UserRole = "admin" | "distributor" | "sales_agent" | "worker";
 
 export interface IUser extends Document {
@@ -23,7 +28,6 @@ export interface IUser extends Document {
   is_worker: boolean;
   is_first_login: boolean;
   distribution_address?: string;
-
   status: ApprovalStatus;
   password: string;
   last_order_date?: Date;
@@ -36,17 +40,26 @@ export interface IUser extends Document {
   bonus: { type: Types.ObjectId[]; ref: "Bonus" }; // refs to Bonus model
   transaction_history: { type: Types.ObjectId[]; ref: "TransactionHistory" }; // refs to Transaction model
   change_request: { type: Types.ObjectId; ref: "ChangeRequest" }; // refs to ChangeRequest model
+  warehouse_location: string;
+  inventory_obligations_accepted: boolean;
+  warehouse_photos: {
+    internal: string[];
+    external: string[];
+  };
+  warehouse_verified: boolean;
   account_details: {
-    bank_name: string;
-    account_number: string;
-    account_type: string;
+    type: Object;
   };
   paid_registration_fee: boolean;
-  documents: any;
+  documents: {
+    id_type: string;
+    id_number: string;
+    id_image_url: string;
+  };
   admin_notes: string;
   years_in_operation: number;
   registration_number: number;
-  referees: { type: Types.ObjectId[]; ref: "Referees" }; // refs to Referee model
+  referees: [{ name: string; type: "Business" | "Character"; contact: string }];
   logs: { type: Types.ObjectId[]; ref: "Logs" }; // refs to Log model
 }
 
@@ -70,10 +83,16 @@ const userSchema = new Schema<IUser>(
     is_first_login: { type: Boolean, default: true },
     distribution_address: String,
     email: { type: String, required: true, unique: true },
+    warehouse_location: { type: String },
+    warehouse_photos: {
+      internal: [],
+      external: [],
+    },
+    warehouse_verified: { type: Boolean, default: false },
+    inventory_obligations_accepted: { type: Boolean, default: false },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
-      default: "pending",
+      default: "pending_for_documents",
     },
     password: { type: String, required: true },
     last_order_date: Date,
@@ -83,19 +102,24 @@ const userSchema = new Schema<IUser>(
     },
     teams: Schema.Types.Mixed,
     stats: Schema.Types.Mixed,
+
     outstanding_boxes: { type: Number, default: 0 },
     orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: Schema.Types.ObjectId, ref: "Product" }],
     bonus: [{ type: Schema.Types.ObjectId, ref: "Bonus" }],
     transaction_history: [{ type: Schema.Types.ObjectId, ref: "Transaction" }],
     change_request: { type: Schema.Types.ObjectId, ref: "ChangeRequest" },
-    account_details: String,
+    account_details: {
+      bank_name: { type: String },
+      account_number: { type: String },
+      account_name: { type: String },
+    },
     paid_registration_fee: { type: Boolean, default: false },
     documents: Schema.Types.Mixed,
     admin_notes: String,
     years_in_operation: Number,
     registration_number: Number,
-    referees: [{ type: Schema.Types.ObjectId, ref: "Referee" }],
+
     logs: [{ type: Schema.Types.ObjectId, ref: "Log" }],
   },
   {

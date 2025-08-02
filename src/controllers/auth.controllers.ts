@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import User from "../models/User";
 import { signupService } from "../services/auth.service";
 import { errorResponse, successResponse } from "../utils/response";
+import { sendEmail } from "../services/mail.service";
 
 export const createAccount = async (req: Request, res: Response) => {
   try {
@@ -15,10 +16,15 @@ export const createAccount = async (req: Request, res: Response) => {
       },
       req.body.password
     );
+    sendEmail(
+      req.body.email,
+      "Welcome to Our Service",
+      `Hello ${user.name}, welcome to our service!`
+    );
 
     successResponse(res, 201, "User created successfully");
   } catch (error: { error: string } | any) {
-    console.log("error here :");
+    console.log("error here :",error);
     errorResponse(res, 400, error as string, error);
   }
 };
