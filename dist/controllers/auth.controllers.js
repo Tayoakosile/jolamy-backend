@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loginAccount = exports.createAccount = void 0;
 const auth_service_1 = require("../services/auth.service");
-const response_1 = require("../utils/response");
 const mail_service_1 = require("../services/mail.service");
+const response_1 = require("../utils/response");
 const createAccount = async (req, res) => {
     try {
         const user = await (0, auth_service_1.signupService)({

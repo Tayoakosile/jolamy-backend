@@ -55,11 +55,13 @@ export interface IUser extends Document {
     id_type: string;
     id_number: string;
     id_image_url: string;
+    referees: [
+      { name: string; type: "Business" | "Character"; contact: string }
+    ];
   };
   admin_notes: string;
   years_in_operation: number;
   registration_number: number;
-  referees: [{ name: string; type: "Business" | "Character"; contact: string }];
   logs: { type: Types.ObjectId[]; ref: "Logs" }; // refs to Log model
 }
 

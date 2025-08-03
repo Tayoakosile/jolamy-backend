@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
-import User from "../models/User";
 import { signupService } from "../services/auth.service";
-import { errorResponse, successResponse } from "../utils/response";
 import { sendEmail } from "../services/mail.service";
+import { errorResponse, successResponse } from "../utils/response";
 
 export const createAccount = async (req: Request, res: Response) => {
   try {
@@ -24,7 +23,7 @@ export const createAccount = async (req: Request, res: Response) => {
 
     successResponse(res, 201, "User created successfully");
   } catch (error: { error: string } | any) {
-    console.log("error here :",error);
+    console.log("error here :", error);
     errorResponse(res, 400, error as string, error);
   }
 };
