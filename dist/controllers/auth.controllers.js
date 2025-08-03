@@ -70,7 +70,7 @@ const loginAccount = async (req, res) => {
             is_first_login: user.last_login ? false : true,
             $push: { logs: activityLog._id },
         });
-        await (0, mail_service_1.sendEmail)("" + user.email, "Login Notification", "You have successfully logged in to your account.");
+        await (0, mail_service_1.sendEmail)(user.email, "Login Notification", "You have successfully logged in to your account.");
         (0, response_1.successResponse)(res, 200, "Login successful", {
             token,
             user: {
@@ -80,7 +80,6 @@ const loginAccount = async (req, res) => {
         });
     }
     catch (error) {
-        console.error("Login error:", error);
         (0, response_1.errorResponse)(res, 500, "An error occurred during login", error);
     }
 };
@@ -112,7 +111,7 @@ const resetPassword = async (req, res) => {
     try {
         const { token } = req.params;
         const { password } = req.body;
-        console.log("req.body :", req.body);
+        // Debugging information removed for production
         const user = await User_1.default.findOne({
             forgot_password_token: token,
             forgot_password_expires: { $gt: new Date() },

@@ -81,7 +81,7 @@ export const loginAccount = async (req: Request, res: Response) => {
       $push: { logs: activityLog._id },
     });
     await sendEmail(
-      "" + user.email,
+      user.email,
       "Login Notification",
       "You have successfully logged in to your account."
     );
@@ -94,7 +94,6 @@ export const loginAccount = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
     errorResponse(res, 500, "An error occurred during login", error);
   }
 };
@@ -137,7 +136,7 @@ export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
-    console.log("req.body :", req.body);
+    // Debugging information removed for production
 
     const user = await User.findOne({
       forgot_password_token: token,

@@ -8,7 +8,6 @@ export const logActivity = async ({
   userId,
   action,
   description,
-
   metadata,
 }: {
   req: Request;
@@ -20,6 +19,7 @@ export const logActivity = async ({
   const ip =
     ((req.headers["x-forwarded-for"] as string) || "").split(",")[0]?.trim() ||
     req.socket.remoteAddress;
+  const location = (req.headers["x-location"] as string) || "Unknown Location";
   const log = await ActivityLog.create({
     userId,
     action,
