@@ -74,6 +74,8 @@ export const loginAccount = async (req: Request, res: Response) => {
     });
 
     await User.findByIdAndUpdate(user._id, {
+      last_login: new Date(),
+      is_first_login: user.last_login ? false : true,
       $push: { logs: activityLog._id },
     });
     await sendEmail(

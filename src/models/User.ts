@@ -7,8 +7,7 @@ export type ApprovalStatus =
   | "pending_for_approval"
   | "approved"
   | "rejected"
-  | "disabled"
-  ;
+  | "disabled";
 export type UserRole = "admin" | "distributor" | "sales_agent" | "worker";
 
 export interface IUser extends Document {
@@ -31,6 +30,7 @@ export interface IUser extends Document {
   is_sales_agent: boolean;
   is_worker: boolean;
   is_first_login: boolean;
+  last_login: Date;
   distribution_address?: string;
   status: ApprovalStatus;
   password: string;
@@ -75,6 +75,7 @@ const userSchema = new Schema<IUser>(
     lastname: { type: String, required: true },
     username: String,
     date_joined: { type: Date, default: Date.now },
+    last_login: { type: Date },
     date_approved: Date,
     phone_number: String,
     gender: String,

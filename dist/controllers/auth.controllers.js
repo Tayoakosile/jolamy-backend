@@ -67,6 +67,8 @@ const loginAccount = async (req, res) => {
             },
         });
         await User_1.default.findByIdAndUpdate(user._id, {
+            last_login: new Date(),
+            is_first_login: user.last_login ? false : true,
             $push: { logs: activityLog._id },
         });
         await (0, mail_service_1.sendEmail)("" + user.email, "Login Notification", "You have successfully logged in to your account.");
