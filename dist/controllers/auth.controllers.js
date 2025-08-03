@@ -3,14 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loginAccount = exports.createAccount = void 0;
+exports.forgotPassword = exports.loginAccount = exports.createAccount = void 0;
+const ActivityLog_1 = require("../models/ActivityLog");
+const User_1 = __importDefault(require("../models/User"));
 const auth_service_1 = require("../services/auth.service");
 const mail_service_1 = require("../services/mail.service");
-const response_1 = require("../utils/response");
-const User_1 = __importDefault(require("../models/User"));
-const jwt_1 = require("../utils/jwt");
 const bcrypt_util_1 = require("../utils/bcrypt.util");
-const ActivityLog_1 = require("../models/ActivityLog");
+const jwt_1 = require("../utils/jwt");
+const response_1 = require("../utils/response");
+const util_1 = require("../utils/util");
 const createAccount = async (req, res) => {
     try {
         const user = await (0, auth_service_1.signupService)({
@@ -86,3 +87,26 @@ const loginAccount = async (req, res) => {
     }
 };
 exports.loginAccount = loginAccount;
+const forgotPassword = async (req, res) => {
+    try {
+        if (!req.body || !req.body.email)
+            (0, response_1.errorResponse)(res, 400, "Email is required");
+        const { email } = req.body;
+        const user = await User_1.default.findOne({ email });
+        if (!user) {
+            return (0, response_1.errorResponse)(res, 401, "No user found with that email");
+        }
+        // Generate reset token
+        const resetToken = (0, util_1.getRandom)();
+        user.forgot_password_token = resetToken;
+        user.forgot_password_expires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+        await user.save();
+        const resetURL = `https://your-frontend.com/reset-password/${resetToken}`;
+        await (0, mail_service_1.sendEmail)(user.email, "Password Reset Request", "To reset your password, please click the link below:\n\n" + resetURL);
+        (0, response_1.successResponse)(res, 200, "Reset link sent to your email");
+    }
+    catch (error) {
+        (0, response_1.errorResponse)(res, 500, "An error occurred while processing your request", error);
+    }
+};
+exports.forgotPassword = forgotPassword;

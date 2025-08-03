@@ -61,8 +61,8 @@ export interface IUser extends Document {
       id_image_url: string;
     }
   ];
-  forgotPasswordToken?: string;
-  forgotPasswordExpires?: Date;
+  forgot_password_token?: string;
+  forgot_password_expires?: Date;
   referees: [{ name: string; type: "Business" | "Character"; contact: string }];
   admin_notes: string;
   years_in_operation: number;

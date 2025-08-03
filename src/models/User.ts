@@ -36,6 +36,8 @@ const userSchema = new Schema<IUser>(
       default: "pending_for_documents",
     },
     password: { type: String, required: true },
+    forgot_password_expires: { type: String },
+    forgot_password_token: { type: String },
     last_order_date: Date,
     user_role: {
       type: String,

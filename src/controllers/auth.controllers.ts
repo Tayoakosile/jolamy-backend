@@ -1,11 +1,14 @@
 import { Request, Response } from "express";
+import { ActivityLog } from "../models/ActivityLog";
+import User from "../models/User";
+
 import { signupService } from "../services/auth.service";
 import { sendEmail } from "../services/mail.service";
-import { errorResponse, successResponse } from "../utils/response";
-import User, { IUser } from "../models/User";
+import { isMatch } from "../utils/bcrypt.util";
 import { generateToken } from "../utils/jwt";
-import { encrypt, isMatch } from "../utils/bcrypt.util";
-import { ActivityLog } from "../models/ActivityLog";
+import { errorResponse, successResponse } from "../utils/response";
+import { IUser } from "../types/type";
+import { getRandom } from "../utils/util";
 
 export const createAccount = async (req: Request, res: Response) => {
   try {
@@ -94,5 +97,39 @@ export const loginAccount = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Login error:", error);
     errorResponse(res, 500, "An error occurred during login", error);
+  }
+};
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    if (!req.body || !req.body.email)
+      errorResponse(res, 400, "Email is required");
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return errorResponse(res, 401, "No user found with that email");
+    }
+
+    // Generate reset token
+    const resetToken = getRandom();
+    user.forgot_password_token = resetToken;
+    user.forgot_password_expires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    await user.save();
+
+    const resetURL = `https://your-frontend.com/reset-password/${resetToken}`;
+
+    await sendEmail(
+      user.email,
+      "Password Reset Request",
+      "To reset your password, please click the link below:\n\n" + resetURL
+    );
+
+    successResponse(res, 200, "Reset link sent to your email");
+  } catch (error) {
+    errorResponse(
+      res,
+      500,
+      "An error occurred while processing your request",
+      error
+    );
   }
 };

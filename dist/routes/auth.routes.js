@@ -7,7 +7,7 @@ const auth_1 = require("../middlewares/auth");
 const router = (0, express_1.Router)();
 router.post("/signup", auth_controllers_1.createAccount);
 router.post("/login", auth_controllers_1.loginAccount);
-router.post("/forget-password", auth_controllers_1.loginAccount);
+router.post("/forgot-password", auth_controllers_1.forgotPassword);
 router.post("/verify-documents", auth_1.protect, verify_document_controllers_1.verifyDocuments);
 router.post("/verify-documents/:id", auth_1.protect, 
 // upload.fields([

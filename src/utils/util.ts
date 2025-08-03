@@ -1,6 +1,7 @@
 // utils/checkIfExists.ts
 
 import mongoose from "mongoose";
+import randomatic from "randomatic";
 import User from "../models/User";
 import { errorResponse } from "./response";
 import { Response } from "express";
@@ -28,3 +29,8 @@ export const checkIfUserExistsById = async (id: string, res: Response) => {
 
   return user;
 };
+
+export const getRandom = (howMuch?:number)=>{
+    return randomatic("a0", howMuch || 18);
+
+}
