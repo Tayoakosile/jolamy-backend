@@ -8,6 +8,7 @@ const createAccount = async (req, res) => {
     try {
         const user = await (0, auth_service_1.signupService)({
             ...req.body,
+            status: "pending_for_documents",
             is_distributor: req.body.user_role === "distributor",
             is_admin: req.body.user_role === "admin",
             is_sales_agents: req.body.user_role === "sales_agent",

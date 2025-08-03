@@ -3,7 +3,7 @@ import { Schema, model, Document, Types } from "mongoose";
 export type ApprovalStatus =
   | "pending_for_documents"
   | "submitted_for_review"
-  | "pending"
+  | "pending_for_approval"
   | "approved"
   | "rejected";
 export type UserRole = "admin" | "distributor" | "sales_agent" | "worker";
@@ -51,14 +51,14 @@ export interface IUser extends Document {
     type: Object;
   };
   paid_registration_fee: boolean;
-  documents: {
-    id_type: string;
-    id_number: string;
-    id_image_url: string;
-    referees: [
-      { name: string; type: "Business" | "Character"; contact: string }
-    ];
-  };
+  documents: [
+    {
+      id_type: string;
+      id_number: string;
+      id_image_url: string;
+    }
+  ];
+  referees: [{ name: string; type: "Business" | "Character"; contact: string }];
   admin_notes: string;
   years_in_operation: number;
   registration_number: number;
