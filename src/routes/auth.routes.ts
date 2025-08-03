@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createAccount, loginAccount } from "../controllers/auth.controllers";
+import { createAccount, forgotPassword, loginAccount, resetPassword } from "../controllers/auth.controllers";
 import {
   getUserInfo,
   verifyDocuments,
@@ -10,7 +10,8 @@ const router = Router();
 
 router.post("/signup", createAccount);
 router.post("/login", loginAccount);
-router.post("/forget-password", loginAccount);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
 router.post(
   "/verify-documents",
   protect,

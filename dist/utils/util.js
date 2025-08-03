@@ -4,8 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkIfUserExistsById = void 0;
+exports.getRandom = exports.checkIfUserExistsById = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
+const randomatic_1 = __importDefault(require("randomatic"));
 const User_1 = __importDefault(require("../models/User"));
 const response_1 = require("./response");
 /**
@@ -29,3 +30,7 @@ const checkIfUserExistsById = async (id, res) => {
     return user;
 };
 exports.checkIfUserExistsById = checkIfUserExistsById;
+const getRandom = (howMuch) => {
+    return (0, randomatic_1.default)("a0", howMuch || 18);
+};
+exports.getRandom = getRandom;
