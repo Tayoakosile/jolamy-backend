@@ -4,11 +4,12 @@ import User from "../models/User";
 
 import { signupService } from "../services/auth.service";
 import { sendEmail } from "../services/mail.service";
-import { isMatch } from "../utils/bcrypt.util";
+import { encrypt, isMatch } from "../utils/bcrypt.util";
 import { generateToken } from "../utils/jwt";
 import { errorResponse, successResponse } from "../utils/response";
 import { IUser } from "../types/type";
 import { getRandom } from "../utils/util";
+import { logActivity } from "../utils/activityLog";
 
 export const createAccount = async (req: Request, res: Response) => {
   try {
@@ -63,13 +64,11 @@ export const loginAccount = async (req: Request, res: Response) => {
     if (!comparePassword) errorResponse(res, 401, "invalid Email or Password");
 
     const token = generateToken(`${user._id}`);
-    const activityLog = await ActivityLog.create({
-      userId: user._id,
+    const activityLog = await logActivity({
+      req,
+      userId: `${user._id}`,
       action: "LOGIN",
       description: "User logged in successfully",
-      ip: req.ip,
-      device: req.headers["user-agent"],
-      location: req.headers["x-forwarded-for"] || req.socket.remoteAddress,
       metadata: {
         email: user.email,
         userId: user._id,
@@ -99,6 +98,7 @@ export const loginAccount = async (req: Request, res: Response) => {
     errorResponse(res, 500, "An error occurred during login", error);
   }
 };
+
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     if (!req.body || !req.body.email)
@@ -129,6 +129,58 @@ export const forgotPassword = async (req: Request, res: Response) => {
       res,
       500,
       "An error occurred while processing your request",
+      error
+    );
+  }
+};
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+    console.log("req.body :", req.body);
+
+    const user = await User.findOne({
+      forgot_password_token: token,
+      forgot_password_expires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return errorResponse(res, 400, "Invalid or expired reset token");
+    }
+
+    const newPassword = await encrypt(password);
+    const activityLog = await logActivity({
+      req,
+      userId: `${user._id}`,
+      action: "PASSWORD_RESET",
+      description: "User password reset successfully",
+
+      metadata: {
+        email: user.email,
+        userId: user._id,
+      },
+    });
+    await User.findOneAndUpdate(
+      { _id: user._id },
+      {
+        forgot_password_expires: "",
+        forgot_password_token: "",
+        password: newPassword,
+        $push: { logs: activityLog._id },
+      }
+    );
+    await sendEmail(
+      "" + user.email,
+      "Password Reset Confirmation",
+      "Your password has been reset successfully."
+    );
+
+    successResponse(res, 200, "Password has been reset successfully");
+  } catch (error) {
+    return errorResponse(
+      res,
+      500,
+      "An error occurred while resetting the password",
       error
     );
   }

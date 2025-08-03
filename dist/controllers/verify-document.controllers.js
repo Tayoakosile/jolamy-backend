@@ -13,16 +13,11 @@ const verifyDocuments = async (req, res) => {
     const userId = req.params.id;
     try {
         const user = (await (0, util_1.checkIfUserExistsById)(userId, res));
-        const ip = (req.headers["x-forwarded-for"] || "")
-            .split(",")[0]
-            ?.trim() || req.socket.remoteAddress;
         const userLog = await (0, activityLog_1.logActivity)({
+            req,
             userId: `${user._id}`,
             action: "VERIFY_DOCUMENTS",
             description: "User submitted documents and referees for verification",
-            ip: req.ip,
-            device: req.headers["user-agent"],
-            location: ip,
             metadata: {
                 documents: user.documents,
                 referees: user.referees,

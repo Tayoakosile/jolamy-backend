@@ -3,8 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.forgotPassword = exports.loginAccount = exports.createAccount = void 0;
-const ActivityLog_1 = require("../models/ActivityLog");
+exports.resetPassword = exports.forgotPassword = exports.loginAccount = exports.createAccount = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const auth_service_1 = require("../services/auth.service");
 const mail_service_1 = require("../services/mail.service");
@@ -12,6 +11,7 @@ const bcrypt_util_1 = require("../utils/bcrypt.util");
 const jwt_1 = require("../utils/jwt");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
+const activityLog_1 = require("../utils/activityLog");
 const createAccount = async (req, res) => {
     try {
         const user = await (0, auth_service_1.signupService)({
@@ -55,13 +55,11 @@ const loginAccount = async (req, res) => {
         if (!comparePassword)
             (0, response_1.errorResponse)(res, 401, "invalid Email or Password");
         const token = (0, jwt_1.generateToken)(`${user._id}`);
-        const activityLog = await ActivityLog_1.ActivityLog.create({
-            userId: user._id,
+        const activityLog = await (0, activityLog_1.logActivity)({
+            req,
+            userId: `${user._id}`,
             action: "LOGIN",
             description: "User logged in successfully",
-            ip: req.ip,
-            device: req.headers["user-agent"],
-            location: req.headers["x-forwarded-for"] || req.socket.remoteAddress,
             metadata: {
                 email: user.email,
                 userId: user._id,
@@ -110,3 +108,40 @@ const forgotPassword = async (req, res) => {
     }
 };
 exports.forgotPassword = forgotPassword;
+const resetPassword = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
+        console.log("req.body :", req.body);
+        const user = await User_1.default.findOne({
+            forgot_password_token: token,
+            forgot_password_expires: { $gt: new Date() },
+        });
+        if (!user) {
+            return (0, response_1.errorResponse)(res, 400, "Invalid or expired reset token");
+        }
+        const newPassword = await (0, bcrypt_util_1.encrypt)(password);
+        const activityLog = await (0, activityLog_1.logActivity)({
+            req,
+            userId: `${user._id}`,
+            action: "PASSWORD_RESET",
+            description: "User password reset successfully",
+            metadata: {
+                email: user.email,
+                userId: user._id,
+            },
+        });
+        await User_1.default.findOneAndUpdate({ _id: user._id }, {
+            forgot_password_expires: "",
+            forgot_password_token: "",
+            password: newPassword,
+            $push: { logs: activityLog._id },
+        });
+        await (0, mail_service_1.sendEmail)("" + user.email, "Password Reset Confirmation", "Your password has been reset successfully.");
+        (0, response_1.successResponse)(res, 200, "Password has been reset successfully");
+    }
+    catch (error) {
+        return (0, response_1.errorResponse)(res, 500, "An error occurred while resetting the password", error);
+    }
+};
+exports.resetPassword = resetPassword;

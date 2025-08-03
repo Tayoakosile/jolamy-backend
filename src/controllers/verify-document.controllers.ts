@@ -11,18 +11,12 @@ export const verifyDocuments = async (req: Request, res: Response) => {
 
   try {
     const user = (await checkIfUserExistsById(userId, res)) as IUser;
-    const ip =
-      ((req.headers["x-forwarded-for"] as string) || "")
-        .split(",")[0]
-        ?.trim() || req.socket.remoteAddress;
 
     const userLog = await logActivity({
+      req,
       userId: `${user._id}`,
       action: "VERIFY_DOCUMENTS",
       description: "User submitted documents and referees for verification",
-      ip: req.ip,
-      device: req.headers["user-agent"],
-      location: ip,
       metadata: {
         documents: user.documents as IUser["documents"],
         referees: user.referees,

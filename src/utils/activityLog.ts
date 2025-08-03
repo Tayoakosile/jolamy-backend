@@ -1,31 +1,31 @@
+import { Request } from "express";
 import { ActivityLog } from "../models/ActivityLog";
 
 // src/utils/logActivity.ts
 
-
 export const logActivity = async ({
+  req,
   userId,
   action,
   description,
-  ip,
-  device,
-  location,
+
   metadata,
 }: {
+  req: Request;
   userId: string;
   action: string;
   description?: string;
-  ip?: string;
-  device?: string;
-  location?: string;
   metadata?: any;
 }) => {
-  const log=await ActivityLog.create({
+  const ip =
+    ((req.headers["x-forwarded-for"] as string) || "").split(",")[0]?.trim() ||
+    req.socket.remoteAddress;
+  const log = await ActivityLog.create({
     userId,
     action,
     description,
     ip,
-    device,
+    device: req.headers["user-agent"],
     location,
     metadata,
   });

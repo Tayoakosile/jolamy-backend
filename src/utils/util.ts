@@ -21,7 +21,6 @@ export const checkIfUserExistsById = async (id: string, res: Response) => {
 
   const user = await User.findById(id)!;
   if (!user) {
-
     errorResponse(res, 401, "User not found", {
       message: "User not found",
     });
