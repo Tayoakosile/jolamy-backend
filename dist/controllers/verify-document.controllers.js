@@ -3,20 +3,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyDocuments = void 0;
+exports.getUserInfo = exports.verifyDocuments = void 0;
 const User_1 = __importDefault(require("../models/User"));
+const mail_service_1 = require("../services/mail.service");
+const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
-const activityLog_1 = require("../utils/activityLog");
-const mail_service_1 = require("../services/mail.service");
 const verifyDocuments = async (req, res) => {
     const userId = req.params.id;
-    console.log("req.params :", req.body);
     try {
+        const user = (await (0, util_1.checkIfUserExistsById)(userId, res));
         const ip = (req.headers["x-forwarded-for"] || "")
             .split(",")[0]
             ?.trim() || req.socket.remoteAddress;
-        const user = (await (0, util_1.checkIfUserExistsById)(userId, res));
         const userLog = await (0, activityLog_1.logActivity)({
             userId: `${user._id}`,
             action: "VERIFY_DOCUMENTS",
@@ -45,4 +44,9 @@ const verifyDocuments = async (req, res) => {
     }
 };
 exports.verifyDocuments = verifyDocuments;
-// This function is a placeholder for the actual document verification logic.
+const getUserInfo = async (req, res) => {
+    const userId = req.params.id;
+    const user = (await (0, util_1.checkIfUserExistsById)(userId, res));
+    (0, response_1.successResponse)(res, 200, "User information retrieved successfully", user);
+};
+exports.getUserInfo = getUserInfo;

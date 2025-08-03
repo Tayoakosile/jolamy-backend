@@ -1,21 +1,20 @@
 import { Request, Response } from "express";
-import User, { IUser } from "../models/User";
+import User from "../models/User";
+import { sendEmail } from "../services/mail.service";
+import { logActivity } from "../utils/activityLog";
 import { errorResponse, successResponse } from "../utils/response";
 import { checkIfUserExistsById } from "../utils/util";
-import { logActivity } from "../utils/activityLog";
-import { sendEmail } from "../services/mail.service";
+import { IUser } from "../types/type";
 
 export const verifyDocuments = async (req: Request, res: Response) => {
   const userId = req.params.id;
-  console.log("req.params :", req.body);
 
   try {
+    const user = (await checkIfUserExistsById(userId, res)) as IUser;
     const ip =
       ((req.headers["x-forwarded-for"] as string) || "")
         .split(",")[0]
         ?.trim() || req.socket.remoteAddress;
-
-    const user = (await checkIfUserExistsById(userId, res)) as IUser;
 
     const userLog = await logActivity({
       userId: `${user._id}`,
@@ -58,4 +57,9 @@ export const verifyDocuments = async (req: Request, res: Response) => {
     errorResponse(res, 401, "Error verifying documents");
   }
 };
-// This function is a placeholder for the actual document verification logic.
+
+export const getUserInfo = async (req: Request, res: Response) => {
+  const userId = req.params.id;
+  const user = (await checkIfUserExistsById(userId, res)) as IUser;
+  successResponse(res, 200, "User information retrieved successfully", user);
+};

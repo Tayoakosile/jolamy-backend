@@ -1,0 +1,71 @@
+import { Types } from "mongoose";
+
+export type ApprovalStatus =
+  | "pending_for_documents"
+  | "submitted_for_review"
+  | "pending_for_approval"
+  | "approved"
+  | "rejected"
+  | "disabled";
+export type UserRole = "admin" | "distributor" | "sales_agent" | "worker";
+
+export interface IUser extends Document {
+  _id: Types.ObjectId;
+  name: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  username: string;
+  date_joined: Date;
+  date_approved: Date;
+  phone_number: string;
+  gender: string;
+  dob: Date;
+  business_address: string;
+  is_factory_worker: boolean;
+  disabled_reason?: string;
+  is_admin: boolean;
+  is_distributor: boolean;
+  is_sales_agent: boolean;
+  is_worker: boolean;
+  is_first_login: boolean;
+  last_login: Date;
+  distribution_address?: string;
+  status: ApprovalStatus;
+  password: string;
+  last_order_date?: Date;
+  user_role: UserRole;
+  teams: any;
+  stats: any;
+  outstanding_boxes: number;
+  orders: { type: Types.ObjectId[]; ref: "Order" }; // refs to Order model
+  products: { type: Types.ObjectId[]; ref: "Products" }; // refs to Product model
+  bonus: { type: Types.ObjectId[]; ref: "Bonus" }; // refs to Bonus model
+  transaction_history: { type: Types.ObjectId[]; ref: "TransactionHistory" }; // refs to Transaction model
+  change_request: { type: Types.ObjectId; ref: "ChangeRequest" }; // refs to ChangeRequest model
+  warehouse_location: string;
+  inventory_obligations_accepted: boolean;
+  warehouse_photos: {
+    internal: string[];
+    external: string[];
+  };
+  warehouse_verified: boolean;
+  account_details: {
+    type: Object;
+  };
+  paid_registration_fee: boolean;
+  documents: [
+    {
+      id_type: string;
+      id_number: string;
+      id_image_url: string;
+    }
+  ];
+  forgotPasswordToken?: string;
+  forgotPasswordExpires?: Date;
+  referees: [{ name: string; type: "Business" | "Character"; contact: string }];
+  admin_notes: string;
+  years_in_operation: number;
+  registration_number: number;
+  logs: { type: Types.ObjectId[]; ref: "Logs" }; // refs to Log model
+}
