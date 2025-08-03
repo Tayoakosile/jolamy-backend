@@ -5,13 +5,13 @@ import jwt from "jsonwebtoken";
 import { AppError } from "../utils/appError";
 import User from "../models/User";
 import { error } from "console";
-import { errorResponse } from "../utils/response";
+import { errorResponse, successResponse } from "../utils/response";
 
 interface JwtPayload {
   id: string;
 }
 
-export const protect = async (
+export const appAuth = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -50,4 +50,11 @@ export const protect = async (
     });
     return next();
   }
+};
+
+// middleware/auth.ts
+export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+  const user = (req as any).user;
+  if (user?.is_admin) return next();
+  return successResponse(res, 403, "Access denied, admin only");
 };

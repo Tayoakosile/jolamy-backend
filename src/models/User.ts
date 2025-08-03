@@ -1,4 +1,4 @@
-import { Document, Schema, Types, model } from "mongoose";
+import { Schema, model } from "mongoose";
 import { IUser } from "../types/type";
 // Optional: enums for role and approval status
 
@@ -9,10 +9,12 @@ const userSchema = new Schema<IUser>(
     username: String,
     date_joined: { type: Date, default: Date.now },
     last_login: { type: Date },
-    date_approved: Date,
+    approved_at: Date,
+    rejected_at: Date,
+    approved_by: { type: Schema.Types.ObjectId, ref: "User" },
+    rejected_by: { type: Schema.Types.ObjectId, ref: "User" },
     phone_number: String,
     gender: String,
-
     dob: Date,
     business_address: String,
     is_factory_worker: { type: Boolean, default: false },

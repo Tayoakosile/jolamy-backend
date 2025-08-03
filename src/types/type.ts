@@ -14,10 +14,14 @@ export interface IUser extends Document {
   name: string;
   firstname: string;
   lastname: string;
+  approved_by: Types.ObjectId;
+  approved_at: Date;
+  rejected_by: Types.ObjectId;
+  rejected_at: Date;
+  rejected_reason?: string;
   email: string;
   username: string;
   date_joined: Date;
-  date_approved: Date;
   phone_number: string;
   gender: string;
   dob: Date;

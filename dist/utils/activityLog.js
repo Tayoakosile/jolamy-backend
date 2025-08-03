@@ -6,13 +6,14 @@ const ActivityLog_1 = require("../models/ActivityLog");
 const logActivity = async ({ req, userId, action, description, metadata, }) => {
     const ip = (req.headers["x-forwarded-for"] || "").split(",")[0]?.trim() ||
         req.socket.remoteAddress;
+    const location = req.headers["x-location"] || "Unknown Location";
     const log = await ActivityLog_1.ActivityLog.create({
         userId,
         action,
         description,
         ip,
         device: req.headers["user-agent"],
-        location,
+        // location field removed as it is not defined
         metadata,
     });
     return log;

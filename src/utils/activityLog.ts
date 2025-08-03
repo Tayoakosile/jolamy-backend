@@ -26,7 +26,7 @@ export const logActivity = async ({
     description,
     ip,
     device: req.headers["user-agent"],
-    location,
+    // location field removed as it is not defined
     metadata,
   });
   return log;

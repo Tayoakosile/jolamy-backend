@@ -4,11 +4,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.protect = void 0;
+exports.isAdmin = exports.appAuth = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
 const response_1 = require("../utils/response");
-const protect = async (req, res, next) => {
+const appAuth = async (req, res, next) => {
     let token;
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -38,4 +38,12 @@ const protect = async (req, res, next) => {
         return next();
     }
 };
-exports.protect = protect;
+exports.appAuth = appAuth;
+// middleware/auth.ts
+const isAdmin = (req, res, next) => {
+    const user = req.user;
+    if (user?.is_admin)
+        return next();
+    return (0, response_1.successResponse)(res, 403, "Access denied, admin only");
+};
+exports.isAdmin = isAdmin;

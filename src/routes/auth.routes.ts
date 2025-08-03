@@ -4,7 +4,7 @@ import {
   getUserInfo,
   verifyDocuments,
 } from "../controllers/verify-document.controllers";
-import { protect } from "../middlewares/auth";
+import { appAuth } from "../middlewares/auth";
 
 const router = Router();
 
@@ -14,13 +14,14 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
 router.post(
   "/verify-documents",
-  protect,
+  appAuth,
 
   verifyDocuments
 );
 router.post(
   "/verify-documents/:id",
-  protect,
+  appAuth,
+
   // upload.fields([
   //   { name: "nin" },
   //   { name: "passport" },
@@ -33,6 +34,6 @@ router.post(
 
   verifyDocuments
 );
-router.get("/verify-documents/:id", protect, getUserInfo);
+router.get("/verify-documents/:id", appAuth, getUserInfo);
 
 export default router;
