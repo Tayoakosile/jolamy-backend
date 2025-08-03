@@ -23,5 +23,6 @@ export const errorResponse = (
     success: false,
     message,
     error,
+    statusCode
   });
 };

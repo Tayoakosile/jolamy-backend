@@ -14,6 +14,7 @@ const errorResponse = (res, statusCode = 500, message = 'Something went wrong', 
         success: false,
         message,
         error,
+        statusCode
     });
 };
 exports.errorResponse = errorResponse;

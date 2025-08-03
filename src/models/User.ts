@@ -1,14 +1,18 @@
 import { Schema, model, Document, Types } from "mongoose";
+import bcrypt from "bcryptjs";
 // Optional: enums for role and approval status
 export type ApprovalStatus =
   | "pending_for_documents"
   | "submitted_for_review"
   | "pending_for_approval"
   | "approved"
-  | "rejected";
+  | "rejected"
+  | "disabled"
+  ;
 export type UserRole = "admin" | "distributor" | "sales_agent" | "worker";
 
 export interface IUser extends Document {
+  _id: Types.ObjectId;
   name: string;
   firstname: string;
   lastname: string;

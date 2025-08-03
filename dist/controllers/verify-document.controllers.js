@@ -18,7 +18,7 @@ const verifyDocuments = async (req, res) => {
             ?.trim() || req.socket.remoteAddress;
         const user = (await (0, util_1.checkIfUserExistsById)(userId, res));
         const userLog = await (0, activityLog_1.logActivity)({
-            userId: user._id,
+            userId: `${user._id}`,
             action: "VERIFY_DOCUMENTS",
             description: "User submitted documents and referees for verification",
             ip: req.ip,
@@ -41,7 +41,7 @@ const verifyDocuments = async (req, res) => {
         (0, response_1.successResponse)(res, 200, "Documents and Referees submitted successfully", updatedUser);
     }
     catch (error) {
-        (0, response_1.errorResponse)(res, 404, "Error verifying documents");
+        (0, response_1.errorResponse)(res, 401, "Error verifying documents");
     }
 };
 exports.verifyDocuments = verifyDocuments;

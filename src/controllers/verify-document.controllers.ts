@@ -18,7 +18,7 @@ export const verifyDocuments = async (req: Request, res: Response) => {
     const user = (await checkIfUserExistsById(userId, res)) as IUser;
 
     const userLog = await logActivity({
-      userId: user._id as string,
+      userId: `${user._id}`,
       action: "VERIFY_DOCUMENTS",
       description: "User submitted documents and referees for verification",
       ip: req.ip,
@@ -55,7 +55,7 @@ export const verifyDocuments = async (req: Request, res: Response) => {
       updatedUser
     );
   } catch (error) {
-    errorResponse(res, 404, "Error verifying documents");
+    errorResponse(res, 401, "Error verifying documents");
   }
 };
 // This function is a placeholder for the actual document verification logic.

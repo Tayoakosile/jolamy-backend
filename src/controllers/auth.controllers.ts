@@ -2,6 +2,10 @@ import { Request, Response } from "express";
 import { signupService } from "../services/auth.service";
 import { sendEmail } from "../services/mail.service";
 import { errorResponse, successResponse } from "../utils/response";
+import User, { IUser } from "../models/User";
+import { generateToken } from "../utils/jwt";
+import { encrypt, isMatch } from "../utils/bcrypt.util";
+import { ActivityLog } from "../models/ActivityLog";
 
 export const createAccount = async (req: Request, res: Response) => {
   try {
@@ -29,7 +33,64 @@ export const createAccount = async (req: Request, res: Response) => {
   }
 };
 
+export const loginAccount = async (req: Request, res: Response) => {
+  try {
+    // return;
 
-export const loginAccount = async (_: Request, res: Response) => {
-  res.json("yooo");
+    if (!req.body || !req.body.email || !req.body.password) {
+      errorResponse(res, 400, "Email and password are required");
+    }
+    const email = req.body?.email;
+    const password = req.body?.password;
+    const user = (await User.findOne({ email })) as IUser;
+    if (!user) {
+      errorResponse(res, 404, "User not found with this email", {
+        message: "User not found with this email",
+      });
+    }
+    if (user.status === "disabled" || user.status === "rejected") {
+      errorResponse(res, 403, "User account is inactive", {
+        message: "User account is inactive. Please contact support.",
+        status: user.status,
+      });
+    }
+
+    const comparePassword = await isMatch(password, user.password);
+
+    if (!comparePassword) errorResponse(res, 401, "invalid Email or Password");
+
+    const token = generateToken(`${user._id}`);
+    const activityLog = await ActivityLog.create({
+      userId: user._id,
+      action: "LOGIN",
+      description: "User logged in successfully",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      location: req.headers["x-forwarded-for"] || req.socket.remoteAddress,
+      metadata: {
+        email: user.email,
+        userId: user._id,
+      },
+    });
+
+    await User.findByIdAndUpdate(user._id, {
+      $push: { logs: activityLog._id },
+    });
+    await sendEmail(
+      "" + user.email,
+      "Login Notification",
+      "You have successfully logged in to your account."
+    );
+
+    successResponse(res, 200, "Login successful", {
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    errorResponse(res, 500, "An error occurred during login", error);
+  }
 };
