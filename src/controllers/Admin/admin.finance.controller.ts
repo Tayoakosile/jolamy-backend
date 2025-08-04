@@ -91,10 +91,12 @@ export const createNewOffices = (req: AuthRequest, res: Response) => {
       statusCode: 201,
       errorStatusCode: 400,
     },
-    true,
-    req.user?.email,
-    "New Office Created",
-    `A new office has been created with the name ${req.body.name}.`
+    {
+      shouldSendMail: true,
+      mailTo: req.user?.email,
+      title: "New Office Created",
+      message: `A new office has been created with the name ${req.body.name}.`,
+    }
   );
 };
 

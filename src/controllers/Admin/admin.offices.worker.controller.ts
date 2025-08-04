@@ -27,14 +27,23 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
       Offices
     )) as IOffice;
 
-    const worker = await User.create({
-      ...body,
-      created_by: _req.user?._id,
-    });
-
-    await OfficeWorker.create({
+    const existingWorker = await User.exists({})
+      .where("email")
+      .equals(body.email.trim().toLowerCase());
+    if (existingWorker) {
+      errorResponse(res, 400, "Worker with this email already exists", {
+        message: "Worker with this email already exists",
+      });
+      return;
+    }
+    const worker = await OfficeWorker.create({
+      ..._req.body,
+      added_by: _req.user?._id,
+      is_active: true,
       office: office._id,
-      user: worker._id,
+      logs: [],
+      cash_flow: [],
+      orders_in_charge: [],
     });
     Offices.findByIdAndUpdate(officeId, {
       $push: { workers: worker._id },
@@ -42,6 +51,8 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
 
     return worker;
   };
+  const mailOptions = {};
+  customReqResHandler(res, request);
 };
 
 export const getOffices = (_req: AuthRequest, res: Response) => {
@@ -118,10 +129,11 @@ export const createNewOffices = (req: AuthRequest, res: Response) => {
       statusCode: 201,
       errorStatusCode: 400,
     },
-    true,
-    req.user?.email,
-    "New Office Created",
-    `A new office has been created with the name ${req.body.name}.`
+    {
+      mailTo: req.user?.email,
+      title: "New Office Created",
+      message: `A new office has been created with the name ${req.body.name}.`,
+    }
   );
 };
 

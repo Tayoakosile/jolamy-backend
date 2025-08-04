@@ -50,6 +50,7 @@ export const customReqResHandler = async (
   res: Response,
   reqFunction: () => void,
   errorFunction?: (error: any) => void | undefined,
+
   responseData: {
     statusCode?: 200 | 201 | 202 | 204;
     errorStatusCode?: 400 | 401 | 403 | 404;
@@ -63,17 +64,24 @@ export const customReqResHandler = async (
     successMessage: "Operation successful",
     data: null,
   },
-
-  shouldSendMail?: boolean,
-  mailTo?: string,
-  title?: string,
-  message?: string
+  mailOptions: {
+    shouldSendMail?: boolean;
+    mailTo?: string;
+    title?: string;
+    message?: string;
+  }={
+    shouldSendMail: false,
+  }
 ) => {
   try {
     const response = await reqFunction();
 
-    if (shouldSendMail) {
-      await sendEmail(mailTo as string, title as string, message as string);
+    if (mailOptions.shouldSendMail) {
+      await sendEmail(
+        mailOptions.mailTo as string,
+        mailOptions.title as string,
+        mailOptions.message as string
+      );
     }
     return successResponse(
       res,
