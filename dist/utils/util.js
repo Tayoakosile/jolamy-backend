@@ -48,15 +48,18 @@ const customReqResHandler = async (res, reqFunction, errorFunction, responseData
     statusCode: 200,
     successMessage: "Operation successful",
     data: null,
-}, shouldSendMail, mailTo, title, message) => {
+}, mailOptions = {
+    shouldSendMail: false,
+}) => {
     try {
         const response = await reqFunction();
-        if (shouldSendMail) {
-            await (0, mail_service_1.sendEmail)(mailTo, title, message);
+        if (mailOptions.shouldSendMail) {
+            await (0, mail_service_1.sendEmail)(mailOptions.mailTo, mailOptions.title, mailOptions.message);
         }
         return (0, response_1.successResponse)(res, responseData.statusCode, responseData.successMessage, responseData.data || response);
     }
     catch (error) {
+        console.log('error :', error);
         errorFunction
             ? errorFunction(error)
             : (0, response_1.errorResponse)(res, responseData.errorStatusCode || 500, responseData.errorMessage, responseData.error || error);

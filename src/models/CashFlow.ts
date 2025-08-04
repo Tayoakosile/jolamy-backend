@@ -3,7 +3,7 @@ import { Schema, model, Types } from "mongoose";
 export interface IFinance {
   type: "inflow" | "outflow";
   amount: number;
-  payment_method?: string; // e.g., "bank_transfer", "cash", "posew", "mobile_money"
+  payment_method?: string; // e.g., "bank_transfer", "cash", "pos", "mobile_money"
   category: string; // e.g., "Product Sales", "Delivery Cost", "Marketing", "Commission"
   description?: string;
   department?: string;

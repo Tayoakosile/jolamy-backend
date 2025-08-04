@@ -7,6 +7,7 @@ import {
 } from "../../utils/util";
 import { logActivity } from "../../utils/activityLog";
 import User from "../../models/User";
+import { Types } from "mongoose";
 
 interface AuthRequest extends Request {
   user?: {
@@ -62,7 +63,9 @@ export const createNewOffices = (req: AuthRequest, res: Response) => {
     });
     const log = await logActivity({
       req,
-      userId: `${req.user?._id}`,
+      userId: new Types.ObjectId(req.user?._id),
+      sender: new Types.ObjectId(req.user?._id),
+      receiver: new Types.ObjectId(req.user?._id),
       action: "CREATE_OFFICE",
       description: "New office created",
       metadata: {
@@ -90,10 +93,12 @@ export const createNewOffices = (req: AuthRequest, res: Response) => {
       statusCode: 201,
       errorStatusCode: 400,
     },
-    true,
-    req.user?.email,
-    "New Office Created",
-    `A new office has been created with the name ${req.body.name}.`
+    {
+      shouldSendMail: true,
+      mailTo: req.user?.email,
+      title: "New Office Created",
+      message: `A new office has been created with the name ${req.body.name}.`,
+    }
   );
 };
 
@@ -110,7 +115,9 @@ export const updateOffice = async (req: AuthRequest, res: Response) => {
 
     const log = await logActivity({
       req,
-      userId: `${req.user?._id}`,
+      userId: new Types.ObjectId(req.user?._id),
+      sender: new Types.ObjectId(req.user?._id),
+      receiver: new Types.ObjectId(updatedOffice?._id),
       action: "UPDATE_OFFICE",
       description: "Office updated successfully",
       metadata: {

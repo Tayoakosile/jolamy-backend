@@ -9,13 +9,14 @@ const mail_service_1 = require("../services/mail.service");
 const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
+const mongoose_1 = require("mongoose");
 const verifyDocuments = async (req, res) => {
     const userId = req.params.id;
     try {
         const user = (await (0, util_1.checkIfDocumentExistsById)(userId, res, User_1.default));
         const userLog = await (0, activityLog_1.logActivity)({
             req,
-            userId: `${user._id}`,
+            userId: new mongoose_1.Types.ObjectId(user._id),
             action: "VERIFY_DOCUMENTS",
             description: "User submitted documents and referees for verification",
             metadata: {

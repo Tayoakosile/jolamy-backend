@@ -12,6 +12,7 @@ const jwt_1 = require("../utils/jwt");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
 const activityLog_1 = require("../utils/activityLog");
+const mongoose_1 = require("mongoose");
 const createAccount = async (req, res) => {
     try {
         const user = await (0, auth_service_1.signupService)({
@@ -56,7 +57,9 @@ const loginAccount = async (req, res) => {
         const token = (0, jwt_1.generateToken)(`${user._id}`);
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
-            userId: `${user._id}`,
+            userId: new mongoose_1.Types.ObjectId(user._id),
+            sender: new mongoose_1.Types.ObjectId(user._id),
+            receiver: new mongoose_1.Types.ObjectId(user._id),
             action: "LOGIN",
             description: "User logged in successfully",
             metadata: {
@@ -120,7 +123,9 @@ const resetPassword = async (req, res) => {
         }
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
-            userId: `${user._id}`,
+            userId: new mongoose_1.Types.ObjectId(user._id),
+            sender: new mongoose_1.Types.ObjectId(user._id),
+            receiver: new mongoose_1.Types.ObjectId(user._id),
             action: "PASSWORD_RESET",
             description: "User password reset successfully",
             metadata: {
