@@ -39,5 +39,4 @@ const financeSchema = new Schema<IFinance>(
   }
 );
 
-const Finance = model<IFinance>("Finance", financeSchema);
-export default Finance;
+export default model<IFinance>("Finance", financeSchema);

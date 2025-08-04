@@ -3,36 +3,56 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateOffice = exports.createNewOffices = exports.getSingleCashFlow = exports.getAllCashFlow = void 0;
+exports.updateOffice = exports.createNewOffices = exports.getSingleOffice = exports.getOffices = exports.addOfficeWorker = void 0;
 const Office_1 = __importDefault(require("../../models/Admin/Office"));
-const User_1 = __importDefault(require("../../models/User"));
-const activityLog_1 = require("../../utils/activityLog");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
-const CashFlow_1 = __importDefault(require("../../models/CashFlow"));
-const getAllCashFlow = (_req, res) => {
+const activityLog_1 = require("../../utils/activityLog");
+const User_1 = __importDefault(require("../../models/User"));
+const OfficeWorker_1 = require("../../models/Admin/OfficeWorker");
+const addOfficeWorker = (_req, res) => {
+    const officeId = _req.params.officeId;
+    const body = _req.body;
     const request = async () => {
-        return await CashFlow_1.default.find();
+        const office = (await (0, util_1.checkIfDocumentExistsById)(officeId, res, Office_1.default));
+        const worker = await User_1.default.create({
+            ...body,
+            created_by: _req.user?._id,
+        });
+        await OfficeWorker_1.OfficeWorker.create({
+            office: office._id,
+            user: worker._id,
+        });
+        Office_1.default.findByIdAndUpdate(officeId, {
+            $push: { workers: worker._id },
+        });
+        return worker;
+    };
+};
+exports.addOfficeWorker = addOfficeWorker;
+const getOffices = (_req, res) => {
+    const request = async () => {
+        return await Office_1.default.find();
     };
     (0, util_1.customReqResHandler)(res, request);
 };
-exports.getAllCashFlow = getAllCashFlow;
-const getSingleCashFlow = async (_req, res) => {
+exports.getOffices = getOffices;
+const getSingleOffice = async (_req, res) => {
     const id = _req.params.id;
-    const cash_flow = await (0, util_1.checkIfDocumentExistsById)(id, res, Office_1.default, [
+    const office = await (0, util_1.checkIfDocumentExistsById)(id, res, Office_1.default, [
         "created_by",
         "logs",
     ]);
     const request = () => {
-        return cash_flow;
+        return office;
     };
     await (0, util_1.customReqResHandler)(res, request, undefined, {
-        successMessage: "CashFlow retrieved successfully",
+        successMessage: "Office retrieved successfully",
         errorMessage: "Error retrieving office",
         statusCode: 200,
     });
 };
-exports.getSingleCashFlow = getSingleCashFlow;
+exports.getSingleOffice = getSingleOffice;
 /**
  *
  *

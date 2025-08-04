@@ -10,7 +10,7 @@ export const verifyDocuments = async (req: Request, res: Response) => {
   const userId = req.params.id;
 
   try {
-    const user = (await checkIfDocumentExistsById(userId, res)) as IUser;
+    const user = (await checkIfDocumentExistsById(userId, res, User)) as IUser;
 
     const userLog = await logActivity({
       req,
@@ -54,6 +54,6 @@ export const verifyDocuments = async (req: Request, res: Response) => {
 
 export const getUserInfo = async (req: Request, res: Response) => {
   const userId = req.params.id;
-  const user = (await checkIfDocumentExistsById(userId, res)) as IUser;
+  const user = (await checkIfDocumentExistsById(userId, res, User)) as IUser;
   successResponse(res, 200, "User information retrieved successfully", user);
 };

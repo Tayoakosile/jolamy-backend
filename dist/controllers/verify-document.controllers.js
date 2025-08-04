@@ -12,7 +12,7 @@ const util_1 = require("../utils/util");
 const verifyDocuments = async (req, res) => {
     const userId = req.params.id;
     try {
-        const user = (await (0, util_1.checkIfDocumentExistsById)(userId, res));
+        const user = (await (0, util_1.checkIfDocumentExistsById)(userId, res, User_1.default));
         const userLog = await (0, activityLog_1.logActivity)({
             req,
             userId: `${user._id}`,
@@ -41,7 +41,7 @@ const verifyDocuments = async (req, res) => {
 exports.verifyDocuments = verifyDocuments;
 const getUserInfo = async (req, res) => {
     const userId = req.params.id;
-    const user = (await (0, util_1.checkIfDocumentExistsById)(userId, res));
+    const user = (await (0, util_1.checkIfDocumentExistsById)(userId, res, User_1.default));
     (0, response_1.successResponse)(res, 200, "User information retrieved successfully", user);
 };
 exports.getUserInfo = getUserInfo;

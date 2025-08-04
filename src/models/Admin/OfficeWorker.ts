@@ -1,7 +1,8 @@
 import { Schema, model, Types } from "mongoose";
 import { timestamp } from "../../utils/util";
+import { Document } from "mongoose";
 
-export interface IOfficeWorker {
+export interface IOfficeWorker extends Document {
   office: Types.ObjectId;
   user: Types.ObjectId; // links to User schema
   role: string; // e.g., "finance", "storekeeper"

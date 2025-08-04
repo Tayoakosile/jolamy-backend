@@ -4,7 +4,7 @@ import { Document } from "mongoose";
 
 export interface IOffice extends Document {
   name: string; // e.g., "Lagos Office"
-
+  _id: Types.ObjectId;
   address?: string;
   created_by: Types.ObjectId; // Admin who created
   transactions: Types.ObjectId;
