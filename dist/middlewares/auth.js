@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isAdmin = exports.appAuth = void 0;
+exports.isWorker = exports.isAdmin = exports.appAuth = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
 const response_1 = require("../utils/response");
@@ -27,6 +27,14 @@ const appAuth = async (req, res, next) => {
             (0, response_1.errorResponse)(res, 401, "User not found", { message: "User not found" });
             return next();
         }
+        if (user.rejected_by ||
+            user?.status === "disabled" ||
+            user?.status === "rejected") {
+            return (0, response_1.errorResponse)(res, 403, "User account is inactive", {
+                message: "User account is inactive. Please contact support.",
+                status: user.status,
+            });
+        }
         // Attach user to request object
         req.user = user;
         next();
@@ -47,3 +55,11 @@ const isAdmin = (req, res, next) => {
     return (0, response_1.successResponse)(res, 403, "Access denied, admin only");
 };
 exports.isAdmin = isAdmin;
+const isWorker = (req, res, next) => {
+    const user = req.user;
+    if (user?.worker || user?.factory_worker)
+        return next();
+    // if (user.is)
+    return (0, response_1.successResponse)(res, 403, "Access denied, Workers only");
+};
+exports.isWorker = isWorker;

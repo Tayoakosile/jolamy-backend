@@ -6,6 +6,7 @@ import { AppError } from "../utils/appError";
 import User from "../models/User";
 import { error } from "console";
 import { errorResponse, successResponse } from "../utils/response";
+import { IUser } from "../types/type";
 
 interface JwtPayload {
   id: string;
@@ -40,7 +41,16 @@ export const appAuth = async (
       errorResponse(res, 401, "User not found", { message: "User not found" });
       return next();
     }
-
+    if (
+      user.rejected_by ||
+      user?.status === "disabled" ||
+      user?.status === "rejected"
+    ) {
+      return errorResponse(res, 403, "User account is inactive", {
+        message: "User account is inactive. Please contact support.",
+        status: user.status,
+      });
+    }
     // Attach user to request object
     (req as any).user = user;
     next();
@@ -54,7 +64,14 @@ export const appAuth = async (
 
 // middleware/auth.ts
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-  const user = (req as any).user;
+  const user = (req as any).user as IUser;
   if (user?.is_admin) return next();
   return successResponse(res, 403, "Access denied, admin only");
+};
+export const isWorker = (req: Request, res: Response, next: NextFunction) => {
+  const user = (req as any).user;
+  if (user?.worker || user?.factory_worker) return next();
+
+  // if (user.is)
+  return successResponse(res, 403, "Access denied, Workers only");
 };

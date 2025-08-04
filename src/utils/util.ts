@@ -60,7 +60,7 @@ export const customReqResHandler = async (
     error?: any;
   } = {
     statusCode: 200,
-    successMessage: "Operation successful",
+    successMessage: "",
     data: null,
   },
   mailOptions: {
@@ -83,7 +83,7 @@ export const customReqResHandler = async (
       );
     }
     return successResponse(
-      res,
+        res,
       responseData.statusCode,
       responseData.successMessage,
       responseData.data || response

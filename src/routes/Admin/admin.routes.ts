@@ -1,23 +1,23 @@
 // routes/admin.routes.ts
 
 import { Router } from "express";
-import { appAuth, isAdmin } from "../middlewares/auth";
+import { appAuth, isAdmin } from "../../middlewares/auth";
 import {
   getPendingUsers,
   approveUser,
   rejectUser,
-} from "../controllers/Admin/admin.controller";
+} from "../../controllers/Admin/admin.controller";
 import {
   createNewOffices,
   getOffices,
   getSingleOffice,
   updateOffice,
-} from "../controllers/Admin/admin.offices.controller";
+} from "../../controllers/Admin/admin.offices.controller";
 import {
   getAllCashFlow,
   getSingleCashFlow,
-} from "../controllers/Admin/admin.finance.controller";
-import { addOfficeWorker, updateWorkerDetails } from "../controllers/Admin/admin.offices.worker.controller";
+} from "../../controllers/Admin/admin.finance.controller";
+import { addOfficeWorker, updateWorkerDetails } from "../../controllers/Admin/admin.offices.worker.controller";
 
 const router = Router();
 
@@ -44,7 +44,6 @@ router.patch("/offices/:id/workers/:worker_id/edit-worker", appAuth, isAdmin, up
 // finance
 router.get("/finances", appAuth, isAdmin, getAllCashFlow);
 router.get("/finances/:id", appAuth, isAdmin, getSingleCashFlow);
-
 // finance
 
 export default router;

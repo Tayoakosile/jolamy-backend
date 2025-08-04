@@ -46,7 +46,7 @@ const getRandom = (howMuch) => {
 exports.getRandom = getRandom;
 const customReqResHandler = async (res, reqFunction, errorFunction, responseData = {
     statusCode: 200,
-    successMessage: "Operation successful",
+    successMessage: "",
     data: null,
 }, mailOptions = {
     shouldSendMail: false,
