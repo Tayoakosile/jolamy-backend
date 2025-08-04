@@ -9,6 +9,7 @@ const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
 const activityLog_1 = require("../../utils/activityLog");
 const User_1 = __importDefault(require("../../models/User"));
+const mongoose_1 = require("mongoose");
 const getOffices = (_req, res) => {
     const request = async () => {
         return await Office_1.default.find();
@@ -55,7 +56,9 @@ const createNewOffices = (req, res) => {
         });
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: `${req.user?._id}`,
+            userId: new mongoose_1.Types.ObjectId(req.user?._id),
+            sender: new mongoose_1.Types.ObjectId(req.user?._id),
+            receiver: new mongoose_1.Types.ObjectId(req.user?._id),
             action: "CREATE_OFFICE",
             description: "New office created",
             metadata: {
@@ -77,7 +80,12 @@ const createNewOffices = (req, res) => {
         errorMessage: "Error creating new office",
         statusCode: 201,
         errorStatusCode: 400,
-    }, true, req.user?.email, "New Office Created", `A new office has been created with the name ${req.body.name}.`);
+    }, {
+        shouldSendMail: true,
+        mailTo: req.user?.email,
+        title: "New Office Created",
+        message: `A new office has been created with the name ${req.body.name}.`,
+    });
 };
 exports.createNewOffices = createNewOffices;
 const updateOffice = async (req, res) => {
@@ -87,7 +95,9 @@ const updateOffice = async (req, res) => {
         const updatedOffice = (await Office_1.default.findByIdAndUpdate(id, { ...req.body }, { new: true }));
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: `${req.user?._id}`,
+            userId: new mongoose_1.Types.ObjectId(req.user?._id),
+            sender: new mongoose_1.Types.ObjectId(req.user?._id),
+            receiver: new mongoose_1.Types.ObjectId(updatedOffice?._id),
             action: "UPDATE_OFFICE",
             description: "Office updated successfully",
             metadata: {

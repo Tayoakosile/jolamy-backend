@@ -3,15 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateOffice = exports.createNewOffices = exports.getSingleOffice = exports.getOffices = exports.addOfficeWorker = void 0;
+exports.updateWorkerDetails = exports.getSingleOffice = exports.getOffices = exports.addOfficeWorker = void 0;
 const Office_1 = __importDefault(require("../../models/Admin/Office"));
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
 const activityLog_1 = require("../../utils/activityLog");
 const User_1 = __importDefault(require("../../models/User"));
 const OfficeWorker_1 = require("../../models/Admin/OfficeWorker");
+const mongoose_1 = require("mongoose");
 const addOfficeWorker = (_req, res) => {
-    const officeId = _req.params.officeId;
+    const officeId = _req.params.id;
+    console.log("officeId :", officeId);
     const body = _req.body;
     const request = async () => {
         const office = (await (0, util_1.checkIfDocumentExistsById)(officeId, res, Office_1.default));
@@ -19,12 +21,11 @@ const addOfficeWorker = (_req, res) => {
             .where("email")
             .equals(body.email.trim().toLowerCase());
         if (existingWorker) {
-            (0, response_1.errorResponse)(res, 400, "Worker with this email already exists", {
+            return (0, response_1.errorResponse)(res, 400, "Worker with this email already exists", {
                 message: "Worker with this email already exists",
             });
-            return;
         }
-        const worker = await OfficeWorker_1.OfficeWorker.create({
+        const worker = (await OfficeWorker_1.OfficeWorker.create({
             ..._req.body,
             added_by: _req.user?._id,
             is_active: true,
@@ -32,14 +33,40 @@ const addOfficeWorker = (_req, res) => {
             logs: [],
             cash_flow: [],
             orders_in_charge: [],
+        }));
+        const log = (await (0, activityLog_1.logActivity)({
+            req: _req,
+            userId: new mongoose_1.Types.ObjectId(_req.user?._id),
+            action: "ADD_OFFICE_WORKER",
+            sender: new mongoose_1.Types.ObjectId(_req.user?._id),
+            receiver: worker.id,
+            description: `New office worker added to office ${office.name}`,
+            metadata: {
+                ...worker,
+                officeId: office._id,
+                userId: new mongoose_1.Types.ObjectId(_req.user?._id),
+            },
+        }));
+        await Office_1.default.findByIdAndUpdate(officeId, {
+            $push: { workers: worker._id, logs: log._id },
         });
-        Office_1.default.findByIdAndUpdate(officeId, {
-            $push: { workers: worker._id },
+        await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(worker._id, {
+            $push: { logs: log._id },
         });
-        return worker;
+        return { worker, password: _req.body.password, officeId: office._id };
     };
-    const mailOptions = {};
-    (0, util_1.customReqResHandler)(res, request);
+    const mailOptions = {
+        shouldSendMail: true,
+        mailTo: body.email,
+        title: "New Office Worker Added",
+        message: `You have been added as a worker in the office ${officeId}.`,
+    };
+    (0, util_1.customReqResHandler)(res, request, undefined, {
+        successMessage: "New office worker added successfully",
+        errorMessage: "Error adding new office worker",
+        statusCode: 201,
+        errorStatusCode: 400,
+    }, mailOptions);
 };
 exports.addOfficeWorker = addOfficeWorker;
 const getOffices = (_req, res) => {
@@ -71,80 +98,33 @@ exports.getSingleOffice = getSingleOffice;
  * @param {AuthRequest} req
  * @param {Response} res
  */
-const createNewOffices = (req, res) => {
+const updateWorkerDetails = async (req, res) => {
+    const id = req.params.worker_id;
+    const office_id = req.params.id;
     const request = async () => {
-        const existingOffice = await Office_1.default.exists({})
-            .where("name")
-            .equals(req.body.name);
-        if (existingOffice) {
-            (0, response_1.errorResponse)(res, 400, "Office with this name already exists", {
-                message: "Office with this name already exists",
-            });
-            return;
-        }
-        const newOffice = await Office_1.default.create({
-            ...req.body,
-            created_by: req.user?._id,
-        });
+        await (0, util_1.checkIfDocumentExistsById)(office_id, res, Office_1.default);
+        await (0, util_1.checkIfDocumentExistsById)(id, res, OfficeWorker_1.OfficeWorker);
+        const updatedOfficeWorker = (await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(id, { ...req.body }, { new: true }));
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: `${req.user?._id}`,
-            action: "CREATE_OFFICE",
-            description: "New office created",
+            userId: new mongoose_1.Types.ObjectId(req.user?._id),
+            action: "UPDATE_OFFICE_WORKER",
+            description: "Office worker details updated",
+            sender: new mongoose_1.Types.ObjectId(req.user?._id),
+            receiver: new mongoose_1.Types.ObjectId(updatedOfficeWorker?._id),
             metadata: {
-                ...newOffice,
-                userId: `${req.user?._id}`,
+                userId: req.user?._id,
             },
         });
-        newOffice.logs = Array.isArray(newOffice.logs)
-            ? [...newOffice.logs, log._id]
-            : [log._id];
-        await newOffice.save();
-        await User_1.default.findByIdAndUpdate(req.user?._id, {
+        await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(updatedOfficeWorker._id, {
             $push: { logs: log._id },
         });
-        return newOffice;
-    };
-    (0, util_1.customReqResHandler)(res, request, undefined, {
-        successMessage: "New office created successfully",
-        errorMessage: "Error creating new office",
-        statusCode: 201,
-        errorStatusCode: 400,
-    }, {
-        mailTo: req.user?.email,
-        title: "New Office Created",
-        message: `A new office has been created with the name ${req.body.name}.`,
-    });
-};
-exports.createNewOffices = createNewOffices;
-const updateOffice = async (req, res) => {
-    const id = req.params.id;
-    await (0, util_1.checkIfDocumentExistsById)(id, res, Office_1.default);
-    const request = async () => {
-        const updatedOffice = (await Office_1.default.findByIdAndUpdate(id, { ...req.body }, { new: true }));
-        const log = await (0, activityLog_1.logActivity)({
-            req,
-            userId: `${req.user?._id}`,
-            action: "UPDATE_OFFICE",
-            description: "Office updated successfully",
-            metadata: {
-                ...updatedOffice,
-                userId: `${req.user?._id}`,
-            },
-        });
-        updatedOffice.logs = Array.isArray(updatedOffice.logs)
-            ? [...updatedOffice.logs, log._id]
-            : [log._id];
-        await updatedOffice.save();
-        await User_1.default.findByIdAndUpdate(req.user?._id, {
-            $push: { logs: log._id },
-        });
-        return updatedOffice;
+        return updatedOfficeWorker;
     };
     await (0, util_1.customReqResHandler)(res, request, undefined, {
-        successMessage: "Office updated successfully",
-        errorMessage: "Error updating office",
+        successMessage: "Office Worker details updated successfully",
+        errorMessage: "Error updating office details",
         statusCode: 200,
     });
 };
-exports.updateOffice = updateOffice;
+exports.updateWorkerDetails = updateWorkerDetails;

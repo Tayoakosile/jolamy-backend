@@ -5,6 +5,7 @@ import { logActivity } from "../utils/activityLog";
 import { errorResponse, successResponse } from "../utils/response";
 import { checkIfDocumentExistsById } from "../utils/util";
 import { IUser } from "../types/type";
+import { Types } from "mongoose";
 
 export const verifyDocuments = async (req: Request, res: Response) => {
   const userId = req.params.id;
@@ -14,7 +15,7 @@ export const verifyDocuments = async (req: Request, res: Response) => {
 
     const userLog = await logActivity({
       req,
-      userId: `${user._id}`,
+      userId: new Types.ObjectId(user._id),
       action: "VERIFY_DOCUMENTS",
       description: "User submitted documents and referees for verification",
       metadata: {

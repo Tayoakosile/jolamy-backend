@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import User from "../../models/User";
-import { checkIfDocumentExistsById } from "../../utils/util";
-import { IUser, UserDocument } from "../../types/type";
-import { logActivity } from "../../utils/activityLog";
 import { sendEmail } from "../../services/mail.service";
+import { IUser } from "../../types/type";
+import { logActivity } from "../../utils/activityLog";
 import { errorResponse, successResponse } from "../../utils/response";
+import { checkIfDocumentExistsById } from "../../utils/util";
 
 interface AuthRequest extends Request {
   user?: {
@@ -34,7 +34,7 @@ export const approveUser = async (req: AuthRequest, res: Response) => {
     //   For the User
     const log = await logActivity({
       req,
-      userId: `${user._id}`,
+      userId: new Types.ObjectId(user._id),
       action: "APPROVED",
       description: "Your account has been approved",
       metadata: {
@@ -65,7 +65,9 @@ export const approveUser = async (req: AuthRequest, res: Response) => {
     //   For the Admin
     const adminLog = await logActivity({
       req,
-      userId: `${adminId}`,
+      userId: new Types.ObjectId(adminId),
+      sender: new Types.ObjectId(adminId),
+      receiver: new Types.ObjectId(user._id),
       action: "APPROVE_USER",
       description: "Approved user account",
       metadata: {
@@ -102,7 +104,9 @@ export const rejectUser = async (req: AuthRequest, res: Response) => {
     //   For the User
     const log = await logActivity({
       req,
-      userId: `${user._id}`,
+      userId: new Types.ObjectId(user._id),
+      sender: new Types.ObjectId(adminId),
+      receiver: new Types.ObjectId(user._id),
       action: "REJECTED",
       description: "Your account has been rejected",
       metadata: {
@@ -133,7 +137,9 @@ export const rejectUser = async (req: AuthRequest, res: Response) => {
     //   For the Admin
     const adminLog = await logActivity({
       req,
-      userId: `${adminId}`,
+      userId: new Types.ObjectId(adminId),
+      sender: new Types.ObjectId(adminId),
+      receiver: new Types.ObjectId(user._id),
       action: "REJECT_USER",
       description: "Rejected user account",
       metadata: {

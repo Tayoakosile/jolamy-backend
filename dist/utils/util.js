@@ -59,6 +59,7 @@ const customReqResHandler = async (res, reqFunction, errorFunction, responseData
         return (0, response_1.successResponse)(res, responseData.statusCode, responseData.successMessage, responseData.data || response);
     }
     catch (error) {
+        console.log('error :', error);
         errorFunction
             ? errorFunction(error)
             : (0, response_1.errorResponse)(res, responseData.errorStatusCode || 500, responseData.errorMessage, responseData.error || error);

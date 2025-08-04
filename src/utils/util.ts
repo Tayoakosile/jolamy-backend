@@ -50,7 +50,6 @@ export const customReqResHandler = async (
   res: Response,
   reqFunction: () => void,
   errorFunction?: (error: any) => void | undefined,
-
   responseData: {
     statusCode?: 200 | 201 | 202 | 204;
     errorStatusCode?: 400 | 401 | 403 | 404;
@@ -90,6 +89,8 @@ export const customReqResHandler = async (
       responseData.data || response
     );
   } catch (error) {
+    console.log('error :', error);
+
     errorFunction
       ? errorFunction(error)
       : errorResponse(

@@ -17,6 +17,7 @@ import {
   getAllCashFlow,
   getSingleCashFlow,
 } from "../controllers/Admin/admin.finance.controller";
+import { addOfficeWorker, updateWorkerDetails } from "../controllers/Admin/admin.offices.worker.controller";
 
 const router = Router();
 
@@ -32,8 +33,12 @@ router.get("/offices", appAuth, isAdmin, getOffices);
 router.get("/offices/:id", appAuth, isAdmin, getSingleOffice);
 router.put("/offices/:id", appAuth, isAdmin, updateOffice);
 router.patch("/offices/:id", appAuth, isAdmin, updateOffice);
+
 // Add worker
-router.patch("/offices/:id/add-worker", appAuth, isAdmin, updateOffice);
+router.post("/offices/:id/add-worker", appAuth, isAdmin, addOfficeWorker);
+// Edit workers details
+router.put("/offices/:id/workers/:worker_id/edit-worker", appAuth, isAdmin, updateWorkerDetails);
+router.patch("/offices/:id/workers/:worker_id/edit-worker", appAuth, isAdmin, updateWorkerDetails);
 // offices
 
 // finance

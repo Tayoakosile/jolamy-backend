@@ -10,6 +10,7 @@ import { errorResponse, successResponse } from "../utils/response";
 import { IUser } from "../types/type";
 import { getRandom } from "../utils/util";
 import { logActivity } from "../utils/activityLog";
+import { Types } from "mongoose";
 
 export const createAccount = async (req: Request, res: Response) => {
   try {
@@ -65,7 +66,9 @@ export const loginAccount = async (req: Request, res: Response) => {
     const token = generateToken(`${user._id}`);
     const activityLog = await logActivity({
       req,
-      userId: `${user._id}`,
+      userId: new Types.ObjectId(user._id),
+      sender: new Types.ObjectId(user._id),
+      receiver: new Types.ObjectId(user._id),
       action: "LOGIN",
       description: "User logged in successfully",
       metadata: {
@@ -148,7 +151,9 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     const activityLog = await logActivity({
       req,
-      userId: `${user._id}`,
+      userId: new Types.ObjectId(user._id),
+      sender: new Types.ObjectId(user._id),
+      receiver: new Types.ObjectId(user._id),
       action: "PASSWORD_RESET",
       description: "User password reset successfully",
 

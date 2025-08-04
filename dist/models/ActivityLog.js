@@ -11,6 +11,8 @@ const activityLogSchema = new mongoose_1.default.Schema({
     userId: { type: mongoose_1.default.Types.ObjectId, ref: "User" },
     action: String,
     description: String,
+    sender: { type: mongoose_1.default.Types.ObjectId, ref: "User" },
+    receiver: { type: mongoose_1.default.Types.ObjectId, ref: "User" },
     ip: String,
     device: String,
     location: String,

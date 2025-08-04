@@ -14,6 +14,7 @@ export interface IOfficeWorker extends Document {
   employee_id: string; // e.g., "finance", "storekeeper"
   is_active: boolean;
   is_deactivated: boolean;
+  is_deleted: boolean;
   deactivated_by: Types.ObjectId;
   logs: Types.ObjectId[]; // logs of activities
   cash_flow: Types.ObjectId[]; // logs of activities
@@ -27,7 +28,8 @@ const officeWorkerSchema = new Schema<IOfficeWorker>(
     employee_id: { type: String },
     role: { type: String, required: true },
     is_active: { type: Boolean, default: true },
-    is_deactivated: { type: Boolean, default: true },
+    is_deactivated: { type: Boolean, default: false },
+    is_deleted: { type: Boolean, default: false },
     deactivated_by: { type: Schema.Types.ObjectId, ref: "User" },
     added_by: { type: Schema.Types.ObjectId, ref: "User" },
     logs: [{ type: Schema.Types.ObjectId, ref: "Log" }],

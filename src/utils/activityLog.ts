@@ -1,5 +1,6 @@
 import { Request } from "express";
 import { ActivityLog } from "../models/ActivityLog";
+import { Types } from "mongoose";
 
 // src/utils/logActivity.ts
 
@@ -8,12 +9,16 @@ export const logActivity = async ({
   userId,
   action,
   description,
+  sender,
+  receiver,
   metadata,
 }: {
   req: Request;
-  userId: string;
+  userId: Types.ObjectId;
   action: string;
   description?: string;
+  sender?: Types.ObjectId;
+  receiver?: Types.ObjectId;
   metadata?: any;
 }) => {
   const ip =
@@ -25,7 +30,10 @@ export const logActivity = async ({
     action,
     description,
     ip,
+    sender,
+    receiver,
     device: req.headers["user-agent"],
+    location,
     // location field removed as it is not defined
     metadata,
   });
