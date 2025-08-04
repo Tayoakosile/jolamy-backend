@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.customReqResHandler = exports.getRandom = exports.checkIfUserExistsById = void 0;
+exports.timestamp = exports.customReqResHandler = exports.getRandom = exports.checkIfUserExistsById = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const randomatic_1 = __importDefault(require("randomatic"));
 const User_1 = __importDefault(require("../models/User"));
@@ -57,3 +57,7 @@ statusCode, statusErrorCode, success = {
     }
 };
 exports.customReqResHandler = customReqResHandler;
+exports.timestamp = {
+    createdAt: "created_at",
+    updatedAt: "updated_at",
+};

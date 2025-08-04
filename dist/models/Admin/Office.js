@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
+const util_1 = require("../../utils/util");
 const officeSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     address: { type: String },
@@ -19,6 +20,10 @@ const officeSchema = new mongoose_1.Schema({
         lastFundedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
         lastFundedAmount: { type: Number },
     },
-}, { timestamps: true });
+}, {
+    timestamps: {
+        ...util_1.timestamp,
+    },
+});
 const Offices = (0, mongoose_1.model)("Office", officeSchema);
 exports.default = Offices;

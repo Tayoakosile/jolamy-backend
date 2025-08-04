@@ -38,7 +38,7 @@ export const customReqResHandler = async (
   req: Request,
   res: Response,
   reqFunction: () => void,
-//   errorFunction?: (error: any) => void,
+  //   errorFunction?: (error: any) => void,
   statusCode?: number,
   statusErrorCode?: number,
   success: {
@@ -81,4 +81,9 @@ export const customReqResHandler = async (
       errorInCode.data
     );
   }
+};
+
+export const timestamp = {
+  createdAt: "created_at",
+  updatedAt: "updated_at",
 };

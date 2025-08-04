@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
 import { IUser } from "../types/type";
-import { encrypt } from "../utils/bcrypt.util";
+import { encrypt, isMatch } from "../utils/bcrypt.util";
+import { timestamp } from "../utils/util";
 // Optional: enums for role and approval status
 
 const userSchema = new Schema<IUser>(
@@ -18,12 +19,7 @@ const userSchema = new Schema<IUser>(
     gender: String,
     dob: Date,
     business_address: String,
-    is_factory_worker: { type: Boolean, default: false },
     disabled_reason: String,
-    is_admin: { type: Boolean, default: false },
-    is_distributor: { type: Boolean, default: false },
-    is_sales_agent: { type: Boolean, default: false },
-    is_worker: { type: Boolean, default: false },
     is_first_login: { type: Boolean, default: true },
     distribution_address: String,
     email: { type: String, required: true, unique: true },
@@ -44,11 +40,10 @@ const userSchema = new Schema<IUser>(
     last_order_date: Date,
     user_role: {
       type: String,
-      enum: ["admin", "distributor", "sales_agent", "worker"],
+      enum: ["admin", "distributor", "sales_agent", "worker", "factory_worker"],
     },
     teams: Schema.Types.Mixed,
     stats: Schema.Types.Mixed,
-
     outstanding_boxes: { type: Number, default: 0 },
     orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: Schema.Types.ObjectId, ref: "Product" }],
@@ -70,18 +65,43 @@ const userSchema = new Schema<IUser>(
     logs: [{ type: Schema.Types.ObjectId, ref: "Log" }],
   },
   {
-    timestamps: true,
+    timestamps: {
+      ...timestamp,
+    },
   }
 );
-userSchema.virtual('fullName').get(function () {
+userSchema.virtual("fullName").get(function () {
   return `${this.first_name} ${this.last_name}`;
 });
+userSchema.virtual("is_admin").get(function () {
+  return (this.is_admin = this.user_role === "admin");
+});
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+userSchema.virtual("is_distributor").get(function () {
+  return (this.is_distributor = this.user_role === "distributor");
+});
+
+userSchema.virtual("is_sales_agent").get(function () {
+  return (this.is_sales_agent = this.user_role === "sales_agent");
+});
+
+userSchema.virtual("is_worker").get(function () {
+  return (this.is_worker = this.user_role === "worker");
+});
+
+userSchema.virtual("is_factory_worker").get(function () {
+  return (this.is_factory_worker = this.user_role === "factory_worker");
+});
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
   this.password = await encrypt(this.password);
   next();
 });
-
+userSchema.methods.comparePassword = async function (
+  candidatePassword: string
+) {
+  return await isMatch(candidatePassword, this.password);
+};
 
 export default model<IUser>("User", userSchema);

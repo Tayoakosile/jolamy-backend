@@ -1,4 +1,5 @@
 import { Schema, model, Types } from "mongoose";
+import { timestamp } from "../../utils/util";
 
 export interface IOfficeWorker {
   office: Types.ObjectId;
@@ -15,15 +16,18 @@ const officeWorkerSchema = new Schema<IOfficeWorker>(
   {
     office: { type: Schema.Types.ObjectId, ref: "Office", required: true },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    employee_id: { type: String},
+    employee_id: { type: String },
     role: { type: String, required: true },
     is_active: { type: Boolean, default: true },
     is_deactivated: { type: Boolean, default: true },
     deactivated_by: { type: Schema.Types.ObjectId, ref: "User" },
     added_by: { type: Schema.Types.ObjectId, ref: "User" },
-
-},
-    { timestamps: true }
+  },
+  {
+    timestamps: {
+      ...timestamp,
+    },
+  }
 );
 export const OfficeWorker = model<IOfficeWorker>(
   "OfficeWorker",

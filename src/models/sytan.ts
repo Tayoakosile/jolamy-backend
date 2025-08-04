@@ -1,9 +1,7 @@
 import { Schema, model, Types } from "mongoose";
+import { timestamp } from "../utils/util";
 
 // 👷 2. models/OfficeWorker.ts
-
-
-
 
 // 💳 3. models/OfficeWallet.ts
 
@@ -22,7 +20,11 @@ const walletSchema = new Schema<IOfficeWallet>(
     lastFundedBy: { type: Schema.Types.ObjectId, ref: "User" },
     lastFundedAmount: { type: Number },
   },
-  { timestamps: true }
+  {
+    timestamps: {
+      ...timestamp,
+    },
+  }
 );
 
 export const OfficeWallet = model<IOfficeWallet>("OfficeWallet", walletSchema);
@@ -49,7 +51,11 @@ const financeLogSchema = new Schema<IOfficeFinanceLog>(
     reference: { type: String },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
-  { timestamps: true }
+  {
+    timestamps: {
+      ...timestamp,
+    },
+  }
 );
 
 export const OfficeFinanceLog = model<IOfficeFinanceLog>(

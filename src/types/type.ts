@@ -7,7 +7,7 @@ export type ApprovalStatus =
   | "approved"
   | "rejected"
   | "disabled";
-export type UserRole = "admin" | "distributor" | "sales_agent" | "worker";
+export type UserRole = "admin" | "distributor" | "sales_agent" | "worker"|"factory_worker";
 
 export interface IUser extends Document {
   _id: Types.ObjectId;

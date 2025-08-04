@@ -1,4 +1,5 @@
 import { Schema, model, Types } from "mongoose";
+import { timestamp } from "../../utils/util";
 
 export interface IOffice {
   name: string; // e.g., "Lagos Office"
@@ -11,7 +12,6 @@ export interface IOffice {
   is_active: boolean;
   created_at?: Date;
   wallet?: Object;
-
 }
 
 const officeSchema = new Schema<IOffice>(
@@ -34,7 +34,11 @@ const officeSchema = new Schema<IOffice>(
       lastFundedAmount: { type: Number },
     },
   },
-  { timestamps: true }
+  {
+    timestamps: {
+      ...timestamp,
+    },
+  }
 );
 
 const Offices = model<IOffice>("Office", officeSchema);
