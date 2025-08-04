@@ -9,6 +9,9 @@ import { logActivity } from "../../utils/activityLog";
 import User from "../../models/User";
 import { IOfficeWorker, OfficeWorker } from "../../models/Admin/OfficeWorker";
 import { Types } from "mongoose";
+import { encrypt } from "../../utils/bcrypt.util";
+import { sendEmail } from "../../services/mail.service";
+import { send } from "process";
 
 interface AuthRequest extends Request {
   user?: {
@@ -124,15 +127,34 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
 export const updateWorkerDetails = async (req: AuthRequest, res: Response) => {
   const id = req.params.worker_id;
   const office_id = req.params.id;
+  // if password or email is included then a mail has to be sent with the updated password
 
   const request = async () => {
     await checkIfDocumentExistsById<IOffice>(office_id, res, Offices);
-    await checkIfDocumentExistsById<IOfficeWorker>(id, res, OfficeWorker);
+    const officeWorker = (await checkIfDocumentExistsById<IOfficeWorker>(
+      id,
+      res,
+      OfficeWorker
+    )) as IOfficeWorker;
+    delete req.body.email;
     const updatedOfficeWorker = (await OfficeWorker.findByIdAndUpdate(
       id,
-      { ...req.body },
+      {
+        ...req.body,
+        email: officeWorker.email,
+        password: req.body.password
+          ? await encrypt(req.body.password)
+          : officeWorker.password,
+      },
       { new: true }
-    )) as IOffice;
+    )) as IOfficeWorker;
+    if (req.body.password) {
+      sendEmail(
+        updatedOfficeWorker.email,
+        "Password Updated",
+        `Your password has been updated. Your new password is: ${req.body.password}`
+      );
+    }
 
     const log = await logActivity({
       req,
@@ -140,7 +162,7 @@ export const updateWorkerDetails = async (req: AuthRequest, res: Response) => {
       action: "UPDATE_OFFICE_WORKER",
       description: "Office worker details updated",
       sender: new Types.ObjectId(req.user?._id),
-      receiver: new Types.ObjectId(updatedOfficeWorker?._id),
+      receiver: (id as unknown as Types.ObjectId) || updatedOfficeWorker._id,
       metadata: {
         userId: req.user?._id,
       },

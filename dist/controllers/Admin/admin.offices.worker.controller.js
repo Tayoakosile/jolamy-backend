@@ -11,6 +11,8 @@ const activityLog_1 = require("../../utils/activityLog");
 const User_1 = __importDefault(require("../../models/User"));
 const OfficeWorker_1 = require("../../models/Admin/OfficeWorker");
 const mongoose_1 = require("mongoose");
+const bcrypt_util_1 = require("../../utils/bcrypt.util");
+const mail_service_1 = require("../../services/mail.service");
 const addOfficeWorker = (_req, res) => {
     const officeId = _req.params.id;
     console.log("officeId :", officeId);
@@ -101,17 +103,28 @@ exports.getSingleOffice = getSingleOffice;
 const updateWorkerDetails = async (req, res) => {
     const id = req.params.worker_id;
     const office_id = req.params.id;
+    // if password or email is included then a mail has to be sent with the updated password
     const request = async () => {
         await (0, util_1.checkIfDocumentExistsById)(office_id, res, Office_1.default);
-        await (0, util_1.checkIfDocumentExistsById)(id, res, OfficeWorker_1.OfficeWorker);
-        const updatedOfficeWorker = (await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(id, { ...req.body }, { new: true }));
+        const officeWorker = (await (0, util_1.checkIfDocumentExistsById)(id, res, OfficeWorker_1.OfficeWorker));
+        delete req.body.email;
+        const updatedOfficeWorker = (await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(id, {
+            ...req.body,
+            email: officeWorker.email,
+            password: req.body.password
+                ? await (0, bcrypt_util_1.encrypt)(req.body.password)
+                : officeWorker.password,
+        }, { new: true }));
+        if (req.body.password) {
+            (0, mail_service_1.sendEmail)(updatedOfficeWorker.email, "Password Updated", `Your password has been updated. Your new password is: ${req.body.password}`);
+        }
         const log = await (0, activityLog_1.logActivity)({
             req,
             userId: new mongoose_1.Types.ObjectId(req.user?._id),
             action: "UPDATE_OFFICE_WORKER",
             description: "Office worker details updated",
             sender: new mongoose_1.Types.ObjectId(req.user?._id),
-            receiver: new mongoose_1.Types.ObjectId(updatedOfficeWorker?._id),
+            receiver: id || updatedOfficeWorker._id,
             metadata: {
                 userId: req.user?._id,
             },
