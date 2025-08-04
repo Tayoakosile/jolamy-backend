@@ -147,7 +147,6 @@ export const resetPassword = async (req: Request, res: Response) => {
       return errorResponse(res, 400, "Invalid or expired reset token");
     }
 
-    const newPassword = await encrypt(password);
     const activityLog = await logActivity({
       req,
       userId: `${user._id}`,
@@ -164,7 +163,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       {
         forgot_password_expires: "",
         forgot_password_token: "",
-        password: newPassword,
+        password,
         $push: { logs: activityLog._id },
       }
     );

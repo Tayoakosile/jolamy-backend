@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
+const bcrypt_util_1 = require("../utils/bcrypt.util");
 // Optional: enums for role and approval status
 const userSchema = new mongoose_1.Schema({
-    firstname: { type: String, required: true },
-    lastname: { type: String, required: true },
+    first_name: { type: String, required: true },
+    last_name: { type: String, required: true },
     username: String,
     date_joined: { type: Date, default: Date.now },
     last_login: { type: Date },
@@ -65,5 +66,14 @@ const userSchema = new mongoose_1.Schema({
     logs: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Log" }],
 }, {
     timestamps: true,
+});
+userSchema.virtual('fullName').get(function () {
+    return `${this.first_name} ${this.last_name}`;
+});
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password'))
+        return next();
+    this.password = await (0, bcrypt_util_1.encrypt)(this.password);
+    next();
 });
 exports.default = (0, mongoose_1.model)("User", userSchema);

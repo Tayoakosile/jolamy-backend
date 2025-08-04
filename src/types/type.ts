@@ -12,8 +12,8 @@ export type UserRole = "admin" | "distributor" | "sales_agent" | "worker";
 export interface IUser extends Document {
   _id: Types.ObjectId;
   name: string;
-  firstname: string;
-  lastname: string;
+  first_name: string;
+  last_name: string;
   approved_by: Types.ObjectId;
   approved_at: Date;
   rejected_by: Types.ObjectId;

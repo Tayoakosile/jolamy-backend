@@ -7,22 +7,12 @@ import {
   approveUser,
   rejectUser,
 } from "../controllers/Admin/admin.controller";
-import { getOffices } from "../controllers/Admin/admin.offices.controller";
 
 const router = Router();
-
 // users
 router.get("/pending-users", appAuth, isAdmin, getPendingUsers);
 router.post("/approve/:userId", appAuth, isAdmin, approveUser);
 router.post("/reject/:userId", appAuth, isAdmin, rejectUser);
 // users
-
-// offices
-router.get("/offices", appAuth, isAdmin, getOffices);
-router.post("/offices", appAuth, isAdmin, getPendingUsers);
-router.get("/offices/:id", appAuth, isAdmin, getPendingUsers);
-router.put("/offices/:id", appAuth, isAdmin, getPendingUsers);
-
-// offices
 
 export default router;

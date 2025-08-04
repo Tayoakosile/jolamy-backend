@@ -3,8 +3,9 @@
 import mongoose from "mongoose";
 import randomatic from "randomatic";
 import User from "../models/User";
-import { errorResponse } from "./response";
-import { Response } from "express";
+import { errorResponse, successResponse } from "./response";
+import { Request, Response } from "express";
+import { sendEmail } from "../services/mail.service";
 
 /**
  * Checks if a user exists by ID.
@@ -29,7 +30,55 @@ export const checkIfUserExistsById = async (id: string, res: Response) => {
   return user;
 };
 
-export const getRandom = (howMuch?:number)=>{
-    return randomatic("a0", howMuch || 18);
+export const getRandom = (howMuch?: number) => {
+  return randomatic("a0", howMuch || 18);
+};
 
-}
+export const customReqResHandler = async (
+  req: Request,
+  res: Response,
+  reqFunction: () => void,
+//   errorFunction?: (error: any) => void,
+  statusCode?: number,
+  statusErrorCode?: number,
+  success: {
+    message: string;
+    data?: any;
+  } = {
+    message: "Operation successful",
+    data: null,
+  },
+  errorInCode: {
+    message: string;
+    data?: any;
+  } = {
+    message: "An error occurred",
+    data: null,
+  },
+  shouldSendMail?: boolean,
+  mailTo?: string,
+  title?: string,
+  message?: string
+) => {
+  try {
+    const response = await reqFunction();
+
+    if (shouldSendMail) {
+      await sendEmail(mailTo as string, title as string, message as string);
+    }
+    return successResponse(
+      res,
+      statusCode || 200,
+      success?.message,
+      success.data || response
+    );
+  } catch (error) {
+    // errorFunction(error);
+    errorResponse(
+      res,
+      statusErrorCode || 500,
+      errorInCode.message,
+      errorInCode.data
+    );
+  }
+};

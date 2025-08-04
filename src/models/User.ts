@@ -1,11 +1,12 @@
 import { Schema, model } from "mongoose";
 import { IUser } from "../types/type";
+import { encrypt } from "../utils/bcrypt.util";
 // Optional: enums for role and approval status
 
 const userSchema = new Schema<IUser>(
   {
-    firstname: { type: String, required: true },
-    lastname: { type: String, required: true },
+    first_name: { type: String, required: true },
+    last_name: { type: String, required: true },
     username: String,
     date_joined: { type: Date, default: Date.now },
     last_login: { type: Date },
@@ -72,5 +73,15 @@ const userSchema = new Schema<IUser>(
     timestamps: true,
   }
 );
+userSchema.virtual('fullName').get(function () {
+  return `${this.first_name} ${this.last_name}`;
+});
+
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  this.password = await encrypt(this.password);
+  next();
+});
+
 
 export default model<IUser>("User", userSchema);
