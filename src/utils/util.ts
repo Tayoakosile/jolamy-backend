@@ -20,24 +20,28 @@ export const checkIfDocumentExistsById = async <T extends Document>(
   populateFields?: string | string[]
 ) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return errorResponse(res, 400, "Invalid ID format", {
+    errorResponse(res, 400, "Invalid ID format", {
       message: "Invalid ID format",
     });
+    return;
   }
   if (populateFields) {
     const populatedDocument = await Model.findById(id).populate(populateFields);
     if (!populatedDocument) {
-      return errorResponse(res, 404, "Document not found", {
+      errorResponse(res, 404, "Document not found", {
         message: "Document not found",
       });
+      return;
     }
+
     return populatedDocument;
   }
   const document = await Model.findById(id);
   if (!document) {
-    return errorResponse(res, 404, "Document not found", {
+    errorResponse(res, 404, "Document not found", {
       message: "Document not found",
     });
+    return
   }
   return document;
 };
@@ -68,7 +72,7 @@ export const customReqResHandler = async (
     mailTo?: string;
     title?: string;
     message?: string;
-  }={
+  } = {
     shouldSendMail: false,
   }
 ) => {
@@ -83,13 +87,13 @@ export const customReqResHandler = async (
       );
     }
     return successResponse(
-        res,
+      res,
       responseData.statusCode,
       responseData.successMessage,
       responseData.data || response
     );
   } catch (error) {
-    console.log('error :', error);
+    console.log("error :", error);
 
     errorFunction
       ? errorFunction(error)

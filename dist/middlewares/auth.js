@@ -6,6 +6,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isWorker = exports.isAdmin = exports.appAuth = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const OfficeWorker_1 = require("../models/Admin/OfficeWorker");
 const User_1 = __importDefault(require("../models/User"));
 const response_1 = require("../utils/response");
 const appAuth = async (req, res, next) => {
@@ -22,21 +23,26 @@ const appAuth = async (req, res, next) => {
     }
     try {
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-        const user = await User_1.default.findById(decoded.id);
-        if (!user) {
+        const user = (await User_1.default.findById(decoded.id));
+        const worker = (await OfficeWorker_1.OfficeWorker.findById(decoded.id));
+        if (!user && !worker) {
             (0, response_1.errorResponse)(res, 401, "User not found", { message: "User not found" });
             return next();
         }
-        if (user.rejected_by ||
+        if (worker) {
+            req.user = worker ? worker : user;
+            next();
+        }
+        if (user?.rejected_by ||
             user?.status === "disabled" ||
             user?.status === "rejected") {
-            return (0, response_1.errorResponse)(res, 403, "User account is inactive", {
+            (0, response_1.errorResponse)(res, 403, "User account is inactive", {
                 message: "User account is inactive. Please contact support.",
                 status: user.status,
             });
+            return;
         }
-        // Attach user to request object
-        req.user = user;
+        req.user = worker ? worker : user;
         next();
     }
     catch (err) {
@@ -50,16 +56,17 @@ exports.appAuth = appAuth;
 // middleware/auth.ts
 const isAdmin = (req, res, next) => {
     const user = req.user;
-    if (user?.is_admin)
+    if (user?.is_admin || user.user_role == "admin")
         return next();
-    return (0, response_1.successResponse)(res, 403, "Access denied, admin only");
+    (0, response_1.errorResponse)(res, 403, "Access denied, admin only");
+    return;
 };
 exports.isAdmin = isAdmin;
 const isWorker = (req, res, next) => {
     const user = req.user;
     if (user?.worker || user?.factory_worker)
         return next();
-    // if (user.is)
-    return (0, response_1.successResponse)(res, 403, "Access denied, Workers only");
+    (0, response_1.errorResponse)(res, 403, "Access denied, Workers only");
+    return;
 };
 exports.isWorker = isWorker;

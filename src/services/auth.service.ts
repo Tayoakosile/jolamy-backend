@@ -1,11 +1,9 @@
 import User from "../models/User";
 
-import bcrypt from "bcryptjs";
-import { AppError } from "../utils/appError";
-import { IUser } from "../types/type";
-import { OfficeWorker } from "../models/Admin/OfficeWorker";
-import { errorResponse } from "../utils/response";
 import { Response } from "express";
+import { OfficeWorker } from "../models/Admin/OfficeWorker";
+import { IUser } from "../types/type";
+import { errorResponse } from "../utils/response";
 
 export const signupService = async (
   req: any,

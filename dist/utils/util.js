@@ -18,24 +18,27 @@ const response_1 = require("./response");
  */
 const checkIfDocumentExistsById = async (id, res, Model, populateFields) => {
     if (!mongoose_1.default.Types.ObjectId.isValid(id)) {
-        return (0, response_1.errorResponse)(res, 400, "Invalid ID format", {
+        (0, response_1.errorResponse)(res, 400, "Invalid ID format", {
             message: "Invalid ID format",
         });
+        return;
     }
     if (populateFields) {
         const populatedDocument = await Model.findById(id).populate(populateFields);
         if (!populatedDocument) {
-            return (0, response_1.errorResponse)(res, 404, "Document not found", {
+            (0, response_1.errorResponse)(res, 404, "Document not found", {
                 message: "Document not found",
             });
+            return;
         }
         return populatedDocument;
     }
     const document = await Model.findById(id);
     if (!document) {
-        return (0, response_1.errorResponse)(res, 404, "Document not found", {
+        (0, response_1.errorResponse)(res, 404, "Document not found", {
             message: "Document not found",
         });
+        return;
     }
     return document;
 };
@@ -59,7 +62,7 @@ const customReqResHandler = async (res, reqFunction, errorFunction, responseData
         return (0, response_1.successResponse)(res, responseData.statusCode, responseData.successMessage, responseData.data || response);
     }
     catch (error) {
-        console.log('error :', error);
+        console.log("error :", error);
         errorFunction
             ? errorFunction(error)
             : (0, response_1.errorResponse)(res, responseData.errorStatusCode || 500, responseData.errorMessage, responseData.error || error);
