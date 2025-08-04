@@ -11,6 +11,7 @@ import { IUser } from "../types/type";
 import { getRandom } from "../utils/util";
 import { logActivity } from "../utils/activityLog";
 import { Types } from "mongoose";
+import { OfficeWorker } from "../models/Admin/OfficeWorker";
 
 export const createAccount = async (req: Request, res: Response) => {
   try {
@@ -23,7 +24,7 @@ export const createAccount = async (req: Request, res: Response) => {
         is_sales_agents: req.body.user_role === "sales_agent",
         is_worker: req.body.user_role === "worker",
       },
-      req.body.password
+      res
     );
     sendEmail(
       req.body.email,
@@ -39,23 +40,69 @@ export const createAccount = async (req: Request, res: Response) => {
 
 export const loginAccount = async (req: Request, res: Response) => {
   try {
-    // return;
-
     if (!req.body || !req.body.email || !req.body.password) {
       errorResponse(res, 400, "Email and password are required");
     }
     const email = req.body?.email;
     const password = req.body?.password;
+
+    const officeWorker = (await OfficeWorker.findOne({ email })) as IUser;
+    if (officeWorker) {
+      const comparePassword = await isMatch(password, officeWorker.password);
+
+      if (!comparePassword)
+        errorResponse(res, 401, "invalid Email or Password");
+      const token = generateToken(`${officeWorker._id}`);
+      const activityLog = await logActivity({
+        req,
+        userId: new Types.ObjectId(officeWorker._id),
+        sender: new Types.ObjectId(officeWorker._id),
+        receiver: new Types.ObjectId(officeWorker._id),
+        action: "LOGIN",
+        description: "Worker logged in successfully",
+        metadata: {
+          email: officeWorker.email,
+          userId: officeWorker._id,
+        },
+      });
+
+      await OfficeWorker.findByIdAndUpdate(officeWorker._id, {
+        last_login: new Date(),
+        is_first_login: officeWorker.last_login ? false : true,
+        $push: { logs: activityLog._id },
+      });
+      await sendEmail(
+        officeWorker.email,
+        "Login Notification",
+        officeWorker.is_first_login
+          ? "You have successfully logged in to your account for the first time. Welcome aboard!"
+          : "You have successfully logged in to your account."
+      );
+
+      successResponse(res, 200, "Login successful", {
+        token,
+        user: {
+          id: officeWorker._id,
+          email: officeWorker.email,
+        },
+      });
+      return;
+    }
     const user = (await User.findOne({ email })) as IUser;
     if (!user) {
       errorResponse(res, 404, "User not found with this email", {
         message: "User not found with this email",
       });
     }
-    if (user.status === "disabled" || user.status === "rejected") {
+    if (
+      user.status === "disabled" ||
+      user.status === "rejected" ||
+      user.rejected_by
+    ) {
       errorResponse(res, 403, "User account is inactive", {
         message: "User account is inactive. Please contact support.",
         status: user.status,
+        user,
       });
     }
 

@@ -5,17 +5,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.signupService = void 0;
 const User_1 = __importDefault(require("../models/User"));
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const appError_1 = require("../utils/appError");
-const signupService = async (req, password) => {
+const OfficeWorker_1 = require("../models/Admin/OfficeWorker");
+const response_1 = require("../utils/response");
+const signupService = async (req, res) => {
     const existingUser = await User_1.default.findOne({ email: req.email });
-    if (existingUser) {
-        throw new appError_1.AppError("Email already in use", 400);
+    const existingOfficeWorker = await OfficeWorker_1.OfficeWorker.findOne({ email: req.email });
+    if (existingUser || existingOfficeWorker) {
+        (0, response_1.errorResponse)(res, 400, "User with this email already exists");
     }
-    const hashedPassword = await bcryptjs_1.default.hash(password, 10);
     const user = await User_1.default.create({
         ...req,
-        password: hashedPassword,
     });
     return user;
 };

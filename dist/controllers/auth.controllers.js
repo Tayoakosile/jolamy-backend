@@ -13,6 +13,7 @@ const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
 const activityLog_1 = require("../utils/activityLog");
 const mongoose_1 = require("mongoose");
+const OfficeWorker_1 = require("../models/Admin/OfficeWorker");
 const createAccount = async (req, res) => {
     try {
         const user = await (0, auth_service_1.signupService)({
@@ -22,7 +23,7 @@ const createAccount = async (req, res) => {
             is_admin: req.body.user_role === "admin",
             is_sales_agents: req.body.user_role === "sales_agent",
             is_worker: req.body.user_role === "worker",
-        }, req.body.password);
+        }, res);
         (0, mail_service_1.sendEmail)(req.body.email, "Welcome to Our Service", `Hello ${user.name}, welcome to our service!`);
         (0, response_1.successResponse)(res, 201, "User created successfully");
     }
@@ -33,22 +34,59 @@ const createAccount = async (req, res) => {
 exports.createAccount = createAccount;
 const loginAccount = async (req, res) => {
     try {
-        // return;
         if (!req.body || !req.body.email || !req.body.password) {
             (0, response_1.errorResponse)(res, 400, "Email and password are required");
         }
         const email = req.body?.email;
         const password = req.body?.password;
+        const officeWorker = (await OfficeWorker_1.OfficeWorker.findOne({ email }));
+        if (officeWorker) {
+            const comparePassword = await (0, bcrypt_util_1.isMatch)(password, officeWorker.password);
+            if (!comparePassword)
+                (0, response_1.errorResponse)(res, 401, "invalid Email or Password");
+            const token = (0, jwt_1.generateToken)(`${officeWorker._id}`);
+            const activityLog = await (0, activityLog_1.logActivity)({
+                req,
+                userId: new mongoose_1.Types.ObjectId(officeWorker._id),
+                sender: new mongoose_1.Types.ObjectId(officeWorker._id),
+                receiver: new mongoose_1.Types.ObjectId(officeWorker._id),
+                action: "LOGIN",
+                description: "Worker logged in successfully",
+                metadata: {
+                    email: officeWorker.email,
+                    userId: officeWorker._id,
+                },
+            });
+            await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(officeWorker._id, {
+                last_login: new Date(),
+                is_first_login: officeWorker.last_login ? false : true,
+                $push: { logs: activityLog._id },
+            });
+            await (0, mail_service_1.sendEmail)(officeWorker.email, "Login Notification", officeWorker.is_first_login
+                ? "You have successfully logged in to your account for the first time. Welcome aboard!"
+                : "You have successfully logged in to your account.");
+            (0, response_1.successResponse)(res, 200, "Login successful", {
+                token,
+                user: {
+                    id: officeWorker._id,
+                    email: officeWorker.email,
+                },
+            });
+            return;
+        }
         const user = (await User_1.default.findOne({ email }));
         if (!user) {
             (0, response_1.errorResponse)(res, 404, "User not found with this email", {
                 message: "User not found with this email",
             });
         }
-        if (user.status === "disabled" || user.status === "rejected") {
+        if (user.status === "disabled" ||
+            user.status === "rejected" ||
+            user.rejected_by) {
             (0, response_1.errorResponse)(res, 403, "User account is inactive", {
                 message: "User account is inactive. Please contact support.",
                 status: user.status,
+                user,
             });
         }
         const comparePassword = await (0, bcrypt_util_1.isMatch)(password, user.password);
