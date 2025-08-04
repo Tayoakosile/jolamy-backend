@@ -26,7 +26,6 @@ const createAccount = async (req, res) => {
         (0, response_1.successResponse)(res, 201, "User created successfully");
     }
     catch (error) {
-        console.log("error here :", error);
         (0, response_1.errorResponse)(res, 400, error, error);
     }
 };
@@ -119,7 +118,6 @@ const resetPassword = async (req, res) => {
         if (!user) {
             return (0, response_1.errorResponse)(res, 400, "Invalid or expired reset token");
         }
-        const newPassword = await (0, bcrypt_util_1.encrypt)(password);
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
             userId: `${user._id}`,
@@ -133,7 +131,7 @@ const resetPassword = async (req, res) => {
         await User_1.default.findOneAndUpdate({ _id: user._id }, {
             forgot_password_expires: "",
             forgot_password_token: "",
-            password: newPassword,
+            password,
             $push: { logs: activityLog._id },
         });
         await (0, mail_service_1.sendEmail)("" + user.email, "Password Reset Confirmation", "Your password has been reset successfully.");

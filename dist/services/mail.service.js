@@ -15,7 +15,7 @@ const sendEmail = (to, subject, html) => {
             console.log(`Subject: ${subject}`);
             console.log(`HTML:\n${html}`);
             resolve(true);
-        }, 1500); // simulate 1.5s delay
+        }, 1000);
     });
 };
 exports.sendEmail = sendEmail;

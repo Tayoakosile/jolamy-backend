@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import {  Document, Types } from "mongoose";
 
 export type ApprovalStatus =
   | "pending_for_documents"
@@ -7,13 +7,14 @@ export type ApprovalStatus =
   | "approved"
   | "rejected"
   | "disabled";
-export type UserRole = "admin" | "distributor" | "sales_agent" | "worker";
+export type UserRole = "admin" | "distributor" | "sales_agent" | "worker"|"factory_worker";
 
+export type UserDocument = IUser & Document;
 export interface IUser extends Document {
   _id: Types.ObjectId;
   name: string;
-  firstname: string;
-  lastname: string;
+  first_name: string;
+  last_name: string;
   approved_by: Types.ObjectId;
   approved_at: Date;
   rejected_by: Types.ObjectId;

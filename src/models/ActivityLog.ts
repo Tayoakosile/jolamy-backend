@@ -1,5 +1,6 @@
 // src/models/activityLog.model.ts
 import mongoose from "mongoose";
+import { timestamp } from "../utils/util";
 
 const activityLogSchema = new mongoose.Schema(
   {
@@ -11,7 +12,11 @@ const activityLogSchema = new mongoose.Schema(
     location: String,
     metadata: Object,
   },
-  { timestamps: true }
+  {
+    timestamps: {
+      ...timestamp,
+    },
+  }
 );
 
-export const ActivityLog = mongoose.model("Logs", activityLogSchema);
+export const ActivityLog = mongoose.model("Log", activityLogSchema);

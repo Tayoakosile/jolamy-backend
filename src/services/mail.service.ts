@@ -10,6 +10,6 @@ export const sendEmail = (to: string, subject: string, html: string) => {
       console.log(`Subject: ${subject}`);
       console.log(`HTML:\n${html}`);
       resolve(true);
-    }, 1500); // simulate 1.5s delay
+    }, 1000);
   });
 };

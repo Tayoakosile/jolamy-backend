@@ -32,7 +32,6 @@ export const createAccount = async (req: Request, res: Response) => {
 
     successResponse(res, 201, "User created successfully");
   } catch (error: { error: string } | any) {
-    console.log("error here :", error);
     errorResponse(res, 400, error as string, error);
   }
 };
@@ -147,7 +146,6 @@ export const resetPassword = async (req: Request, res: Response) => {
       return errorResponse(res, 400, "Invalid or expired reset token");
     }
 
-    const newPassword = await encrypt(password);
     const activityLog = await logActivity({
       req,
       userId: `${user._id}`,
@@ -164,7 +162,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       {
         forgot_password_expires: "",
         forgot_password_token: "",
-        password: newPassword,
+        password,
         $push: { logs: activityLog._id },
       }
     );

@@ -1,10 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
+const bcrypt_util_1 = require("../utils/bcrypt.util");
+const util_1 = require("../utils/util");
 // Optional: enums for role and approval status
 const userSchema = new mongoose_1.Schema({
-    firstname: { type: String, required: true },
-    lastname: { type: String, required: true },
+    first_name: { type: String, required: true },
+    last_name: { type: String, required: true },
     username: String,
     date_joined: { type: Date, default: Date.now },
     last_login: { type: Date },
@@ -16,12 +18,7 @@ const userSchema = new mongoose_1.Schema({
     gender: String,
     dob: Date,
     business_address: String,
-    is_factory_worker: { type: Boolean, default: false },
     disabled_reason: String,
-    is_admin: { type: Boolean, default: false },
-    is_distributor: { type: Boolean, default: false },
-    is_sales_agent: { type: Boolean, default: false },
-    is_worker: { type: Boolean, default: false },
     is_first_login: { type: Boolean, default: true },
     distribution_address: String,
     email: { type: String, required: true, unique: true },
@@ -42,7 +39,7 @@ const userSchema = new mongoose_1.Schema({
     last_order_date: Date,
     user_role: {
         type: String,
-        enum: ["admin", "distributor", "sales_agent", "worker"],
+        enum: ["admin", "distributor", "sales_agent", "worker", "factory_worker"],
     },
     teams: mongoose_1.Schema.Types.Mixed,
     stats: mongoose_1.Schema.Types.Mixed,
@@ -64,6 +61,35 @@ const userSchema = new mongoose_1.Schema({
     registration_number: Number,
     logs: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Log" }],
 }, {
-    timestamps: true,
+    timestamps: {
+        ...util_1.timestamp,
+    },
 });
+userSchema.virtual("fullName").get(function () {
+    return `${this.first_name} ${this.last_name}`;
+});
+userSchema.virtual("is_admin").get(function () {
+    return (this.is_admin = this.user_role === "admin");
+});
+userSchema.virtual("is_distributor").get(function () {
+    return (this.is_distributor = this.user_role === "distributor");
+});
+userSchema.virtual("is_sales_agent").get(function () {
+    return (this.is_sales_agent = this.user_role === "sales_agent");
+});
+userSchema.virtual("is_worker").get(function () {
+    return (this.is_worker = this.user_role === "worker");
+});
+userSchema.virtual("is_factory_worker").get(function () {
+    return (this.is_factory_worker = this.user_role === "factory_worker");
+});
+userSchema.pre("save", async function (next) {
+    if (!this.isModified("password"))
+        return next();
+    this.password = await (0, bcrypt_util_1.encrypt)(this.password);
+    next();
+});
+userSchema.methods.comparePassword = async function (candidatePassword) {
+    return await (0, bcrypt_util_1.isMatch)(candidatePassword, this.password);
+};
 exports.default = (0, mongoose_1.model)("User", userSchema);
