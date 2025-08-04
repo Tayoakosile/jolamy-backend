@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createNewOffices = exports.getSingleOffice = exports.getOffices = void 0;
+exports.updateOffice = exports.createNewOffices = exports.getSingleOffice = exports.getOffices = void 0;
 const Office_1 = __importDefault(require("../../models/Admin/Office"));
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
@@ -22,7 +22,7 @@ const getSingleOffice = async (_req, res) => {
         "created_by",
         "logs",
     ]);
-    const request = async () => {
+    const request = () => {
         return office;
     };
     await (0, util_1.customReqResHandler)(res, request, undefined, {
@@ -80,3 +80,34 @@ const createNewOffices = (req, res) => {
     }, true, req.user?.email, "New Office Created", `A new office has been created with the name ${req.body.name}.`);
 };
 exports.createNewOffices = createNewOffices;
+const updateOffice = async (req, res) => {
+    const id = req.params.id;
+    await (0, util_1.checkIfDocumentExistsById)(id, res, Office_1.default);
+    const request = async () => {
+        const updatedOffice = (await Office_1.default.findByIdAndUpdate(id, { ...req.body }, { new: true }));
+        const log = await (0, activityLog_1.logActivity)({
+            req,
+            userId: `${req.user?._id}`,
+            action: "UPDATE_OFFICE",
+            description: "Office updated successfully",
+            metadata: {
+                ...updatedOffice,
+                userId: `${req.user?._id}`,
+            },
+        });
+        updatedOffice.logs = Array.isArray(updatedOffice.logs)
+            ? [...updatedOffice.logs, log._id]
+            : [log._id];
+        await updatedOffice.save();
+        await User_1.default.findByIdAndUpdate(req.user?._id, {
+            $push: { logs: log._id },
+        });
+        return updatedOffice;
+    };
+    await (0, util_1.customReqResHandler)(res, request, undefined, {
+        successMessage: "Office updated successfully",
+        errorMessage: "Error updating office",
+        statusCode: 200,
+    });
+};
+exports.updateOffice = updateOffice;

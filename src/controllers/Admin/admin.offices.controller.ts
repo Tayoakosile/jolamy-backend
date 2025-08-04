@@ -29,7 +29,7 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
     "logs",
   ]);
 
-  const request = async () => {
+  const request = () => {
     return office;
   };
 
@@ -95,4 +95,42 @@ export const createNewOffices = (req: AuthRequest, res: Response) => {
     "New Office Created",
     `A new office has been created with the name ${req.body.name}.`
   );
+};
+
+export const updateOffice = async (req: AuthRequest, res: Response) => {
+  const id = req.params.id;
+  await checkIfDocumentExistsById<IOffice>(id, res, Offices);
+
+  const request = async () => {
+    const updatedOffice = (await Offices.findByIdAndUpdate(
+      id,
+      { ...req.body },
+      { new: true }
+    )) as IOffice;
+
+    const log = await logActivity({
+      req,
+      userId: `${req.user?._id}`,
+      action: "UPDATE_OFFICE",
+      description: "Office updated successfully",
+      metadata: {
+        ...updatedOffice,
+        userId: `${req.user?._id}`,
+      },
+    });
+    updatedOffice.logs = Array.isArray(updatedOffice.logs)
+      ? [...updatedOffice.logs, log._id]
+      : [log._id];
+    await updatedOffice.save();
+    await User.findByIdAndUpdate(req.user?._id, {
+      $push: { logs: log._id },
+    });
+    return updatedOffice;
+  };
+
+  await customReqResHandler(res, request, undefined, {
+    successMessage: "Office updated successfully",
+    errorMessage: "Error updating office",
+    statusCode: 200,
+  });
 };
