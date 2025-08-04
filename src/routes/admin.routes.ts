@@ -7,7 +7,7 @@ import {
   approveUser,
   rejectUser,
 } from "../controllers/Admin/admin.controller";
-import { getOffices } from "../controllers/Admin/admin.offices.controller";
+import { createNewOffices, getOffices, getSingleOffice } from "../controllers/Admin/admin.offices.controller";
 
 const router = Router();
 
@@ -19,8 +19,8 @@ router.post("/reject/:userId", appAuth, isAdmin, rejectUser);
 
 // offices
 router.get("/offices", appAuth, isAdmin, getOffices);
-router.post("/offices", appAuth, isAdmin, getPendingUsers);
-router.get("/offices/:id", appAuth, isAdmin, getPendingUsers);
+router.post("/offices", appAuth, isAdmin, createNewOffices);
+router.get("/offices/:id", appAuth, isAdmin, getSingleOffice);
 router.put("/offices/:id", appAuth, isAdmin, getPendingUsers);
 
 // offices

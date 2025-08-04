@@ -20,4 +20,4 @@ const activityLogSchema = new mongoose_1.default.Schema({
         ...util_1.timestamp,
     },
 });
-exports.ActivityLog = mongoose_1.default.model("Logs", activityLogSchema);
+exports.ActivityLog = mongoose_1.default.model("Log", activityLogSchema);

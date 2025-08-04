@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import User from "../../models/User";
-import { checkIfUserExistsById } from "../../utils/util";
-import { IUser } from "../../types/type";
+import { checkIfDocumentExistsById } from "../../utils/util";
+import { IUser, UserDocument } from "../../types/type";
 import { logActivity } from "../../utils/activityLog";
 import { sendEmail } from "../../services/mail.service";
 import { errorResponse, successResponse } from "../../utils/response";
@@ -25,7 +25,11 @@ export const approveUser = async (req: AuthRequest, res: Response) => {
     const userId = req.params?.userId;
     const adminId = req.user?._id;
 
-    const user = (await checkIfUserExistsById(userId, res)) as IUser;
+    const user = (await checkIfDocumentExistsById<IUser>(
+      userId,
+      res,
+      User
+    )) as IUser;
 
     //   For the User
     const log = await logActivity({
@@ -89,7 +93,11 @@ export const rejectUser = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.params?.userId;
     const adminId = req.user?._id;
-    const user = (await checkIfUserExistsById(userId, res)) as IUser;
+    const user = (await checkIfDocumentExistsById<IUser>(
+      userId,
+      res,
+      User
+    )) as IUser;
 
     //   For the User
     const log = await logActivity({
@@ -107,7 +115,7 @@ export const rejectUser = async (req: AuthRequest, res: Response) => {
       {
         status: "rejected",
         rejected_at: new Date(),
-        rejected_reason: req.body?.rejected_reason ,
+        rejected_reason: req.body?.rejected_reason,
         rejected_by: new mongoose.Types.ObjectId(adminId),
         logs: Array.isArray(user.logs) ? [...user.logs, log._id] : [log._id],
       },

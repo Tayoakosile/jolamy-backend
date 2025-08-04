@@ -1,33 +1,45 @@
 // utils/checkIfExists.ts
 
-import mongoose from "mongoose";
+import { Response } from "express";
+import mongoose, { Document } from "mongoose";
 import randomatic from "randomatic";
-import User from "../models/User";
-import { errorResponse, successResponse } from "./response";
-import { Request, Response } from "express";
 import { sendEmail } from "../services/mail.service";
+import { errorResponse, successResponse } from "./response";
 
 /**
  * Checks if a user exists by ID.
  * @param id - The MongoDB ObjectId as string.
+ * @param res - Res passed down.
  * @returns The user document if found, or null.
  * @throws Error if the ID is invalid or the DB fails.
  */
-export const checkIfUserExistsById = async (id: string, res: Response) => {
+export const checkIfDocumentExistsById = async <T extends Document>(
+  id: string,
+  res: Response,
+  Model: mongoose.Model<T>,
+  populateFields?: string | string[]
+) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    errorResponse(res, 400, "Invalid user ID format", {
-      message: "Invalid user ID format",
+    return errorResponse(res, 400, "Invalid ID format", {
+      message: "Invalid ID format",
     });
   }
-
-  const user = await User.findById(id)!;
-  if (!user) {
-    errorResponse(res, 401, "User not found", {
-      message: "User not found",
+  if (populateFields) {
+    const populatedDocument = await Model.findById(id).populate(populateFields);
+    if (!populatedDocument) {
+      return errorResponse(res, 404, "Document not found", {
+        message: "Document not found",
+      });
+    }
+    return populatedDocument;
+  }
+  const document = await Model.findById(id);
+  if (!document) {
+    return errorResponse(res, 404, "Document not found", {
+      message: "Document not found",
     });
   }
-
-  return user;
+  return document;
 };
 
 export const getRandom = (howMuch?: number) => {
@@ -35,26 +47,23 @@ export const getRandom = (howMuch?: number) => {
 };
 
 export const customReqResHandler = async (
-  req: Request,
   res: Response,
   reqFunction: () => void,
-  //   errorFunction?: (error: any) => void,
-  statusCode?: number,
-  statusErrorCode?: number,
-  success: {
-    message: string;
+  errorFunction?: (error: any) => void | undefined,
+  responseData: {
+    statusCode?: 200 | 201 | 202 | 204;
+    errorStatusCode?: 400 | 401 | 403 | 404;
+    successMessage: string;
+    errorMessage?: string;
     data?: any;
+    successData?: any;
+    error?: any;
   } = {
-    message: "Operation successful",
+    statusCode: 200,
+    successMessage: "Operation successful",
     data: null,
   },
-  errorInCode: {
-    message: string;
-    data?: any;
-  } = {
-    message: "An error occurred",
-    data: null,
-  },
+
   shouldSendMail?: boolean,
   mailTo?: string,
   title?: string,
@@ -68,18 +77,19 @@ export const customReqResHandler = async (
     }
     return successResponse(
       res,
-      statusCode || 200,
-      success?.message,
-      success.data || response
+      responseData.statusCode,
+      responseData.successMessage,
+      responseData.data || response
     );
   } catch (error) {
-    // errorFunction(error);
-    errorResponse(
-      res,
-      statusErrorCode || 500,
-      errorInCode.message,
-      errorInCode.data
-    );
+    errorFunction
+      ? errorFunction(error)
+      : errorResponse(
+          res,
+          responseData.errorStatusCode || 500,
+          responseData.errorMessage,
+          responseData.error || error
+        );
   }
 };
 

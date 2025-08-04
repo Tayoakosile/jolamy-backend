@@ -26,7 +26,6 @@ const createAccount = async (req, res) => {
         (0, response_1.successResponse)(res, 201, "User created successfully");
     }
     catch (error) {
-        console.log("error here :", error);
         (0, response_1.errorResponse)(res, 400, error, error);
     }
 };

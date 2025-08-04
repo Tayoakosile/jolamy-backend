@@ -13,8 +13,8 @@ router.post("/reject/:userId", auth_1.appAuth, auth_1.isAdmin, admin_controller_
 // users
 // offices
 router.get("/offices", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.getOffices);
-router.post("/offices", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.getPendingUsers);
-router.get("/offices/:id", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.getPendingUsers);
+router.post("/offices", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.createNewOffices);
+router.get("/offices/:id", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.getSingleOffice);
 router.put("/offices/:id", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.getPendingUsers);
 // offices
 exports.default = router;

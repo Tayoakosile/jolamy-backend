@@ -32,7 +32,6 @@ export const createAccount = async (req: Request, res: Response) => {
 
     successResponse(res, 201, "User created successfully");
   } catch (error: { error: string } | any) {
-    console.log("error here :", error);
     errorResponse(res, 400, error as string, error);
   }
 };

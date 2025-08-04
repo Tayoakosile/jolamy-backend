@@ -19,7 +19,7 @@ const approveUser = async (req, res) => {
     try {
         const userId = req.params?.userId;
         const adminId = req.user?._id;
-        const user = (await (0, util_1.checkIfUserExistsById)(userId, res));
+        const user = (await (0, util_1.checkIfDocumentExistsById)(userId, res, User_1.default));
         //   For the User
         const log = await (0, activityLog_1.logActivity)({
             req,
@@ -69,7 +69,7 @@ const rejectUser = async (req, res) => {
     try {
         const userId = req.params?.userId;
         const adminId = req.user?._id;
-        const user = (await (0, util_1.checkIfUserExistsById)(userId, res));
+        const user = (await (0, util_1.checkIfDocumentExistsById)(userId, res, User_1.default));
         //   For the User
         const log = await (0, activityLog_1.logActivity)({
             req,

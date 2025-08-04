@@ -3,14 +3,14 @@ import User from "../models/User";
 import { sendEmail } from "../services/mail.service";
 import { logActivity } from "../utils/activityLog";
 import { errorResponse, successResponse } from "../utils/response";
-import { checkIfUserExistsById } from "../utils/util";
+import { checkIfDocumentExistsById } from "../utils/util";
 import { IUser } from "../types/type";
 
 export const verifyDocuments = async (req: Request, res: Response) => {
   const userId = req.params.id;
 
   try {
-    const user = (await checkIfUserExistsById(userId, res)) as IUser;
+    const user = (await checkIfDocumentExistsById(userId, res)) as IUser;
 
     const userLog = await logActivity({
       req,
@@ -54,6 +54,6 @@ export const verifyDocuments = async (req: Request, res: Response) => {
 
 export const getUserInfo = async (req: Request, res: Response) => {
   const userId = req.params.id;
-  const user = (await checkIfUserExistsById(userId, res)) as IUser;
+  const user = (await checkIfDocumentExistsById(userId, res)) as IUser;
   successResponse(res, 200, "User information retrieved successfully", user);
 };

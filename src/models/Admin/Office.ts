@@ -1,14 +1,15 @@
 import { Schema, model, Types } from "mongoose";
 import { timestamp } from "../../utils/util";
+import { Document } from "mongoose";
 
-export interface IOffice {
+export interface IOffice extends Document {
   name: string; // e.g., "Lagos Office"
 
   address?: string;
   created_by: Types.ObjectId; // Admin who created
-  transactions: Types.ObjectId; // Admin who created
-  workers: Types.ObjectId[]; // Admin who created
-  logs: Types.ObjectId[]; // Admin who created
+  transactions: Types.ObjectId;
+  workers: Types.ObjectId[];
+  logs: Types.ObjectId[];
   is_active: boolean;
   created_at?: Date;
   wallet?: Object;
@@ -20,18 +21,20 @@ const officeSchema = new Schema<IOffice>(
     address: { type: String },
     created_by: { type: Schema.Types.ObjectId, ref: "User", required: true },
     is_active: { type: Boolean, default: true },
-    transactions: {
-      type: Schema.Types.ObjectId,
-      ref: "Finance",
-      required: true,
-    },
+    transactions: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Finance",
+        required: true,
+      },
+    ],
     workers: [{ type: Schema.Types.ObjectId, ref: "OfficeWorker" }],
     logs: [{ type: Schema.Types.ObjectId, ref: "Log" }],
     wallet: {
-      office: { type: Schema.Types.ObjectId, ref: "Office", required: true },
       balance: { type: Number, default: 0 },
       lastFundedBy: { type: Schema.Types.ObjectId, ref: "User" },
       lastFundedAmount: { type: Number },
+      logs: [{ type: Schema.Types.ObjectId, ref: "Log" }],
     },
   },
   {
