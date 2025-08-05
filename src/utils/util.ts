@@ -41,7 +41,7 @@ export const checkIfDocumentExistsById = async <T extends Document>(
     errorResponse(res, 404, "Document not found", {
       message: "Document not found",
     });
-    return
+    return;
   }
   return document;
 };

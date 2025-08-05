@@ -1,19 +1,21 @@
 import { Request, Response } from "express";
-import { ActivityLog } from "../models/ActivityLog";
 import User from "../models/User";
 
-import { signupService } from "../services/auth.service";
-import { sendEmail } from "../services/mail.service";
-import { encrypt, isMatch } from "../utils/bcrypt.util";
-import { generateToken } from "../utils/jwt";
-import { errorResponse, successResponse } from "../utils/response";
-import { IUser } from "../types/type";
-import { getRandom } from "../utils/util";
-import { logActivity } from "../utils/activityLog";
 import { Types } from "mongoose";
 import { OfficeWorker } from "../models/Admin/OfficeWorker";
+import { signupService } from "../services/auth.service";
+import { sendEmail } from "../services/mail.service";
+import { IUser } from "../types/type";
+import { logActivity } from "../utils/activityLog";
+import { isMatch } from "../utils/bcrypt.util";
+import { generateToken } from "../utils/jwt";
+import { errorResponse, successResponse } from "../utils/response";
+import { getRandom } from "../utils/util";
 
 export const createAccount = async (req: Request, res: Response) => {
+  if (!req.body) {
+    return errorResponse(res, 400, "Request body is required");
+  }
   try {
     const user = await signupService(
       {
@@ -29,7 +31,7 @@ export const createAccount = async (req: Request, res: Response) => {
     sendEmail(
       req.body.email,
       "Welcome to Our Service",
-      `Hello ${user.name}, welcome to our service!`
+      `Hello ${user.username}, welcome to our service!`
     );
 
     successResponse(res, 201, "User created successfully");
@@ -230,6 +232,27 @@ export const resetPassword = async (req: Request, res: Response) => {
       res,
       500,
       "An error occurred while resetting the password",
+      error
+    );
+  }
+};
+
+export const getUserProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user._id;
+    const user = await User.findById(userId).select("-password -__v");
+    if (!user) {
+      return errorResponse(res, 404, "User not found");
+    }
+    successResponse(res, 200, "User profile retrieved successfully", user);
+    return;
+  } catch (error) {
+    console.log("error :", error);
+
+    errorResponse(
+      res,
+      500,
+      "An error occurred while retrieving profile",
       error
     );
   }

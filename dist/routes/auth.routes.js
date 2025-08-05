@@ -21,4 +21,5 @@ router.post("/verify-documents/:id", auth_1.appAuth,
 // ]),
 verify_document_controllers_1.verifyDocuments);
 router.get("/verify-documents/:id", auth_1.appAuth, verify_document_controllers_1.getUserInfo);
+router.get("/profile", auth_1.appAuth, auth_controllers_1.getUserProfile);
 exports.default = router;

@@ -3,18 +3,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.forgotPassword = exports.loginAccount = exports.createAccount = void 0;
+exports.getUserProfile = exports.resetPassword = exports.forgotPassword = exports.loginAccount = exports.createAccount = void 0;
 const User_1 = __importDefault(require("../models/User"));
+const mongoose_1 = require("mongoose");
+const OfficeWorker_1 = require("../models/Admin/OfficeWorker");
 const auth_service_1 = require("../services/auth.service");
 const mail_service_1 = require("../services/mail.service");
+const activityLog_1 = require("../utils/activityLog");
 const bcrypt_util_1 = require("../utils/bcrypt.util");
 const jwt_1 = require("../utils/jwt");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
-const activityLog_1 = require("../utils/activityLog");
-const mongoose_1 = require("mongoose");
-const OfficeWorker_1 = require("../models/Admin/OfficeWorker");
 const createAccount = async (req, res) => {
+    if (!req.body) {
+        return (0, response_1.errorResponse)(res, 400, "Request body is required");
+    }
     try {
         const user = await (0, auth_service_1.signupService)({
             ...req.body,
@@ -24,7 +27,7 @@ const createAccount = async (req, res) => {
             is_sales_agents: req.body.user_role === "sales_agent",
             is_worker: req.body.user_role === "worker",
         }, res);
-        (0, mail_service_1.sendEmail)(req.body.email, "Welcome to Our Service", `Hello ${user.name}, welcome to our service!`);
+        (0, mail_service_1.sendEmail)(req.body.email, "Welcome to Our Service", `Hello ${user.username}, welcome to our service!`);
         (0, response_1.successResponse)(res, 201, "User created successfully");
     }
     catch (error) {
@@ -185,3 +188,19 @@ const resetPassword = async (req, res) => {
     }
 };
 exports.resetPassword = resetPassword;
+const getUserProfile = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const user = await User_1.default.findById(userId).select("-password -__v");
+        if (!user) {
+            return (0, response_1.errorResponse)(res, 404, "User not found");
+        }
+        (0, response_1.successResponse)(res, 200, "User profile retrieved successfully", user);
+        return;
+    }
+    catch (error) {
+        console.log("error :", error);
+        (0, response_1.errorResponse)(res, 500, "An error occurred while retrieving profile", error);
+    }
+};
+exports.getUserProfile = getUserProfile;

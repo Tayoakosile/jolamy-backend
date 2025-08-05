@@ -2,18 +2,10 @@ import { Request, Response } from "express";
 import mongoose, { Types } from "mongoose";
 import User from "../../models/User";
 import { sendEmail } from "../../services/mail.service";
-import { IUser } from "../../types/type";
+import { AuthRequest, IUser } from "../../types/type";
 import { logActivity } from "../../utils/activityLog";
 import { errorResponse, successResponse } from "../../utils/response";
 import { checkIfDocumentExistsById } from "../../utils/util";
-
-interface AuthRequest extends Request {
-  user?: {
-    _id: string;
-    is_admin: boolean;
-    email: string;
-  };
-}
 
 export const getPendingUsers = async (_req: AuthRequest, res: Response) => {
   const users = await User.find({ status: "pending" });

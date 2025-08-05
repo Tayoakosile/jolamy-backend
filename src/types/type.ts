@@ -1,3 +1,4 @@
+import { Request } from "express";
 import {  Document, Types } from "mongoose";
 
 export type ApprovalStatus =
@@ -29,6 +30,8 @@ export interface IUser extends Document {
   business_address: string;
   is_factory_worker: boolean;
   disabled_reason?: string;
+  change_requests?: [];
+  cart?: [];
   is_admin: boolean;
   is_distributor: boolean;
   is_sales_agent: boolean;
@@ -73,4 +76,13 @@ export interface IUser extends Document {
   years_in_operation: number;
   registration_number: number;
   logs: { type: Types.ObjectId[]; ref: "Logs" }; // refs to Log model
+}
+
+
+export interface AuthRequest extends Request {
+  user?: {
+    _id: string;
+    is_admin: boolean;
+    email: string;
+  };
 }

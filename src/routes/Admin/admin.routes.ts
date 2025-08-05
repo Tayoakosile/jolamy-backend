@@ -72,7 +72,7 @@ router.post(
   "/products",
   appAuth,
   isAdmin,
-  upload.array("files"),
+  // upload.array("files"),
   addNewProducts
 );
 router.get("/products/:id", appAuth, isAdmin, getSingleProducts);

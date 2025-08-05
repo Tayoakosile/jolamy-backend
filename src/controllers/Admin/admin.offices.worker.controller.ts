@@ -11,14 +11,7 @@ import {
   checkIfDocumentExistsById,
   customReqResHandler,
 } from "../../utils/util";
-
-interface AuthRequest extends Request {
-  user?: {
-    _id: string;
-    is_admin: boolean;
-    email: string;
-  };
-}
+import { AuthRequest } from "../../types/type";
 
 export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
   const officeId = _req.params.id;

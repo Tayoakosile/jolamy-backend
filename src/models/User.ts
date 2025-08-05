@@ -15,6 +15,7 @@ const userSchema = new Schema<IUser>(
     rejected_at: Date,
     approved_by: { type: Schema.Types.ObjectId, ref: "User" },
     rejected_by: { type: Schema.Types.ObjectId, ref: "User" },
+    change_requests: [{ type: Schema.Types.ObjectId, ref: "ChangeRequest" }],
     phone_number: String,
     gender: String,
     dob: Date,
@@ -23,6 +24,7 @@ const userSchema = new Schema<IUser>(
     is_first_login: { type: Boolean, default: true },
     distribution_address: String,
     email: { type: String, required: true, unique: true },
+    cart: [{ type: Schema.Types.ObjectId, ref: "Cart" }],
     warehouse_location: { type: String },
     warehouse_photos: {
       internal: [],

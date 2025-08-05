@@ -9,7 +9,6 @@ const Product_1 = require("../../models/Product");
 const activityLog_1 = require("../../utils/activityLog");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
-const upload_r2_controllers_1 = require("../upload-r2.controllers");
 const User_1 = __importDefault(require("../../models/User"));
 const addNewProducts = (_req, res) => {
     const user = _req.user;
@@ -19,7 +18,6 @@ const addNewProducts = (_req, res) => {
     // }
     const body = _req.body;
     const request = async () => {
-        const urls = await (0, upload_r2_controllers_1.uploadToR2)(_req, res);
         const existingProduct = await Product_1.Product.findOne({
             $or: [
                 {
@@ -36,7 +34,7 @@ const addNewProducts = (_req, res) => {
         }
         const product = await Product_1.Product.create({
             ..._req.body,
-            product_images: urls,
+            // product_images: urls,
             created_by: _req.user?._id,
             is_active: true,
         });
@@ -74,23 +72,24 @@ const getSingleProducts = async (_req, res) => {
     const id = _req.params.id;
     await (0, util_1.checkIfDocumentExistsById)(id, res, Product_1.Product);
     const request = async () => {
-        return await Product_1.Product.findById(id);
+        const product = await Product_1.Product.findOne({ _id: id, is_active: true });
+        const logs = await (0, activityLog_1.logActivity)({
+            req: _req,
+            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
+            action: "GET_PRODUCT",
+            sender: new mongoose_1.Types.ObjectId(_req.user?._id),
+            receiver: new mongoose_1.Types.ObjectId(id),
+            description: `Product fetched: ${id}`,
+            metadata: {
+                product_id: id,
+                user_id: _req.user?._id,
+            },
+        });
+        await User_1.default.findByIdAndUpdate(_req.user?._id, {
+            $push: { logs: logs.id },
+        });
+        return product;
     };
-    const logs = await (0, activityLog_1.logActivity)({
-        req: _req,
-        user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
-        action: "GET_PRODUCT",
-        sender: new mongoose_1.Types.ObjectId(_req.user?._id),
-        receiver: new mongoose_1.Types.ObjectId(id),
-        description: `Product fetched: ${id}`,
-        metadata: {
-            product_id: id,
-            user_id: _req.user?._id,
-        },
-    });
-    await User_1.default.findByIdAndUpdate(_req.user?._id, {
-        $push: { logs: logs.id },
-    });
     (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Product Fetched Successfully",
         statusCode: 200,
