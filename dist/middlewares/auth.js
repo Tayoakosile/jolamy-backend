@@ -30,8 +30,9 @@ const appAuth = async (req, res, next) => {
             return next();
         }
         if (worker) {
-            req.user = worker ? worker : user;
+            req.user = worker;
             next();
+            return;
         }
         if (user?.rejected_by ||
             user?.status === "disabled" ||
@@ -64,7 +65,7 @@ const isAdmin = (req, res, next) => {
 exports.isAdmin = isAdmin;
 const isWorker = (req, res, next) => {
     const user = req.user;
-    if (user?.worker || user?.factory_worker)
+    if (user?.worker || user?.factory_worker || user)
         return next();
     (0, response_1.errorResponse)(res, 403, "Access denied, Workers only");
     return;

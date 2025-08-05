@@ -9,16 +9,16 @@ const financeSchema = new mongoose_1.Schema({
         required: true,
     },
     amount: { type: Number, required: true },
+    office_id: { type: mongoose_1.Schema.Types.ObjectId, required: true },
     payment_method: { type: String, trim: true },
-    attachments: { type: String, trim: true },
+    attachments: { type: [] },
     category: { type: String, required: true, trim: true },
     description: { type: String },
     notes: { type: String },
     status: { type: String },
     reference: { type: String },
     created_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
-    created_at: { type: Date, default: Date.now },
 }, {
-    timestamps: true, // Adds createdAt and updatedAt
+    timestamps: true,
 });
 exports.default = (0, mongoose_1.model)("Finance", financeSchema);

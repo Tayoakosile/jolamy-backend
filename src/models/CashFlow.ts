@@ -1,6 +1,6 @@
-import { Schema, model, Types } from "mongoose";
+import { Schema, model, Types, Document } from "mongoose";
 
-export interface IFinance {
+export interface IFinance extends Document {
   type: "inflow" | "outflow";
   amount: number;
   payment_method?: string; // e.g., "bank_transfer", "cash", "pos", "mobile_money"
@@ -8,6 +8,7 @@ export interface IFinance {
   description?: string;
   department?: string;
   notes?: string;
+  office_id: { type: Schema.Types.ObjectId; ref: "Office" };
   status: string; // e.g., "pending", "completed", "cancelled"
   internal_reference?: string;
   created_by: { type: Schema.Types.ObjectId; ref: "User"; required: true }; // Ref to User
@@ -15,6 +16,7 @@ export interface IFinance {
   attachments?: string[]; // URL or path to payment proof document
   reference?: string; // optional external ID or notes
 }
+
 /** @type {*} */
 const financeSchema = new Schema<IFinance>(
   {
@@ -24,18 +26,18 @@ const financeSchema = new Schema<IFinance>(
       required: true,
     },
     amount: { type: Number, required: true },
+    office_id: { type: Schema.Types.ObjectId, required: true },
     payment_method: { type: String, trim: true },
-    attachments: { type: String, trim: true },
+    attachments: { type: [] },
     category: { type: String, required: true, trim: true },
     description: { type: String },
     notes: { type: String },
     status: { type: String },
     reference: { type: String },
     created_by: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    created_at: { type: Date, default: Date.now },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt
+    timestamps: true,
   }
 );
 

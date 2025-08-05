@@ -11,8 +11,13 @@ export interface IOffice extends Document {
   workers: Types.ObjectId[];
   logs: Types.ObjectId[];
   is_active: boolean;
-  created_at?: Date;
-  wallet?: Object;
+  wallet?: {
+    balance: number;
+    lastFundedBy?: Types.ObjectId; // User who last funded the wallet
+    lastFundedAmount?: number; // Last funded amount
+    logs?: Types.ObjectId[]; // Logs related to wallet transactions
+  };
+
 }
 
 const officeSchema = new Schema<IOffice>(
@@ -40,6 +45,7 @@ const officeSchema = new Schema<IOffice>(
   {
     timestamps: {
       ...timestamp,
+
     },
   }
 );
