@@ -38,7 +38,7 @@ const addOfficeWorker = (_req, res) => {
         }));
         const log = (await (0, activityLog_1.logActivity)({
             req: _req,
-            userId: new mongoose_1.Types.ObjectId(_req.user?._id),
+            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
             action: "ADD_OFFICE_WORKER",
             sender: new mongoose_1.Types.ObjectId(_req.user?._id),
             receiver: worker.id,
@@ -46,7 +46,7 @@ const addOfficeWorker = (_req, res) => {
             metadata: {
                 ...worker,
                 officeId: office._id,
-                userId: new mongoose_1.Types.ObjectId(_req.user?._id),
+                user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
             },
         }));
         await Office_1.default.findByIdAndUpdate(officeId, {
@@ -120,13 +120,13 @@ const updateWorkerDetails = async (req, res) => {
         }
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: new mongoose_1.Types.ObjectId(req.user?._id),
+            user_id: new mongoose_1.Types.ObjectId(req.user?._id),
             action: "UPDATE_OFFICE_WORKER",
             description: "Office worker details updated",
             sender: new mongoose_1.Types.ObjectId(req.user?._id),
             receiver: id || updatedOfficeWorker._id,
             metadata: {
-                userId: req.user?._id,
+                user_id: req.user?._id,
             },
         });
         await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(updatedOfficeWorker._id, {

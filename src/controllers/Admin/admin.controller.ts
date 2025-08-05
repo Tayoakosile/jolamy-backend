@@ -22,11 +22,11 @@ export const getPendingUsers = async (_req: AuthRequest, res: Response) => {
 
 export const approveUser = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.params?.userId;
+    const user_id = req.params?.user_id;
     const adminId = req.user?._id;
 
     const user = (await checkIfDocumentExistsById<IUser>(
-      userId,
+      user_id,
       res,
       User
     )) as IUser;
@@ -34,11 +34,11 @@ export const approveUser = async (req: AuthRequest, res: Response) => {
     //   For the User
     const log = await logActivity({
       req,
-      userId: new Types.ObjectId(user._id),
+      user_id: new Types.ObjectId(user._id),
       action: "APPROVED",
       description: "Your account has been approved",
       metadata: {
-        userId: user._id,
+        user_id: user._id,
         adminId: adminId,
       },
     });
@@ -65,13 +65,13 @@ export const approveUser = async (req: AuthRequest, res: Response) => {
     //   For the Admin
     const adminLog = await logActivity({
       req,
-      userId: new Types.ObjectId(adminId),
+      user_id: new Types.ObjectId(adminId),
       sender: new Types.ObjectId(adminId),
       receiver: new Types.ObjectId(user._id),
       action: "APPROVE_USER",
       description: "Approved user account",
       metadata: {
-        userId: adminId,
+        user_id: adminId,
         adminId: adminId,
       },
     });
@@ -93,10 +93,10 @@ export const approveUser = async (req: AuthRequest, res: Response) => {
 
 export const rejectUser = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.params?.userId;
+    const user_id = req.params?.user_id;
     const adminId = req.user?._id;
     const user = (await checkIfDocumentExistsById<IUser>(
-      userId,
+      user_id,
       res,
       User
     )) as IUser;
@@ -104,13 +104,13 @@ export const rejectUser = async (req: AuthRequest, res: Response) => {
     //   For the User
     const log = await logActivity({
       req,
-      userId: new Types.ObjectId(user._id),
+      user_id: new Types.ObjectId(user._id),
       sender: new Types.ObjectId(adminId),
       receiver: new Types.ObjectId(user._id),
       action: "REJECTED",
       description: "Your account has been rejected",
       metadata: {
-        userId: user._id,
+        user_id: user._id,
         adminId: adminId,
       },
     });
@@ -137,13 +137,13 @@ export const rejectUser = async (req: AuthRequest, res: Response) => {
     //   For the Admin
     const adminLog = await logActivity({
       req,
-      userId: new Types.ObjectId(adminId),
+      user_id: new Types.ObjectId(adminId),
       sender: new Types.ObjectId(adminId),
       receiver: new Types.ObjectId(user._id),
       action: "REJECT_USER",
       description: "Rejected user account",
       metadata: {
-        userId: adminId,
+        user_id: adminId,
         rejected_reason: req.body?.rejected_reason || "No notes provided",
       },
     });

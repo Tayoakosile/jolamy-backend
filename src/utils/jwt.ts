@@ -1,8 +1,8 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 
-export const generateToken = (userId: string, secret?: string): string => {
+export const generateToken = (user_id: string, secret?: string): string => {
   return jwt.sign(
-    { id: userId },
+    { id: user_id },
     secret || (process.env.JWT_SECRET as string),
     {
       expiresIn: "7d",
@@ -11,8 +11,8 @@ export const generateToken = (userId: string, secret?: string): string => {
 };
 
 export const decodeToken = (
-  userId: string,
+  user_id: string,
   secret: string
 ): string | JwtPayload => {
-  return jwt.verify(userId, secret || (process.env.JWT_SECRET as string));
+  return jwt.verify(user_id, secret || (process.env.JWT_SECRET as string));
 };

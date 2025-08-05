@@ -40,7 +40,7 @@ const createNewFinance = (req, res) => {
         });
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: user._id,
+            user_id: user._id,
             action: "CREATE_FINANCE_RECORD",
             description: "Created a new finance record",
             sender: user._id,
@@ -52,7 +52,7 @@ const createNewFinance = (req, res) => {
         });
         const log2 = await (0, activityLog_1.logActivity)({
             req,
-            userId: user._id,
+            user_id: user._id,
             action: "UPDATE_OFFICE_WALLET",
             description: `Updated office wallet after ${req.body.type} transaction`,
             sender: user._id,
@@ -117,7 +117,7 @@ const updateFinance = (req, res) => {
         // Log the update activity
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: user._id,
+            user_id: user._id,
             action: "UPDATE_FINANCE_RECORD",
             description: `Updated finance record with ID ${financeId}`,
             sender: user._id,

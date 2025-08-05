@@ -34,13 +34,14 @@ interface Variant {
 export interface IProduct extends Document {
   name: string;
   inventory: [];
+  reference_id?: string; // optional external ID or reference
   description?: string;
   available_weight: { type: String; required: true };
   orders: mongoose.Types.ObjectId[]; // references to orders
   category?: string;
   archived_at?: string;
   archived_by?: string;
-  product_image?: string[];
+  product_images?: string[];
   logs?: mongoose.Types.ObjectId[]; // references to logs
   is_active: boolean;
   is_archived: boolean; // added for archiving products
@@ -91,7 +92,8 @@ const ProductSchema = new Schema<IProduct>(
     name: { type: String, required: true },
     description: String,
     category: String,
-    product_image: { type: Array, required: true },
+    reference_id: String,
+    product_images: { type: Array, required: true },
     available_weight: [{ type: String, required: true }], // e.g., '500g', '1kg'
     is_active: { type: Boolean, default: true },
     is_archived: { type: Boolean, default: false }, // added for archiving products

@@ -45,7 +45,7 @@ export const createNewFinance = (req: Request, res: Response) => {
 
     const log = await logActivity({
       req,
-      userId: user._id,
+      user_id: user._id,
       action: "CREATE_FINANCE_RECORD",
       description: "Created a new finance record",
       sender: user._id,
@@ -57,7 +57,7 @@ export const createNewFinance = (req: Request, res: Response) => {
     });
     const log2 = await logActivity({
       req,
-      userId: user._id,
+      user_id: user._id,
       action: "UPDATE_OFFICE_WALLET",
       description: `Updated office wallet after ${req.body.type} transaction`,
       sender: user._id,
@@ -132,7 +132,7 @@ export const updateFinance = (req: Request, res: Response) => {
     // Log the update activity
     const log = await logActivity({
       req,
-      userId: user._id,
+      user_id: user._id,
       action: "UPDATE_FINANCE_RECORD",
       description: `Updated finance record with ID ${financeId}`,
       sender: user._id,

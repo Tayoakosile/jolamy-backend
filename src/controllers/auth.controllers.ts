@@ -55,14 +55,14 @@ export const loginAccount = async (req: Request, res: Response) => {
       const token = generateToken(`${officeWorker._id}`);
       const activityLog = await logActivity({
         req,
-        userId: new Types.ObjectId(officeWorker._id),
+        user_id: new Types.ObjectId(officeWorker._id),
         sender: new Types.ObjectId(officeWorker._id),
         receiver: new Types.ObjectId(officeWorker._id),
         action: "LOGIN",
         description: "Worker logged in successfully",
         metadata: {
           email: officeWorker.email,
-          userId: officeWorker._id,
+          user_id: officeWorker._id,
         },
       });
 
@@ -113,14 +113,14 @@ export const loginAccount = async (req: Request, res: Response) => {
     const token = generateToken(`${user._id}`);
     const activityLog = await logActivity({
       req,
-      userId: new Types.ObjectId(user._id),
+      user_id: new Types.ObjectId(user._id),
       sender: new Types.ObjectId(user._id),
       receiver: new Types.ObjectId(user._id),
       action: "LOGIN",
       description: "User logged in successfully",
       metadata: {
         email: user.email,
-        userId: user._id,
+        user_id: user._id,
       },
     });
 
@@ -198,7 +198,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     const activityLog = await logActivity({
       req,
-      userId: new Types.ObjectId(user._id),
+      user_id: new Types.ObjectId(user._id),
       sender: new Types.ObjectId(user._id),
       receiver: new Types.ObjectId(user._id),
       action: "PASSWORD_RESET",
@@ -206,7 +206,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
       metadata: {
         email: user.email,
-        userId: user._id,
+        user_id: user._id,
       },
     });
     await User.findOneAndUpdate(

@@ -56,14 +56,14 @@ const createNewOffices = (req, res) => {
         });
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: new mongoose_1.Types.ObjectId(req.user?._id),
+            user_id: new mongoose_1.Types.ObjectId(req.user?._id),
             sender: new mongoose_1.Types.ObjectId(req.user?._id),
             receiver: new mongoose_1.Types.ObjectId(req.user?._id),
             action: "CREATE_OFFICE",
             description: "New office created",
             metadata: {
                 ...newOffice,
-                userId: `${req.user?._id}`,
+                user_id: `${req.user?._id}`,
             },
         });
         newOffice.logs = Array.isArray(newOffice.logs)
@@ -95,14 +95,14 @@ const updateOffice = async (req, res) => {
         const updatedOffice = (await Office_1.default.findByIdAndUpdate(id, { ...req.body }, { new: true }));
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: new mongoose_1.Types.ObjectId(req.user?._id),
+            user_id: new mongoose_1.Types.ObjectId(req.user?._id),
             sender: new mongoose_1.Types.ObjectId(req.user?._id),
             receiver: new mongoose_1.Types.ObjectId(updatedOffice?._id),
             action: "UPDATE_OFFICE",
             description: "Office updated successfully",
             metadata: {
                 ...updatedOffice,
-                userId: `${req.user?._id}`,
+                user_id: `${req.user?._id}`,
             },
         });
         updatedOffice.logs = Array.isArray(updatedOffice.logs)

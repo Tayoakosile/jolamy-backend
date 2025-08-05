@@ -63,14 +63,14 @@ export const createNewOffices = (req: AuthRequest, res: Response) => {
     });
     const log = await logActivity({
       req,
-      userId: new Types.ObjectId(req.user?._id),
+      user_id: new Types.ObjectId(req.user?._id),
       sender: new Types.ObjectId(req.user?._id),
       receiver: new Types.ObjectId(req.user?._id),
       action: "CREATE_OFFICE",
       description: "New office created",
       metadata: {
         ...newOffice,
-        userId: `${req.user?._id}`,
+        user_id: `${req.user?._id}`,
       },
     });
     newOffice.logs = Array.isArray(newOffice.logs)
@@ -115,14 +115,14 @@ export const updateOffice = async (req: AuthRequest, res: Response) => {
 
     const log = await logActivity({
       req,
-      userId: new Types.ObjectId(req.user?._id),
+      user_id: new Types.ObjectId(req.user?._id),
       sender: new Types.ObjectId(req.user?._id),
       receiver: new Types.ObjectId(updatedOffice?._id),
       action: "UPDATE_OFFICE",
       description: "Office updated successfully",
       metadata: {
         ...updatedOffice,
-        userId: `${req.user?._id}`,
+        user_id: `${req.user?._id}`,
       },
     });
     updatedOffice.logs = Array.isArray(updatedOffice.logs)

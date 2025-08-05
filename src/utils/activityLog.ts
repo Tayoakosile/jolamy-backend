@@ -6,7 +6,7 @@ import { Types } from "mongoose";
 
 export const logActivity = async ({
   req,
-  userId,
+  user_id,
   action,
   description,
   sender,
@@ -14,7 +14,7 @@ export const logActivity = async ({
   metadata,
 }: {
   req: Request;
-  userId: Types.ObjectId;
+  user_id: Types.ObjectId;
   action: string;
   description?: string;
   sender?: Types.ObjectId;
@@ -26,7 +26,7 @@ export const logActivity = async ({
     req.socket.remoteAddress;
   const location = (req.headers["x-location"] as string) || "Unknown Location";
   const log = await ActivityLog.create({
-    userId,
+    user_id,
     action,
     description,
     ip,

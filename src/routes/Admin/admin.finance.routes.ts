@@ -11,8 +11,8 @@ import {
 const router = Router();
 // users
 router.get("/pending-users", appAuth, isAdmin, getPendingUsers);
-router.post("/approve/:userId", appAuth, isAdmin, approveUser);
-router.post("/reject/:userId", appAuth, isAdmin, rejectUser);
+router.post("/approve/:user_id", appAuth, isAdmin, approveUser);
+router.post("/reject/:user_id", appAuth, isAdmin, rejectUser);
 // users
 
 export default router;

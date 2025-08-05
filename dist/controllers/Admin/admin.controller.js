@@ -50,17 +50,17 @@ const getPendingUsers = async (_req, res) => {
 exports.getPendingUsers = getPendingUsers;
 const approveUser = async (req, res) => {
     try {
-        const userId = req.params?.userId;
+        const user_id = req.params?.user_id;
         const adminId = req.user?._id;
-        const user = (await (0, util_1.checkIfDocumentExistsById)(userId, res, User_1.default));
+        const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, res, User_1.default));
         //   For the User
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: new mongoose_1.Types.ObjectId(user._id),
+            user_id: new mongoose_1.Types.ObjectId(user._id),
             action: "APPROVED",
             description: "Your account has been approved",
             metadata: {
-                userId: user._id,
+                user_id: user._id,
                 adminId: adminId,
             },
         });
@@ -78,13 +78,13 @@ const approveUser = async (req, res) => {
         //   For the Admin
         const adminLog = await (0, activityLog_1.logActivity)({
             req,
-            userId: new mongoose_1.Types.ObjectId(adminId),
+            user_id: new mongoose_1.Types.ObjectId(adminId),
             sender: new mongoose_1.Types.ObjectId(adminId),
             receiver: new mongoose_1.Types.ObjectId(user._id),
             action: "APPROVE_USER",
             description: "Approved user account",
             metadata: {
-                userId: adminId,
+                user_id: adminId,
                 adminId: adminId,
             },
         });
@@ -102,19 +102,19 @@ const approveUser = async (req, res) => {
 exports.approveUser = approveUser;
 const rejectUser = async (req, res) => {
     try {
-        const userId = req.params?.userId;
+        const user_id = req.params?.user_id;
         const adminId = req.user?._id;
-        const user = (await (0, util_1.checkIfDocumentExistsById)(userId, res, User_1.default));
+        const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, res, User_1.default));
         //   For the User
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: new mongoose_1.Types.ObjectId(user._id),
+            user_id: new mongoose_1.Types.ObjectId(user._id),
             sender: new mongoose_1.Types.ObjectId(adminId),
             receiver: new mongoose_1.Types.ObjectId(user._id),
             action: "REJECTED",
             description: "Your account has been rejected",
             metadata: {
-                userId: user._id,
+                user_id: user._id,
                 adminId: adminId,
             },
         });
@@ -132,13 +132,13 @@ const rejectUser = async (req, res) => {
         //   For the Admin
         const adminLog = await (0, activityLog_1.logActivity)({
             req,
-            userId: new mongoose_1.Types.ObjectId(adminId),
+            user_id: new mongoose_1.Types.ObjectId(adminId),
             sender: new mongoose_1.Types.ObjectId(adminId),
             receiver: new mongoose_1.Types.ObjectId(user._id),
             action: "REJECT_USER",
             description: "Rejected user account",
             metadata: {
-                userId: adminId,
+                user_id: adminId,
                 rejected_reason: req.body?.rejected_reason || "No notes provided",
             },
         });

@@ -7,37 +7,47 @@ import path from "path";
 import { getRandom } from "../utils/util";
 import { error } from "console";
 
-export const uploadToR2 = async (req: Request, res: Response) => {
-  if (!req.file) {
+export const uploadToR2 = async (
+  req: Request,
+  res: Response,
+  shouldIncludeSuccessResponse?: boolean
+) => {
+  if (!req.files) {
     errorResponse(res, 400, "No file uploaded");
     return;
   }
 
-  const file = req.file;
-  const originalExt = path.extname(file.originalname);
-  const uniqueFilename = `${getRandom(20)}${originalExt}`;
-  const fileName = `uploads/${Date.now()}-${uniqueFilename}`;
-
   try {
+    const files = req.files as Express.Multer.File[];
+    const fileNamesAndUrls = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const originalExt = path.extname(file.originalname);
+      const uniqueFilename = `${getRandom(20)}${originalExt}`;
+      const fileName = `uploads/${Date.now()}-${uniqueFilename}`;
+      await r2.send(
+        new PutObjectCommand({
+          Bucket: process.env.R2_BUCKET,
+          Key: fileName,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        })
+      );
+      fileNamesAndUrls.push(fileName);
+    }
+
     // return;
-    await r2.send(
-      new PutObjectCommand({
-        Bucket: process.env.R2_BUCKET,
-        Key: fileName,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      })
+
+    const publicUrls = fileNamesAndUrls.map(
+      (fileName) => `${process.env.CDN_URL}/${fileName}`
     );
-
-    const publicUrl = `${process.env.CDN_URL}/${fileName}`;
-
-    successResponse(res, 200, "File uploaded successfully", {
-      url: publicUrl,
-      fileName: uniqueFilename,
-      originalName: file.originalname,
-    });
+    if (shouldIncludeSuccessResponse) {
+      successResponse(res, 200, "File uploaded successfully", {
+        url: publicUrls,
+      });
+    }
+    return publicUrls;
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Upload failed", error: err });
     errorResponse(
       res,

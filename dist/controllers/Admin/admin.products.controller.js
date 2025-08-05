@@ -1,37 +1,62 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateProduct = exports.getSingleProducts = exports.getProducts = exports.addNewProducts = void 0;
 const mongoose_1 = require("mongoose");
+const Product_1 = require("../../models/Product");
 const activityLog_1 = require("../../utils/activityLog");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
-const Product_1 = require("../../models/Product");
+const upload_r2_controllers_1 = require("../upload-r2.controllers");
+const User_1 = __importDefault(require("../../models/User"));
 const addNewProducts = (_req, res) => {
+    const user = _req.user;
+    // if (!_req.files || _req.files.length === 0)  {
+    //   errorResponse(res, 400, "No files uploaded. Please upload product images.");
+    // return;
+    // }
     const body = _req.body;
     const request = async () => {
-        const existingProduct = await Product_1.Product.exists({})
-            .where("name")
-            .equals(body.name);
+        const urls = await (0, upload_r2_controllers_1.uploadToR2)(_req, res);
+        const existingProduct = await Product_1.Product.findOne({
+            $or: [
+                {
+                    name: body.name,
+                    reference_id: body.reference_id,
+                },
+            ],
+        });
         if (existingProduct) {
-            return (0, response_1.errorResponse)(res, 400, "Product with this name already exists", {
+            return (0, response_1.errorResponse)(res, 400, "Product with this name or Reference already exists, Edit instead", {
                 message: "Product with this name already exists",
+                existingProduct,
             });
         }
         const product = await Product_1.Product.create({
             ..._req.body,
+            product_images: urls,
             created_by: _req.user?._id,
             is_active: true,
         });
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
-            userId: new mongoose_1.Types.ObjectId(_req.user?._id),
+            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
             action: "ADD_PRODUCT",
             sender: new mongoose_1.Types.ObjectId(_req.user?._id),
             receiver: product.id,
             description: `New product added: ${product.name}`,
             metadata: {
-                productId: product._id,
+                product_id: product._id,
+                user_id: _req.user?._id,
             },
+        });
+        await User_1.default.findByIdAndUpdate(user?._id, {
+            $push: { logs: log.id },
+        });
+        await Product_1.Product.findByIdAndUpdate(user?._id, {
+            $push: { logs: log.id },
         });
         return { message: "Product added successfully" };
     };
@@ -45,7 +70,17 @@ const getProducts = (_req, res) => {
     (0, util_1.customReqResHandler)(res, request);
 };
 exports.getProducts = getProducts;
-const getSingleProducts = async (_req, res) => { };
+const getSingleProducts = async (_req, res) => {
+    const id = _req.params.id;
+    await (0, util_1.checkIfDocumentExistsById)(id, res, Product_1.Product);
+    const request = async () => {
+        return await Product_1.Product.findById(id);
+    };
+    (0, util_1.customReqResHandler)(res, request, undefined, {
+        successMessage: "Product Fetched Successfully",
+        statusCode: 200,
+    });
+};
 exports.getSingleProducts = getSingleProducts;
 const updateProduct = async (req, res) => { };
 exports.updateProduct = updateProduct;

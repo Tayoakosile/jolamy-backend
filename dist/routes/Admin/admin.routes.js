@@ -8,11 +8,12 @@ const admin_controller_1 = require("../../controllers/Admin/admin.controller");
 const admin_offices_controller_1 = require("../../controllers/Admin/admin.offices.controller");
 const admin_finance_controller_1 = require("../../controllers/Admin/admin.finance.controller");
 const admin_offices_worker_controller_1 = require("../../controllers/Admin/admin.offices.worker.controller");
+const upload_1 = require("../../utils/upload");
 const router = (0, express_1.Router)();
 // users
 router.get("/pending-users", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.getPendingUsers);
-router.post("/approve/:userId", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.approveUser);
-router.post("/reject/:userId", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.rejectUser);
+router.post("/approve/:user_id", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.approveUser);
+router.post("/reject/:user_id", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.rejectUser);
 // users
 // offices
 router.post("/offices", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.createNewOffices);
@@ -31,7 +32,7 @@ router.get("/finances/:id", auth_1.appAuth, auth_1.isAdmin, admin_finance_contro
 // products
 // users
 router.get("/products", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.getProducts);
-router.post("/products", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.addNewProducts);
+router.post("/products", auth_1.appAuth, auth_1.isAdmin, upload_1.upload.array("files"), admin_products_controller_1.addNewProducts);
 router.get("/products/:id", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.getSingleProducts);
 router.put("/products/:id", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.updateProduct);
 router.patch("/products/:id", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.updateProduct);

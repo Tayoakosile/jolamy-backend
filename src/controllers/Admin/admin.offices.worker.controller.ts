@@ -52,7 +52,7 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
 
     const log = (await logActivity({
       req: _req,
-      userId: new Types.ObjectId(_req.user?._id),
+      user_id: new Types.ObjectId(_req.user?._id),
       action: "ADD_OFFICE_WORKER",
       sender: new Types.ObjectId(_req.user?._id),
       receiver: worker.id,
@@ -60,7 +60,7 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
       metadata: {
         ...worker,
         officeId: office._id,
-        userId: new Types.ObjectId(_req.user?._id),
+        user_id: new Types.ObjectId(_req.user?._id),
       },
     })) as any;
 
@@ -157,13 +157,13 @@ export const updateWorkerDetails = async (req: AuthRequest, res: Response) => {
 
     const log = await logActivity({
       req,
-      userId: new Types.ObjectId(req.user?._id),
+      user_id: new Types.ObjectId(req.user?._id),
       action: "UPDATE_OFFICE_WORKER",
       description: "Office worker details updated",
       sender: new Types.ObjectId(req.user?._id),
       receiver: (id as unknown as Types.ObjectId) || updatedOfficeWorker._id,
       metadata: {
-        userId: req.user?._id,
+        user_id: req.user?._id,
       },
     });
 

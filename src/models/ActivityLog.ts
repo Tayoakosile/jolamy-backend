@@ -4,7 +4,7 @@ import { timestamp } from "../utils/util";
 
 const activityLogSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Types.ObjectId, ref: "User" },
+    user_id: { type: mongoose.Types.ObjectId, ref: "User" },
     action: String,
     description: String,
     sender: { type: mongoose.Types.ObjectId, ref: "User" },

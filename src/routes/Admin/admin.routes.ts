@@ -27,13 +27,14 @@ import {
   addOfficeWorker,
   updateWorkerDetails,
 } from "../../controllers/Admin/admin.offices.worker.controller";
+import { upload } from "../../utils/upload";
 
 const router = Router();
 
 // users
 router.get("/pending-users", appAuth, isAdmin, getPendingUsers);
-router.post("/approve/:userId", appAuth, isAdmin, approveUser);
-router.post("/reject/:userId", appAuth, isAdmin, rejectUser);
+router.post("/approve/:user_id", appAuth, isAdmin, approveUser);
+router.post("/reject/:user_id", appAuth, isAdmin, rejectUser);
 // users
 
 // offices
@@ -66,7 +67,13 @@ router.get("/finances/:id", appAuth, isAdmin, getSingleCashFlow);
 
 // users
 router.get("/products", appAuth, isAdmin, getProducts);
-router.post("/products", appAuth, isAdmin, addNewProducts);
+router.post(
+  "/products",
+  appAuth,
+  isAdmin,
+  upload.array("files"),
+  addNewProducts
+);
 router.get("/products/:id", appAuth, isAdmin, getSingleProducts);
 router.put("/products/:id", appAuth, isAdmin, updateProduct);
 router.patch("/products/:id", appAuth, isAdmin, updateProduct);

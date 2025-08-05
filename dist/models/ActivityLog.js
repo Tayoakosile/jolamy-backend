@@ -8,7 +8,7 @@ exports.ActivityLog = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const util_1 = require("../utils/util");
 const activityLogSchema = new mongoose_1.default.Schema({
-    userId: { type: mongoose_1.default.Types.ObjectId, ref: "User" },
+    user_id: { type: mongoose_1.default.Types.ObjectId, ref: "User" },
     action: String,
     description: String,
     sender: { type: mongoose_1.default.Types.ObjectId, ref: "User" },

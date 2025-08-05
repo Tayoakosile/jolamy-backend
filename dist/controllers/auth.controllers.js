@@ -47,14 +47,14 @@ const loginAccount = async (req, res) => {
             const token = (0, jwt_1.generateToken)(`${officeWorker._id}`);
             const activityLog = await (0, activityLog_1.logActivity)({
                 req,
-                userId: new mongoose_1.Types.ObjectId(officeWorker._id),
+                user_id: new mongoose_1.Types.ObjectId(officeWorker._id),
                 sender: new mongoose_1.Types.ObjectId(officeWorker._id),
                 receiver: new mongoose_1.Types.ObjectId(officeWorker._id),
                 action: "LOGIN",
                 description: "Worker logged in successfully",
                 metadata: {
                     email: officeWorker.email,
-                    userId: officeWorker._id,
+                    user_id: officeWorker._id,
                 },
             });
             await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(officeWorker._id, {
@@ -95,14 +95,14 @@ const loginAccount = async (req, res) => {
         const token = (0, jwt_1.generateToken)(`${user._id}`);
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
-            userId: new mongoose_1.Types.ObjectId(user._id),
+            user_id: new mongoose_1.Types.ObjectId(user._id),
             sender: new mongoose_1.Types.ObjectId(user._id),
             receiver: new mongoose_1.Types.ObjectId(user._id),
             action: "LOGIN",
             description: "User logged in successfully",
             metadata: {
                 email: user.email,
-                userId: user._id,
+                user_id: user._id,
             },
         });
         await User_1.default.findByIdAndUpdate(user._id, {
@@ -161,14 +161,14 @@ const resetPassword = async (req, res) => {
         }
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
-            userId: new mongoose_1.Types.ObjectId(user._id),
+            user_id: new mongoose_1.Types.ObjectId(user._id),
             sender: new mongoose_1.Types.ObjectId(user._id),
             receiver: new mongoose_1.Types.ObjectId(user._id),
             action: "PASSWORD_RESET",
             description: "User password reset successfully",
             metadata: {
                 email: user.email,
-                userId: user._id,
+                user_id: user._id,
             },
         });
         await User_1.default.findOneAndUpdate({ _id: user._id }, {
