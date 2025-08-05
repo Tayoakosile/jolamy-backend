@@ -11,10 +11,10 @@ const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
 const admin_routes_1 = __importDefault(require("./routes/Admin/admin.routes"));
 const finance_routes_1 = __importDefault(require("./routes/finance.routes"));
-dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Middleware
 app.use(express_1.default.json());
+dotenv_1.default.config();
 app.use("/api/auth", auth_routes_1.default);
 app.use("/api/users", user_routes_1.default);
 app.use("/api/upload", upload_routes_1.default);

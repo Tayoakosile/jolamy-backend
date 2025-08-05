@@ -11,6 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.859.0",
+    "@aws-sdk/s3-request-presigner": "^3.859.0",
     "@bytescale/sdk": "^3.53.0",
     "@mailerlite/mailerlite-nodejs": "^1.4.1",
     "axios": "^1.11.0",
@@ -36,6 +38,7 @@
     "@types/node": "^24.1.0",
     "@types/randomatic": "^3.1.5",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "wrangler": "^4.27.0"
   }
 }

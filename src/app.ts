@@ -7,11 +7,11 @@ import userRoutes from "./routes/user.routes";
 import adminRoutes from "./routes/Admin/admin.routes";
 import financesRoutes from "./routes/finance.routes";
 
-dotenv.config();
 const app = express();
 
 // Middleware
 app.use(express.json());
+dotenv.config();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);

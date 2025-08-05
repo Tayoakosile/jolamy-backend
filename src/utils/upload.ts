@@ -43,14 +43,22 @@ export const generateUniqueFileName = (
   return `${prefix}-${timestamp}-${randomId}${ext}`;
 };
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "../uploads/"); // Make sure this folder exists at project root
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+export const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // Limit to 10MB
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "application/pdf",
+      ".docx",
+    ];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(
+        new Error("Invalid file type. Only JPEG, PNG, and PDF are allowed.")
+      );
+    }
+    cb(null, true);
   },
 });
-
-export const upload = multer({ storage });
