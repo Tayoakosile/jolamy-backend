@@ -30,7 +30,21 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
     "logs",
   ]);
 
-  const request = () => {
+  const request = async () => {
+    const log = await logActivity({
+      req: _req,
+      user_id: new Types.ObjectId(_req.user?._id),
+      action: "GET_SINGLE_OFFICE",
+      description: "Retrieved office details",
+      metadata: {
+        ...office,
+        user_id: `${_req.user?._id}`,
+      },
+    });
+
+    await User.findByIdAndUpdate(_req.user?._id, {
+      $push: { logs: log._id },
+    });
     return office;
   };
 

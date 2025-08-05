@@ -28,7 +28,20 @@ const getSingleCashFlow = async (_req, res) => {
         "created_by",
         "logs",
     ]);
-    const request = () => {
+    const request = async () => {
+        const log = await (0, activityLog_1.logActivity)({
+            req: _req,
+            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
+            action: "GET_SINGLE_CASH_FLOW",
+            description: "Retrieved cash flow successfully",
+            metadata: {
+                ...cash_flow,
+                user_id: `${_req.user?._id}`,
+            },
+        });
+        await User_1.default.findByIdAndUpdate(_req.user?._id, {
+            $push: { logs: log._id },
+        });
         return cash_flow;
     };
     await (0, util_1.customReqResHandler)(res, request, undefined, {

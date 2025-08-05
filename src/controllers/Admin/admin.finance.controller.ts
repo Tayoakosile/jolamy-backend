@@ -36,10 +36,23 @@ export const getSingleCashFlow = async (_req: AuthRequest, res: Response) => {
     "logs",
   ]);
 
-  const request = () => {
+  const request = async () => {
+    const log = await logActivity({
+      req: _req,
+      user_id: new Types.ObjectId(_req.user?._id),
+      action: "GET_SINGLE_CASH_FLOW",
+      description: "Retrieved cash flow successfully",
+      metadata: {
+        ...cash_flow,
+        user_id: `${_req.user?._id}`,
+      },
+    });
+
+    await User.findByIdAndUpdate(_req.user?._id, {
+      $push: { logs: log._id },
+    });
     return cash_flow;
   };
-
   await customReqResHandler(res, request, undefined, {
     successMessage: "CashFlow retrieved successfully",
     errorMessage: "Error retrieving office",

@@ -76,6 +76,21 @@ const getSingleProducts = async (_req, res) => {
     const request = async () => {
         return await Product_1.Product.findById(id);
     };
+    const logs = await (0, activityLog_1.logActivity)({
+        req: _req,
+        user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
+        action: "GET_PRODUCT",
+        sender: new mongoose_1.Types.ObjectId(_req.user?._id),
+        receiver: new mongoose_1.Types.ObjectId(id),
+        description: `Product fetched: ${id}`,
+        metadata: {
+            product_id: id,
+            user_id: _req.user?._id,
+        },
+    });
+    await User_1.default.findByIdAndUpdate(_req.user?._id, {
+        $push: { logs: logs.id },
+    });
     (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Product Fetched Successfully",
         statusCode: 200,

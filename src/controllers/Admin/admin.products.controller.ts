@@ -95,6 +95,21 @@ export const getSingleProducts = async (_req: AuthRequest, res: Response) => {
   const request = async () => {
     return await Product.findById(id);
   };
+  const logs = await logActivity({
+    req: _req,
+    user_id: new Types.ObjectId(_req.user?._id),
+    action: "GET_PRODUCT",
+    sender: new Types.ObjectId(_req.user?._id),
+    receiver: new Types.ObjectId(id),
+    description: `Product fetched: ${id}`,
+    metadata: {
+      product_id: id,
+      user_id: _req.user?._id,
+    },
+  });
+  await User.findByIdAndUpdate(_req.user?._id, {
+    $push: { logs: logs.id },
+  });
   customReqResHandler(res, request, undefined, {
     successMessage: "Product Fetched Successfully",
     statusCode: 200,

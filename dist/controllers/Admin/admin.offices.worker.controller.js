@@ -84,7 +84,22 @@ const getSingleOffice = async (_req, res) => {
         "created_by",
         "logs",
     ]);
-    const request = () => {
+    const request = async () => {
+        const log = await (0, activityLog_1.logActivity)({
+            req: _req,
+            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
+            action: "GET_OFFICE",
+            sender: new mongoose_1.Types.ObjectId(_req.user?._id),
+            receiver: new mongoose_1.Types.ObjectId(id),
+            description: `Office fetched: ${office.name}`,
+            metadata: {
+                office_id: id,
+                user_id: _req.user?._id,
+            },
+        });
+        await User_1.default.findByIdAndUpdate(_req.user?._id, {
+            $push: { logs: log._id },
+        });
         return office;
     };
     await (0, util_1.customReqResHandler)(res, request, undefined, {
