@@ -23,6 +23,7 @@ const userSchema = new mongoose_1.Schema({
     is_first_login: { type: Boolean, default: true },
     distribution_address: String,
     email: { type: String, required: true, unique: true },
+    cart: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Cart" }],
     warehouse_location: { type: String },
     warehouse_photos: {
         internal: [],

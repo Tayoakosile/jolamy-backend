@@ -14,12 +14,15 @@ const ShippingLocationSchema = new mongoose_1.Schema({
     city: { type: String, required: true },
     state: { type: String, required: true },
     country: { type: String, required: true },
+    phoneNumber: { type: String, required: true },
+    estimatedDate: { type: Date, required: true },
 }, { _id: false });
 const OrderSchema = new mongoose_1.Schema({
     order_id: { type: String, unique: true, required: true },
-    distributor_id: { type: mongoose_1.Types.ObjectId, ref: "User", required: true },
+    user_id: { type: mongoose_1.Types.ObjectId, ref: "User", required: true },
     assigned_to: { type: mongoose_1.Types.ObjectId, ref: "OfficeWorker", required: true },
     date: { type: Date, default: Date.now },
+    delivery_fee: { type: Number, required: true },
     role: {
         type: String,
         enum: ["distributor", "sales_agent"],
@@ -38,7 +41,7 @@ const OrderSchema = new mongoose_1.Schema({
         default: "not_assigned",
     },
     internal_notes: { type: String },
-    amount: { type: Number, required: true },
+    total_amount: { type: Number, required: true },
     payment_method: {
         type: String,
         enum: ["bank_transfer", "cash", "pos", "mobile_money", "paystack"],

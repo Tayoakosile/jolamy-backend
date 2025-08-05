@@ -22,8 +22,6 @@ export const addNewProducts = (_req: AuthRequest, res: Response) => {
   const body = _req.body;
 
   const request = async () => {
-    const urls = await uploadToR2(_req, res);
-
     const existingProduct = await Product.findOne({
       $or: [
         {
@@ -46,7 +44,7 @@ export const addNewProducts = (_req: AuthRequest, res: Response) => {
     }
     const product = await Product.create({
       ..._req.body,
-      product_images: urls,
+      // product_images: urls,
       created_by: _req.user?._id,
       is_active: true,
     });
@@ -86,23 +84,27 @@ export const getSingleProducts = async (_req: AuthRequest, res: Response) => {
   const id = _req.params.id;
   await checkIfDocumentExistsById(id, res, Product);
   const request = async () => {
-    return await Product.findById(id);
+    const product = await Product.findOne({ _id: id, is_active: true });
+
+    const logs = await logActivity({
+      req: _req,
+      user_id: new Types.ObjectId(_req.user?._id),
+      action: "GET_PRODUCT",
+      sender: new Types.ObjectId(_req.user?._id),
+      receiver: new Types.ObjectId(id),
+      description: `Product fetched: ${id}`,
+      metadata: {
+        product_id: id,
+        user_id: _req.user?._id,
+      },
+    });
+    await User.findByIdAndUpdate(_req.user?._id, {
+      $push: { logs: logs.id },
+    });
+
+    return product;
   };
-  const logs = await logActivity({
-    req: _req,
-    user_id: new Types.ObjectId(_req.user?._id),
-    action: "GET_PRODUCT",
-    sender: new Types.ObjectId(_req.user?._id),
-    receiver: new Types.ObjectId(id),
-    description: `Product fetched: ${id}`,
-    metadata: {
-      product_id: id,
-      user_id: _req.user?._id,
-    },
-  });
-  await User.findByIdAndUpdate(_req.user?._id, {
-    $push: { logs: logs.id },
-  });
+
   customReqResHandler(res, request, undefined, {
     successMessage: "Product Fetched Successfully",
     statusCode: 200,

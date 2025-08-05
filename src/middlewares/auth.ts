@@ -71,6 +71,7 @@ export const appAuth = async (
 // middleware/auth.ts
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   const user = (req as any).user as IUser;
+
   if (user?.is_admin || user.user_role == "admin") return next();
   errorResponse(res, 403, "Access denied, admin only");
   return;

@@ -31,6 +31,7 @@ export interface IUser extends Document {
   is_factory_worker: boolean;
   disabled_reason?: string;
   change_requests?: [];
+  cart?: [];
   is_admin: boolean;
   is_distributor: boolean;
   is_sales_agent: boolean;

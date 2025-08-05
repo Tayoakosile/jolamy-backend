@@ -24,6 +24,7 @@ const userSchema = new Schema<IUser>(
     is_first_login: { type: Boolean, default: true },
     distribution_address: String,
     email: { type: String, required: true, unique: true },
+    cart: [{ type: Schema.Types.ObjectId, ref: "Cart" }],
     warehouse_location: { type: String },
     warehouse_photos: {
       internal: [],

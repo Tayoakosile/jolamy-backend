@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { createAccount, forgotPassword, loginAccount, resetPassword } from "../controllers/auth.controllers";
+import {
+  createAccount,
+  forgotPassword,
+  getUserProfile,
+  loginAccount,
+  resetPassword,
+} from "../controllers/auth.controllers";
 import {
   getUserInfo,
   verifyDocuments,
@@ -35,5 +41,6 @@ router.post(
   verifyDocuments
 );
 router.get("/verify-documents/:id", appAuth, getUserInfo);
+router.get("/profile", appAuth, getUserProfile);
 
 export default router;
