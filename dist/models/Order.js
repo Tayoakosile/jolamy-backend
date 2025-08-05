@@ -21,6 +21,7 @@ const OrderSchema = new mongoose_1.Schema({
     order_id: { type: String, unique: true, required: true },
     user_id: { type: mongoose_1.Types.ObjectId, ref: "User", required: true },
     assigned_to: { type: mongoose_1.Types.ObjectId, ref: "OfficeWorker", required: true },
+    order_number: { type: String, unique: true, required: true },
     date: { type: Date, default: Date.now },
     delivery_fee: { type: Number, required: true },
     role: {
