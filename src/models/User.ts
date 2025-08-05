@@ -15,6 +15,7 @@ const userSchema = new Schema<IUser>(
     rejected_at: Date,
     approved_by: { type: Schema.Types.ObjectId, ref: "User" },
     rejected_by: { type: Schema.Types.ObjectId, ref: "User" },
+    change_requests: [{ type: Schema.Types.ObjectId, ref: "ChangeRequest" }],
     phone_number: String,
     gender: String,
     dob: Date,

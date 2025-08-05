@@ -6,6 +6,7 @@ import uploadRoutes from "./routes/upload.routes";
 import userRoutes from "./routes/user.routes";
 import adminRoutes from "./routes/Admin/admin.routes";
 import financesRoutes from "./routes/finance.routes";
+import orderRoutes from "./routes/order.routes";
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/finances", financesRoutes);
+app.use("/api/orders", orderRoutes);
 
 const PORT = process.env.PORT || 5000;
 

@@ -8,14 +8,7 @@ import {
 import { logActivity } from "../../utils/activityLog";
 import User from "../../models/User";
 import { Types } from "mongoose";
-
-interface AuthRequest extends Request {
-  user?: {
-    _id: string;
-    is_admin: boolean;
-    email: string;
-  };
-}
+import { AuthRequest } from "../../types/type";
 
 export const getOffices = (_req: AuthRequest, res: Response) => {
   const request = async () => {

@@ -9,14 +9,7 @@ import {
 } from "../../utils/util";
 import { uploadToR2 } from "../upload-r2.controllers";
 import User from "../../models/User";
-
-interface AuthRequest extends Request {
-  user?: {
-    _id: string;
-    is_admin: boolean;
-    email: string;
-  };
-}
+import { AuthRequest } from "../../types/type";
 
 export const addNewProducts = (_req: AuthRequest, res: Response) => {
   const user = _req.user;

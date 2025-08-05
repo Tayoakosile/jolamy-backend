@@ -14,6 +14,7 @@ const userSchema = new mongoose_1.Schema({
     rejected_at: Date,
     approved_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
     rejected_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
+    change_requests: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "ChangeRequest" }],
     phone_number: String,
     gender: String,
     dob: Date,
