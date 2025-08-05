@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProduct = exports.getSingleProducts = exports.getProducts = exports.addNewProducts = void 0;
+exports.archiveProduct = exports.updateProduct = exports.getSingleProducts = exports.getProducts = exports.addNewProducts = void 0;
 const mongoose_1 = require("mongoose");
 const Product_1 = require("../../models/Product");
 const activityLog_1 = require("../../utils/activityLog");
@@ -82,5 +82,64 @@ const getSingleProducts = async (_req, res) => {
     });
 };
 exports.getSingleProducts = getSingleProducts;
-const updateProduct = async (req, res) => { };
+const updateProduct = async (req, res) => {
+    const id = req.params.id;
+    await (0, util_1.checkIfDocumentExistsById)(id, res, Product_1.Product);
+    const body = req.body;
+    const request = async () => {
+        const log = await (0, activityLog_1.logActivity)({
+            req,
+            user_id: new mongoose_1.Types.ObjectId(req.user?._id),
+            action: "UPDATE_PRODUCT",
+            sender: new mongoose_1.Types.ObjectId(req.user?._id),
+            receiver: new mongoose_1.Types.ObjectId(id),
+            description: `Product updated: ${body.name}`,
+            metadata: {
+                product_id: id,
+                user_id: req.user?._id,
+            },
+        });
+        await Product_1.Product.findByIdAndUpdate(id, {
+            ...body,
+            logs: {
+                $push: log.id,
+            },
+        }, { new: true });
+        await User_1.default.findByIdAndUpdate(req.user?._id, {
+            $push: { logs: log.id },
+        });
+        return;
+    };
+    (0, util_1.customReqResHandler)(res, request, undefined, {
+        successMessage: "Product updated successfully",
+        statusCode: 200,
+    });
+};
 exports.updateProduct = updateProduct;
+const archiveProduct = async (req, res) => {
+    const id = req.params.id;
+    await (0, util_1.checkIfDocumentExistsById)(id, res, Product_1.Product);
+    const request = async () => {
+        const log = await (0, activityLog_1.logActivity)({
+            req,
+            user_id: new mongoose_1.Types.ObjectId(req.user?._id),
+            action: "ARCHIVE_PRODUCT",
+            sender: new mongoose_1.Types.ObjectId(req.user?._id),
+            receiver: new mongoose_1.Types.ObjectId(id),
+            description: `Product archived: ${id}`,
+            metadata: {
+                product_id: id,
+                user_id: req.user?._id,
+            },
+        });
+        await User_1.default.findByIdAndUpdate(req.user?._id, {
+            $push: { logs: log.id },
+        });
+        return await Product_1.Product.findByIdAndUpdate(id, { is_active: false, is_archived: true, logs: { $push: log.id } }, { new: true });
+    };
+    (0, util_1.customReqResHandler)(res, request, undefined, {
+        successMessage: "Product archived successfully",
+        statusCode: 200,
+    });
+};
+exports.archiveProduct = archiveProduct;

@@ -101,4 +101,72 @@ export const getSingleProducts = async (_req: AuthRequest, res: Response) => {
   });
 };
 
-export const updateProduct = async (req: AuthRequest, res: Response) => {};
+export const updateProduct = async (req: AuthRequest, res: Response) => {
+  const id = req.params.id;
+  await checkIfDocumentExistsById(id, res, Product);
+  const body = req.body;
+
+  const request = async () => {
+    const log = await logActivity({
+      req,
+      user_id: new Types.ObjectId(req.user?._id),
+      action: "UPDATE_PRODUCT",
+      sender: new Types.ObjectId(req.user?._id),
+      receiver: new Types.ObjectId(id),
+      description: `Product updated: ${body.name}`,
+      metadata: {
+        product_id: id,
+        user_id: req.user?._id,
+      },
+    });
+    await Product.findByIdAndUpdate(
+      id,
+      {
+        ...body,
+        logs: {
+          $push: log.id,
+        },
+      },
+      { new: true }
+    );
+    await User.findByIdAndUpdate(req.user?._id, {
+      $push: { logs: log.id },
+    });
+    return;
+  };
+  customReqResHandler(res, request, undefined, {
+    successMessage: "Product updated successfully",
+    statusCode: 200,
+  });
+};
+
+export const archiveProduct = async (req: AuthRequest, res: Response) => {
+  const id = req.params.id;
+  await checkIfDocumentExistsById(id, res, Product);
+  const request = async () => {
+    const log = await logActivity({
+      req,
+      user_id: new Types.ObjectId(req.user?._id),
+      action: "ARCHIVE_PRODUCT",
+      sender: new Types.ObjectId(req.user?._id),
+      receiver: new Types.ObjectId(id),
+      description: `Product archived: ${id}`,
+      metadata: {
+        product_id: id,
+        user_id: req.user?._id,
+      },
+    });
+    await User.findByIdAndUpdate(req.user?._id, {
+      $push: { logs: log.id },
+    });
+    return await Product.findByIdAndUpdate(
+      id,
+      { is_active: false, is_archived: true, logs: { $push: log.id } },
+      { new: true }
+    );
+  };
+  customReqResHandler(res, request, undefined, {
+    successMessage: "Product archived successfully",
+    statusCode: 200,
+  });
+};

@@ -4,6 +4,7 @@ import { Router } from "express";
 import { appAuth, isAdmin } from "../../middlewares/auth";
 import {
   addNewProducts,
+  archiveProduct,
   getProducts,
   getSingleProducts,
   updateProduct,
@@ -77,6 +78,7 @@ router.post(
 router.get("/products/:id", appAuth, isAdmin, getSingleProducts);
 router.put("/products/:id", appAuth, isAdmin, updateProduct);
 router.patch("/products/:id", appAuth, isAdmin, updateProduct);
+router.patch("/products/:id/archive", appAuth, isAdmin, archiveProduct);
 // users
 
 // products

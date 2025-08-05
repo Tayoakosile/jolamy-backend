@@ -36,6 +36,7 @@ router.post("/products", auth_1.appAuth, auth_1.isAdmin, upload_1.upload.array("
 router.get("/products/:id", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.getSingleProducts);
 router.put("/products/:id", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.updateProduct);
 router.patch("/products/:id", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.updateProduct);
+router.patch("/products/:id/archive", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.archiveProduct);
 // users
 // products
 exports.default = router;
