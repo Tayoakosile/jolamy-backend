@@ -13,10 +13,6 @@ export const uploadImage = async (req: Request, res: Response) => {
     const files = req.files as Express.Multer.File[];
     const urls: string[] = [];
 
-    console.log(
-      "generateToken() :",
-      generateToken("hello_world", process.env.EMAIL_SECRET as string)
-    );
 
     for (const file of files) {
       const fullPath = path.join(process.cwd(), file.path);

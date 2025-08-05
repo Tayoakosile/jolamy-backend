@@ -1,12 +1,12 @@
 // routes/admin.routes.ts
 
 import { Router } from "express";
-import { appAuth, isAdmin } from "../middlewares/auth";
+import { appAuth, isAdmin } from "../../middlewares/auth";
 import {
   getPendingUsers,
   approveUser,
   rejectUser,
-} from "../controllers/Admin/admin.controller";
+} from "../../controllers/Admin/admin.controller";
 
 const router = Router();
 // users

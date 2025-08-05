@@ -3,6 +3,12 @@
 import { Router } from "express";
 import { appAuth, isAdmin } from "../../middlewares/auth";
 import {
+  addNewProducts,
+  getProducts,
+  getSingleProducts,
+  updateProduct,
+} from "../../controllers/Admin/admin.products.controller";
+import {
   getPendingUsers,
   approveUser,
   rejectUser,
@@ -17,7 +23,10 @@ import {
   getAllCashFlow,
   getSingleCashFlow,
 } from "../../controllers/Admin/admin.finance.controller";
-import { addOfficeWorker, updateWorkerDetails } from "../../controllers/Admin/admin.offices.worker.controller";
+import {
+  addOfficeWorker,
+  updateWorkerDetails,
+} from "../../controllers/Admin/admin.offices.worker.controller";
 
 const router = Router();
 
@@ -33,17 +42,36 @@ router.get("/offices", appAuth, isAdmin, getOffices);
 router.get("/offices/:id", appAuth, isAdmin, getSingleOffice);
 router.put("/offices/:id", appAuth, isAdmin, updateOffice);
 router.patch("/offices/:id", appAuth, isAdmin, updateOffice);
-
-// Add worker
 router.post("/offices/:id/add-worker", appAuth, isAdmin, addOfficeWorker);
-// Edit workers details
-router.put("/offices/:id/workers/:worker_id/edit-worker", appAuth, isAdmin, updateWorkerDetails);
-router.patch("/offices/:id/workers/:worker_id/edit-worker", appAuth, isAdmin, updateWorkerDetails);
+router.put(
+  "/offices/:id/workers/:worker_id/edit-worker",
+  appAuth,
+  isAdmin,
+  updateWorkerDetails
+);
+router.patch(
+  "/offices/:id/workers/:worker_id/edit-worker",
+  appAuth,
+  isAdmin,
+  updateWorkerDetails
+);
 // offices
 
 // finance
 router.get("/finances", appAuth, isAdmin, getAllCashFlow);
 router.get("/finances/:id", appAuth, isAdmin, getSingleCashFlow);
 // finance
+
+// products
+
+// users
+router.get("/products", appAuth, isAdmin, getProducts);
+router.post("/products", appAuth, isAdmin, addNewProducts);
+router.get("/products/:id", appAuth, isAdmin, getSingleProducts);
+router.put("/products/:id", appAuth, isAdmin, updateProduct);
+router.patch("/products/:id", appAuth, isAdmin, updateProduct);
+// users
+
+// products
 
 export default router;

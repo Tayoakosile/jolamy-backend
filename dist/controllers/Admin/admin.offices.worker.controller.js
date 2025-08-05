@@ -4,15 +4,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateWorkerDetails = exports.getSingleOffice = exports.getOffices = exports.addOfficeWorker = void 0;
+const mongoose_1 = require("mongoose");
 const Office_1 = __importDefault(require("../../models/Admin/Office"));
+const OfficeWorker_1 = require("../../models/Admin/OfficeWorker");
+const User_1 = __importDefault(require("../../models/User"));
+const mail_service_1 = require("../../services/mail.service");
+const activityLog_1 = require("../../utils/activityLog");
+const bcrypt_util_1 = require("../../utils/bcrypt.util");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
-const activityLog_1 = require("../../utils/activityLog");
-const User_1 = __importDefault(require("../../models/User"));
-const OfficeWorker_1 = require("../../models/Admin/OfficeWorker");
-const mongoose_1 = require("mongoose");
-const bcrypt_util_1 = require("../../utils/bcrypt.util");
-const mail_service_1 = require("../../services/mail.service");
 const addOfficeWorker = (_req, res) => {
     const officeId = _req.params.id;
     console.log("officeId :", officeId);
