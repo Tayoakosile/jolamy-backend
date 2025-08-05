@@ -15,7 +15,7 @@ const getSingleProductForNotAdmin = async (_req, res) => {
     const id = _req.params.id;
     await (0, util_1.checkIfDocumentExistsById)(id, res, Product_1.Product);
     const request = async () => {
-        const product = await Product_1.Product.findOne({ id });
+        const product = await Product_1.Product.findOne({ _id: id });
         const logs = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
@@ -50,14 +50,10 @@ const addToCart = (_req, res) => {
             return;
         }
         const existingCart = (await Cart_1.Cart.findOne({
-            items: {
-                $elemMatch: {
-                    products: new mongoose_1.Types.ObjectId(product_id),
-                },
-            },
-            user_id: user_id,
+            user: user_id,
         }));
         if (existingCart) {
+            const checkIfProductIdExists = Array.from(existingCart.items).find((item) => `${item.product}` == `${product_id}`);
             // If the product is already in the cart, update the quantity
             const log = await (0, activityLog_1.logActivity)({
                 req: _req,
@@ -72,17 +68,42 @@ const addToCart = (_req, res) => {
                     user_id: user_id,
                 },
             });
-            await existingCart.updateOne({
-                items: {
-                    $push: { products: product_id, logs: existingCart.id },
-                },
+            if (checkIfProductIdExists) {
+                await Cart_1.Cart.findOneAndUpdate({
+                    _id: existingCart._id,
+                    "items.product": product_id,
+                }, {
+                    $set: {
+                        "items.$.product": product_id,
+                        "items.$.quantity": _req.body.quantity || 1,
+                    },
+                });
+            }
+            else {
+                await Cart_1.Cart.findOneAndUpdate({ _id: existingCart._id }, {
+                    $push: {
+                        items: {
+                            product: new mongoose_1.Types.ObjectId(product_id),
+                            quantity: _req.body?.quantity || 1,
+                        },
+                    },
+                });
+            }
+            await User_1.default.findByIdAndUpdate(user_id, {
+                $push: { cart: existingCart._id, logs: log._id },
             });
             return { message: "Product quantity updated in cart successfully" };
         }
+        if (existingCart) {
+        }
         const cart = (await Cart_1.Cart.create({
-            user_id: user_id,
-            product_id: new mongoose_1.Types.ObjectId(product_id),
-            quantity: _req.body.quantity || 1, // Default to 1 if not provided
+            user: user_id,
+            items: [
+                {
+                    product: new mongoose_1.Types.ObjectId(product_id),
+                    quantity: _req.body?.quantity || 1,
+                },
+            ],
         }));
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
@@ -105,5 +126,10 @@ const addToCart = (_req, res) => {
         });
         return { message: "Product added to cart successfully" };
     };
+    (0, util_1.customReqResHandler)(res, request, undefined, {
+        successMessage: "Product added to cart successfully",
+        errorMessage: "Error adding product to cart",
+        statusCode: 200,
+    });
 };
 exports.addToCart = addToCart;

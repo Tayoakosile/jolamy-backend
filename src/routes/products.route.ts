@@ -9,5 +9,5 @@ import { appAuth } from "../middlewares/auth";
 const router = Router();
 
 router.post("/:id/cart", appAuth, addToCart);
-router.get("/products/:id", appAuth, getSingleProductForNotAdmin);
+router.get("/:id", appAuth, getSingleProductForNotAdmin);
 export default router;

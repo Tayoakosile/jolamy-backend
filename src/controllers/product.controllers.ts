@@ -18,7 +18,7 @@ export const getSingleProductForNotAdmin = async (
   const id = _req.params.id;
   await checkIfDocumentExistsById(id, res, Product);
   const request = async () => {
-    const product = await Product.findOne({ id });
+    const product = await Product.findOne({ _id: id });
 
     const logs = await logActivity({
       req: _req,
@@ -55,18 +55,16 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
       errorResponse(res, 404, "Product not found");
       return;
     }
+
     const existingCart = (await Cart.findOne({
-      items: {
-        $elemMatch: {
-          products: new Types.ObjectId(product_id),
-        },
-      },
-      user_id: user_id,
-    })) as ICart;
+      user: user_id,
+    })) as any;
 
     if (existingCart) {
+      const checkIfProductIdExists = Array.from(existingCart.items).find(
+        (item: any) => `${item.product}` == `${product_id}`
+      );
       // If the product is already in the cart, update the quantity
-
       const log = await logActivity({
         req: _req,
         user_id: user_id,
@@ -80,17 +78,50 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
           user_id: user_id,
         },
       });
-      await existingCart.updateOne({
-        items: {
-          $push: { products: product_id, logs: existingCart.id },
-        },
+      if (checkIfProductIdExists) {
+        await Cart.findOneAndUpdate(
+          {
+            _id: existingCart._id,
+            "items.product": product_id,
+          },
+          {
+            $set: {
+              "items.$.product": product_id,
+              "items.$.quantity": _req.body.quantity || 1,
+            },
+          }
+        );
+      } else {
+        await Cart.findOneAndUpdate(
+          { _id: existingCart._id },
+          {
+            $push: {
+              items: {
+                product: new Types.ObjectId(product_id),
+                quantity: _req.body?.quantity || 1,
+              },
+            },
+          }
+        );
+      }
+
+      await User.findByIdAndUpdate(user_id, {
+        $push: { cart: existingCart._id, logs: log._id },
       });
       return { message: "Product quantity updated in cart successfully" };
     }
+
+    if (existingCart) {
+    }
+
     const cart = (await Cart.create({
-      user_id: user_id,
-      product_id: new Types.ObjectId(product_id),
-      quantity: _req.body.quantity || 1, // Default to 1 if not provided
+      user: user_id,
+      items: [
+        {
+          product: new Types.ObjectId(product_id),
+          quantity: _req.body?.quantity || 1,
+        },
+      ],
     })) as ICart;
     const log = await logActivity({
       req: _req,
@@ -114,4 +145,9 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
 
     return { message: "Product added to cart successfully" };
   };
+  customReqResHandler(res, request, undefined, {
+    successMessage: "Product added to cart successfully",
+    errorMessage: "Error adding product to cart",
+    statusCode: 200,
+  });
 };

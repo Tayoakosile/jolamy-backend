@@ -4,7 +4,7 @@ import { timestamp } from "../utils/util";
 
 export interface ICartItem {
   user_id: Types.ObjectId;
-  products: Types.ObjectId;
+  product: Types.ObjectId;
   quantity: number;
 }
 
@@ -16,8 +16,7 @@ export interface ICart extends Document {
 
 const CartItemSchema: Schema = new Schema<ICartItem>(
   {
-    products: { type: Schema.Types.ObjectId, ref: "Product", required: true },
-    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
     quantity: { type: Number, required: true },
   },
   { _id: false }
@@ -29,10 +28,9 @@ const CartSchema: Schema = new Schema<ICart>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true,
     },
     items: { type: [CartItemSchema], required: true },
-    total: { type: Number, required: true, default: 0 },
+    total: { type: Number, default: 0 },
   },
   {
     timestamps: {
