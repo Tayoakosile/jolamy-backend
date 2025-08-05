@@ -10,11 +10,16 @@ const activityLog_1 = require("../../utils/activityLog");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
 const CashFlow_1 = __importDefault(require("../../models/CashFlow"));
+const mongoose_1 = require("mongoose");
 const getAllCashFlow = (_req, res) => {
     const request = async () => {
         return await CashFlow_1.default.find();
     };
-    (0, util_1.customReqResHandler)(res, request);
+    (0, util_1.customReqResHandler)(res, request, undefined, {
+        successMessage: "CashFlows retrieved successfully",
+        errorMessage: "Error retrieving cash flows",
+        statusCode: 200,
+    });
 };
 exports.getAllCashFlow = getAllCashFlow;
 const getSingleCashFlow = async (_req, res) => {
@@ -56,7 +61,7 @@ const createNewOffices = (req, res) => {
         });
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: `${req.user?._id}`,
+            userId: new mongoose_1.Types.ObjectId(req.user?._id),
             action: "CREATE_OFFICE",
             description: "New office created",
             metadata: {
@@ -93,7 +98,7 @@ const updateOffice = async (req, res) => {
         const updatedOffice = (await Office_1.default.findByIdAndUpdate(id, { ...req.body }, { new: true }));
         const log = await (0, activityLog_1.logActivity)({
             req,
-            userId: `${req.user?._id}`,
+            userId: new mongoose_1.Types.ObjectId(req.user?._id),
             action: "UPDATE_OFFICE",
             description: "Office updated successfully",
             metadata: {

@@ -1,11 +1,11 @@
 // src/middleware/auth.ts
 
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { AppError } from "../utils/appError";
+import { OfficeWorker } from "../models/Admin/OfficeWorker";
 import User from "../models/User";
-import { error } from "console";
-import { errorResponse, successResponse } from "../utils/response";
+import { IUser } from "../types/type";
+import { errorResponse } from "../utils/response";
 
 interface JwtPayload {
   id: string;
@@ -34,15 +34,31 @@ export const appAuth = async (
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
 
-    const user = await User.findById(decoded.id);
+    const user = (await User.findById(decoded.id)) as IUser;
+    const worker = (await OfficeWorker.findById(decoded.id)) as IUser;
 
-    if (!user) {
+    if (!user && !worker) {
       errorResponse(res, 401, "User not found", { message: "User not found" });
       return next();
     }
+    if (worker) {
+      (req as any).user = worker;
+      next();
+      return;
+    }
+    if (
+      user?.rejected_by ||
+      user?.status === "disabled" ||
+      user?.status === "rejected"
+    ) {
+      errorResponse(res, 403, "User account is inactive", {
+        message: "User account is inactive. Please contact support.",
+        status: user.status,
+      });
+      return;
+    }
 
-    // Attach user to request object
-    (req as any).user = user;
+    (req as any).user = worker ? worker : user;
     next();
   } catch (err) {
     errorResponse(res, 401, "Invalid or expired token", {
@@ -54,7 +70,15 @@ export const appAuth = async (
 
 // middleware/auth.ts
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+  const user = (req as any).user as IUser;
+  if (user?.is_admin || user.user_role == "admin") return next();
+  errorResponse(res, 403, "Access denied, admin only");
+  return;
+};
+export const isWorker = (req: Request, res: Response, next: NextFunction) => {
   const user = (req as any).user;
-  if (user?.is_admin) return next();
-  return successResponse(res, 403, "Access denied, admin only");
+
+  if (user?.worker || user?.factory_worker || user) return next();
+  errorResponse(res, 403, "Access denied, Workers only");
+  return;
 };

@@ -4,7 +4,8 @@ import connectDB from "./config/db";
 import authRoutes from "./routes/auth.routes";
 import uploadRoutes from "./routes/upload.routes";
 import userRoutes from "./routes/user.routes";
-import adminRoutes from "./routes/admin.routes";
+import adminRoutes from "./routes/Admin/admin.routes";
+import financesRoutes from "./routes/finance.routes";
 
 dotenv.config();
 const app = express();
@@ -16,6 +17,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/finances", financesRoutes);
 
 const PORT = process.env.PORT || 5000;
 

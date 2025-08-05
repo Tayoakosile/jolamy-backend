@@ -8,6 +8,7 @@ import {
   customReqResHandler,
 } from "../../utils/util";
 import CashFlow from "../../models/CashFlow";
+import { Types } from "mongoose";
 
 interface AuthRequest extends Request {
   user?: {
@@ -21,8 +22,13 @@ export const getAllCashFlow = (_req: AuthRequest, res: Response) => {
   const request = async () => {
     return await CashFlow.find();
   };
-  customReqResHandler(res, request);
+  customReqResHandler(res, request, undefined, {
+    successMessage: "CashFlows retrieved successfully",
+    errorMessage: "Error retrieving cash flows",
+    statusCode: 200,
+  });
 };
+
 export const getSingleCashFlow = async (_req: AuthRequest, res: Response) => {
   const id = _req.params.id;
   const cash_flow = await checkIfDocumentExistsById<IOffice>(id, res, Offices, [
@@ -63,7 +69,7 @@ export const createNewOffices = (req: AuthRequest, res: Response) => {
     });
     const log = await logActivity({
       req,
-      userId: `${req.user?._id}`,
+      userId: new Types.ObjectId(req.user?._id),
       action: "CREATE_OFFICE",
       description: "New office created",
       metadata: {
@@ -113,7 +119,7 @@ export const updateOffice = async (req: AuthRequest, res: Response) => {
 
     const log = await logActivity({
       req,
-      userId: `${req.user?._id}`,
+      userId: new Types.ObjectId(req.user?._id),
       action: "UPDATE_OFFICE",
       description: "Office updated successfully",
       metadata: {

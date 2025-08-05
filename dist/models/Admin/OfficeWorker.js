@@ -9,6 +9,7 @@ const officeWorkerSchema = new mongoose_1.Schema({
     employee_id: { type: String },
     role: { type: String, required: true },
     is_active: { type: Boolean, default: true },
+    last_login: { type: Date },
     is_deactivated: { type: Boolean, default: false },
     is_deleted: { type: Boolean, default: false },
     deactivated_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
@@ -19,7 +20,7 @@ const officeWorkerSchema = new mongoose_1.Schema({
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
     username: { type: String, required: true },
-    email: { type: String, required: true, unique: true, },
+    email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
 }, {
     timestamps: {
@@ -28,6 +29,9 @@ const officeWorkerSchema = new mongoose_1.Schema({
 });
 officeWorkerSchema.virtual("fullName").get(function () {
     return `${this.first_name} ${this.last_name}`;
+});
+officeWorkerSchema.virtual("is_first_login").get(function () {
+    return this.last_login ? false : true;
 });
 officeWorkerSchema.pre("save", async function (next) {
     if (!this.isModified("password"))

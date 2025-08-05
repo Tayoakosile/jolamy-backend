@@ -15,6 +15,7 @@ export interface IOfficeWorker extends Document {
   is_active: boolean;
   is_deactivated: boolean;
   is_deleted: boolean;
+  last_login: Date;
   deactivated_by: Types.ObjectId;
   logs: Types.ObjectId[]; // logs of activities
   cash_flow: Types.ObjectId[]; // logs of activities
@@ -28,6 +29,7 @@ const officeWorkerSchema = new Schema<IOfficeWorker>(
     employee_id: { type: String },
     role: { type: String, required: true },
     is_active: { type: Boolean, default: true },
+    last_login: { type: Date },
     is_deactivated: { type: Boolean, default: false },
     is_deleted: { type: Boolean, default: false },
     deactivated_by: { type: Schema.Types.ObjectId, ref: "User" },
@@ -38,7 +40,7 @@ const officeWorkerSchema = new Schema<IOfficeWorker>(
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
     username: { type: String, required: true },
-    email: { type: String, required: true, unique: true,  },
+    email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
   },
   {
@@ -50,6 +52,9 @@ const officeWorkerSchema = new Schema<IOfficeWorker>(
 
 officeWorkerSchema.virtual("fullName").get(function () {
   return `${this.first_name} ${this.last_name}`;
+});
+officeWorkerSchema.virtual("is_first_login").get(function () {
+  return this.last_login ? false : true;
 });
 officeWorkerSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();

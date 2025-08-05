@@ -6,11 +6,13 @@ export const successResponse = (
   message: string = "Success",
   data: any = null
 ) => {
-  return res.status(statusCode).json({
+  if (res.headersSent) return;
+  res.status(statusCode).json({
     success: true,
     message,
     data,
   });
+  return;
 };
 
 export const errorResponse = (
@@ -19,10 +21,12 @@ export const errorResponse = (
   message: string = "Something went wrong",
   error: any = null
 ) => {
-  return res.status(statusCode).json({
+  if (res.headersSent) return;
+  res.status(statusCode).json({
     success: false,
     message,
     error: error ? error : { message },
     statusCode,
   });
+  return;
 };

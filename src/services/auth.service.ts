@@ -1,24 +1,22 @@
 import User from "../models/User";
 
-
-import bcrypt from "bcryptjs";
-import { AppError } from "../utils/appError";
+import { Response } from "express";
+import { OfficeWorker } from "../models/Admin/OfficeWorker";
 import { IUser } from "../types/type";
+import { errorResponse } from "../utils/response";
 
 export const signupService = async (
   req: any,
-  password: string
+  res: Response
 ): Promise<IUser> => {
   const existingUser = await User.findOne({ email: req.email });
-  if (existingUser) {
-    throw new AppError("Email already in use", 400);
+  const existingOfficeWorker = await OfficeWorker.findOne({ email: req.email });
+  if (existingUser || existingOfficeWorker) {
+    errorResponse(res, 400, "User with this email already exists");
   }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await User.create({
     ...req,
-    password: hashedPassword,
   });
 
   return user;
