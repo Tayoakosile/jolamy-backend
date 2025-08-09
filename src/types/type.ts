@@ -1,5 +1,6 @@
 import { Request } from "express";
 import { Document, Types } from "mongoose";
+import { IOrder } from "../models/Order";
 
 export type ApprovalStatus =
   | "pending_for_documents"
@@ -89,4 +90,5 @@ export interface AuthRequest extends Request {
     is_admin: boolean;
     email: string;
   };
+  order?: IOrder;
 }

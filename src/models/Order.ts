@@ -56,7 +56,7 @@ type PaymentMethod =
   | "paystack"
   | null;
 
-export interface IOrder extends Document{
+export interface IOrder extends Document {
   user_id: { type: Types.ObjectId; ref: "User"; required: true };
   assigned_to?: Types.ObjectId;
   order_number?: string;
@@ -105,8 +105,8 @@ const OrderSchema = new Schema<IOrder>(
     },
     payment_status: {
       type: String,
-      enum: ["pending", "paid", "cancelled"],
-      default: "pending",
+      enum: ["unpaid", "pending", "initiated", "paid", "cancelled"],
+      default: "initiated",
     },
     delivery_status: {
       type: String,
