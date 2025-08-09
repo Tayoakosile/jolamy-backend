@@ -41,15 +41,7 @@ router.post(
   "/verify-documents/:id",
   appAuth,
 
-  // upload.fields([
-  //   { name: "nin" },
-  //   { name: "passport" },
-  //   { name: "warehouse_photos_internal" },
-  //   { name: "warehouse_photos_external" },
-  //   { name: "business_registration" },
-  //   { name: "other_documents" },
 
-  // ]),
 
   verifyDocuments
 );

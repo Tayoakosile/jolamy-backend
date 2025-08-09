@@ -150,7 +150,7 @@ const OrderSchema = new Schema<IOrder>(
 
 OrderSchema.pre(
   "save",
-  async function (this: import("mongoose").Document & Order, next) {
+  async function (this: import("mongoose").Document & IOrder, next) {
     if (this.isNew) {
       const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 

@@ -157,7 +157,7 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       user_id: new Types.ObjectId(id),
       action: "CREATE_ORDER",
       sender: new Types.ObjectId(id),
-      receiver: order._id,
+      receiver: order._id as Types.ObjectId,
       description: `Order created with ID ${order._id}`,
       metadata: {
         order_id: order._id,
