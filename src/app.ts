@@ -15,8 +15,8 @@ const app = express();
 // Middleware
 app.use(express.json());
 dotenv.config();
-app.use(apiLimiter);
 app.use("/api/auth", authRoutes);
+app.use(apiLimiter);
 app.use("/api/users", userRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);

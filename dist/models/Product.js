@@ -35,14 +35,17 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Product = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const PricingSchema = new mongoose_1.Schema({
-    distributor_price_per_box: { type: Number, required: true },
-    profit_per_box: { type: Number, required: true },
-    first_time_min_order_qty: { type: Number, required: true },
-    next_order_min_qty: { type: Number }, // optional for sales agent
-    sales_agent_price_per_unit: { type: Number },
-    bonus_per_box: { type: Number },
-}, { _id: false });
+// const PricingSchema = new Schema<Pricing>(
+//   {
+//     distributor_price_per_box: { type: Number, required: true },
+//     profit_per_box: { type: Number, required: true },
+//     first_time_min_order_qty: { type: Number, required: true },
+//     next_order_min_qty: { type: Number }, // optional for sales agent
+//     sales_agent_price_per_unit: { type: Number },
+//     bonus_per_box: { type: Number },
+//   },
+//   { _id: false }
+// );
 const VariantSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     inventory_alert_threshold: { type: Number, required: true },
@@ -61,7 +64,7 @@ const VariantSchema = new mongoose_1.Schema({
         first_time_min_order_qty: { type: Number },
         //   next_order_min_qty: { type: Number, required: true },
     },
-}, { _id: false });
+});
 const ProductSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     description: String,

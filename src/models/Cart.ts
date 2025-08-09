@@ -6,17 +6,19 @@ export interface ICartItem {
   user_id: Types.ObjectId;
   product: Types.ObjectId;
   quantity: number;
+  total: number; // total price for this item
 }
 
 export interface ICart extends Document {
   user: Types.ObjectId;
   items: ICartItem[];
-  total: number;
+  total: { type: number, required: true }, // total price for this item;
 }
 
 const CartItemSchema: Schema = new Schema<ICartItem>(
   {
     product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+
     quantity: { type: Number, required: true },
   },
   { _id: false }

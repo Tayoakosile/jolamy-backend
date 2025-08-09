@@ -137,7 +137,7 @@ const forgotPassword = async (req, res) => {
             return (0, response_1.errorResponse)(res, 401, "No user found with that email");
         }
         // Generate reset token
-        const resetToken = (0, util_1.getRandom)();
+        const resetToken = (0, util_1.generateRandom)();
         user.forgot_password_token = resetToken;
         user.forgot_password_expires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
         await user.save();

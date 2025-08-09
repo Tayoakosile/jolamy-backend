@@ -4,7 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.timestamp = exports.customReqResHandler = exports.getRandom = exports.checkIfDocumentExistsById = void 0;
+exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
+exports.generateEntityNumber = generateEntityNumber;
 const mongoose_1 = __importDefault(require("mongoose"));
 const randomatic_1 = __importDefault(require("randomatic"));
 const mail_service_1 = require("../services/mail.service");
@@ -43,10 +44,10 @@ const checkIfDocumentExistsById = async (id, res, Model, populateFields) => {
     return document;
 };
 exports.checkIfDocumentExistsById = checkIfDocumentExistsById;
-const getRandom = (howMuch) => {
+const generateRandom = (howMuch) => {
     return (0, randomatic_1.default)("a0", howMuch || 18);
 };
-exports.getRandom = getRandom;
+exports.generateRandom = generateRandom;
 const customReqResHandler = async (res, reqFunction, errorFunction, responseData = {
     statusCode: 200,
     successMessage: "",
@@ -73,3 +74,43 @@ exports.timestamp = {
     createdAt: "created_at",
     updatedAt: "updated_at",
 };
+async function generateEntityNumber(entityPrefix, model) {
+    const date = new Date();
+    const yearMonth = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}`;
+    // Find the latest entry for the current year+month
+    const latest = await model
+        .findOne({ entity_number: new RegExp(`^${entityPrefix}-${yearMonth}`) })
+        .sort({ createdAt: -1 });
+    let sequence = 1;
+    if (latest) {
+        const lastSeq = parseInt(latest.entity_number.split("-")[2], 10);
+        sequence = lastSeq + 1;
+    }
+    return `${entityPrefix}-${yearMonth}-${(0, exports.generateRandom)(6)}-${String(sequence).padStart(4, "0")}`;
+}
+const removeSensitiveFields = (req, _res, next) => {
+    const forbidden = [
+        "payment_status",
+        "estimated_date",
+        "estimatedDate",
+        "delivery_status",
+        "refund_status",
+        "order_number",
+        "order_id",
+        "internal_sequence",
+        "total_amount",
+        "discount_amount",
+        "tax_amount",
+        "tracking_number",
+        "courier_service",
+        "payment_reference",
+        "createdAt",
+        "updatedAt",
+        "logs",
+        "cancelled_at",
+        "actual_delivery_date",
+    ];
+    forbidden.forEach((f) => delete req.body[f]);
+    next();
+};
+exports.removeSensitiveFields = removeSensitiveFields;

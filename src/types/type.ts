@@ -1,5 +1,5 @@
 import { Request } from "express";
-import {  Document, Types } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export type ApprovalStatus =
   | "pending_for_documents"
@@ -8,7 +8,12 @@ export type ApprovalStatus =
   | "approved"
   | "rejected"
   | "disabled";
-export type UserRole = "admin" | "distributor" | "sales_agent" | "worker"|"factory_worker";
+export type UserRole =
+  | "admin"
+  | "distributor"
+  | "sales_agent"
+  | "worker"
+  | "factory_worker";
 
 export type UserDocument = IUser & Document;
 export interface IUser extends Document {
@@ -46,7 +51,7 @@ export interface IUser extends Document {
   teams: any;
   stats: any;
   outstanding_boxes: number;
-  orders: { type: Types.ObjectId[]; ref: "Order" }; // refs to Order model
+  orders: Types.ObjectId[]; // refs to Order model
   products: { type: Types.ObjectId[]; ref: "Products" }; // refs to Product model
   bonus: { type: Types.ObjectId[]; ref: "Bonus" }; // refs to Bonus model
   transaction_history: { type: Types.ObjectId[]; ref: "TransactionHistory" }; // refs to Transaction model
@@ -78,9 +83,8 @@ export interface IUser extends Document {
   logs: { type: Types.ObjectId[]; ref: "Logs" }; // refs to Log model
 }
 
-
 export interface AuthRequest extends Request {
-  user?: {
+  user?: IUser & {
     _id: string;
     is_admin: boolean;
     email: string;

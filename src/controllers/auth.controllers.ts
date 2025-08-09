@@ -10,7 +10,7 @@ import { logActivity } from "../utils/activityLog";
 import { isMatch } from "../utils/bcrypt.util";
 import { generateToken } from "../utils/jwt";
 import { errorResponse, successResponse } from "../utils/response";
-import { getRandom } from "../utils/util";
+import { generateRandom } from "../utils/util";
 
 export const createAccount = async (req: Request, res: Response) => {
   if (!req.body) {
@@ -160,7 +160,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 
     // Generate reset token
-    const resetToken = getRandom();
+    const resetToken = generateRandom();
     user.forgot_password_token = resetToken;
     user.forgot_password_expires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
     await user.save();

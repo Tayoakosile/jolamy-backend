@@ -21,7 +21,7 @@ const uploadToR2 = async (req, res, shouldIncludeSuccessResponse) => {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const originalExt = path_1.default.extname(file.originalname);
-            const uniqueFilename = `${(0, util_1.getRandom)(20)}${originalExt}`;
+            const uniqueFilename = `${(0, util_1.generateRandom)(20)}${originalExt}`;
             const fileName = `uploads/${Date.now()}-${uniqueFilename}`;
             await R2_1.r2.send(new client_s3_1.PutObjectCommand({
                 Bucket: process.env.R2_BUCKET,

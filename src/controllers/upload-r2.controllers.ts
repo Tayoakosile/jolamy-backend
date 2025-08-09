@@ -4,7 +4,7 @@ import { Request, Response } from "express";
 import { r2 } from "../utils/R2";
 import { errorResponse, successResponse } from "../utils/response";
 import path from "path";
-import { getRandom } from "../utils/util";
+import { generateRandom } from "../utils/util";
 import { error } from "console";
 
 export const uploadToR2 = async (
@@ -23,7 +23,7 @@ export const uploadToR2 = async (
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const originalExt = path.extname(file.originalname);
-      const uniqueFilename = `${getRandom(20)}${originalExt}`;
+      const uniqueFilename = `${generateRandom(20)}${originalExt}`;
       const fileName = `uploads/${Date.now()}-${uniqueFilename}`;
       await r2.send(
         new PutObjectCommand({

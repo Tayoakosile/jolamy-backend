@@ -1,4 +1,6 @@
-import mongoose, { Schema, Document } from "mongoose";
+
+
+import mongoose, { Schema, Document,  } from "mongoose";
 
 interface Pricing {
   distributor_price_per_box: number;
@@ -9,7 +11,7 @@ interface Pricing {
   bonus_per_box?: number;
 }
 
-interface Variant {
+interface Variant extends Document {
   available_weight: string; // e.g., '500g', '1kg'
   name: string;
   inventory_alert_threshold: number;
@@ -20,6 +22,7 @@ interface Variant {
   distributor_pricing: {
     distributor_price_per_box: number;
     profit_per_box: number;
+    price_per_box: number;
     first_time_min_order_qty: number;
   };
 
@@ -39,6 +42,7 @@ export interface IProduct extends Document {
   available_weight: { type: String; required: true };
   orders: mongoose.Types.ObjectId[]; // references to orders
   category?: string;
+  quantity?: number;
   archived_at?: string;
   archived_by?: string;
   product_images?: string[];
@@ -49,43 +53,40 @@ export interface IProduct extends Document {
   created_by: mongoose.Types.ObjectId;
 }
 
-const PricingSchema = new Schema<Pricing>(
-  {
-    distributor_price_per_box: { type: Number, required: true },
+// const PricingSchema = new Schema<Pricing>(
+//   {
+//     distributor_price_per_box: { type: Number, required: true },
+//     profit_per_box: { type: Number, required: true },
+//     first_time_min_order_qty: { type: Number, required: true },
+//     next_order_min_qty: { type: Number }, // optional for sales agent
+//     sales_agent_price_per_unit: { type: Number },
+//     bonus_per_box: { type: Number },
+//   },
+//   { _id: false }
+// );
+
+const VariantSchema = new Schema<Variant>({
+  name: { type: String, required: true },
+
+  inventory_alert_threshold: { type: Number, required: true },
+  units_per_box: { type: Number, required: true },
+  total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
+  unit_type: { type: String, required: true },
+
+  distributor_pricing: {
+    price_per_box: { type: Number, required: true },
     profit_per_box: { type: Number, required: true },
-    first_time_min_order_qty: { type: Number, required: true },
-    next_order_min_qty: { type: Number }, // optional for sales agent
-    sales_agent_price_per_unit: { type: Number },
-    bonus_per_box: { type: Number },
+    first_time_min_order_qty: { type: Number, default: 150 },
   },
-  { _id: false }
-);
 
-const VariantSchema = new Schema<Variant>(
-  {
-    name: { type: String, required: true },
-
-    inventory_alert_threshold: { type: Number, required: true },
-    units_per_box: { type: Number, required: true },
-    total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
-    unit_type: { type: String, required: true },
-
-    distributor_pricing: {
-      price_per_box: { type: Number, required: true },
-      profit_per_box: { type: Number, required: true },
-      first_time_min_order_qty: { type: Number, default: 150 },
-    },
-
-    sales_agent_pricing: {
-      price_per_unit: { type: Number },
-      price_per_box: { type: Number },
-      bonus_per_box: { type: Number, required: true },
-      first_time_min_order_qty: { type: Number },
-      //   next_order_min_qty: { type: Number, required: true },
-    },
+  sales_agent_pricing: {
+    price_per_unit: { type: Number },
+    price_per_box: { type: Number },
+    bonus_per_box: { type: Number, required: true },
+    first_time_min_order_qty: { type: Number },
+    //   next_order_min_qty: { type: Number, required: true },
   },
-  { _id: false }
-);
+});
 
 const ProductSchema = new Schema<IProduct>(
   {

@@ -1,6 +1,6 @@
 // utils/checkIfExists.ts
 
-import { Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import mongoose, { Document } from "mongoose";
 import randomatic from "randomatic";
 import { sendEmail } from "../services/mail.service";
@@ -46,7 +46,7 @@ export const checkIfDocumentExistsById = async <T extends Document>(
   return document;
 };
 
-export const getRandom = (howMuch?: number) => {
+export const generateRandom = (howMuch?: number) => {
   return randomatic("a0", howMuch || 18);
 };
 
@@ -109,4 +109,58 @@ export const customReqResHandler = async (
 export const timestamp = {
   createdAt: "created_at",
   updatedAt: "updated_at",
+};
+
+export async function generateEntityNumber(
+  entityPrefix: string,
+  model: mongoose.Model<any>
+) {
+  const date = new Date();
+  const yearMonth = `${date.getFullYear()}${String(
+    date.getMonth() + 1
+  ).padStart(2, "0")}`;
+
+  // Find the latest entry for the current year+month
+  const latest = await model
+    .findOne({ entity_number: new RegExp(`^${entityPrefix}-${yearMonth}`) })
+    .sort({ createdAt: -1 });
+
+  let sequence = 1;
+  if (latest) {
+    const lastSeq = parseInt(latest.entity_number.split("-")[2], 10);
+    sequence = lastSeq + 1;
+  }
+
+  return `${entityPrefix}-${yearMonth}-${generateRandom(6)}-${String(
+    sequence
+  ).padStart(4, "0")}`;
+}
+export const removeSensitiveFields = (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  const forbidden = [
+    "payment_status",
+    "estimated_date",
+    "estimatedDate",
+    "delivery_status",
+    "refund_status",
+    "order_number",
+    "order_id",
+    "internal_sequence",
+    "total_amount",
+    "discount_amount",
+    "tax_amount",
+    "tracking_number",
+    "courier_service",
+    "payment_reference",
+    "createdAt",
+    "updatedAt",
+    "logs",
+    "cancelled_at",
+    "actual_delivery_date",
+  ];
+  forbidden.forEach((f) => delete req.body[f]);
+  next();
 };

@@ -18,8 +18,8 @@ const app = (0, express_1.default)();
 // Middleware
 app.use(express_1.default.json());
 dotenv_1.default.config();
-app.use(rate_limiter_1.apiLimiter);
 app.use("/api/auth", auth_routes_1.default);
+app.use(rate_limiter_1.apiLimiter);
 app.use("/api/users", user_routes_1.default);
 app.use("/api/upload", upload_routes_1.default);
 app.use("/api/admin", admin_routes_1.default);
