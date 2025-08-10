@@ -41,10 +41,11 @@ const createNewOrder = (_req, res) => {
             }).select("name category reference_id  available_weight is_active is_archived  variants");
             // if a product is is_active is false or is_archived is true, return error
             if (!productResFromDb?.is_active || productResFromDb?.is_archived) {
-                return (0, response_1.errorResponse)(res, 404, "Product not found", {
+                (0, response_1.errorResponse)(res, 404, "Product not found", {
                     message: `Product ${productResFromDb?.name} is not available for order.`,
                     product: productResFromDb,
                 });
+                return;
             }
             /**
              * Maps over the variants provided by the POST API, matches each variant with its corresponding
@@ -80,24 +81,26 @@ const createNewOrder = (_req, res) => {
                     variantFromPostAPi.quantity <
                         (matchedVariant?.distributor_pricing?.first_time_min_order_qty ||
                             0)) {
-                    return (0, response_1.errorResponse)(res, 401, "Minimum order quantity not met", {
+                    (0, response_1.errorResponse)(res, 401, "Minimum order quantity not met", {
                         message: `Minimum order quantity for ${matchedVariant?.name} is ${matchedVariant?.distributor_pricing.first_time_min_order_qty} boxes on first order.`,
                         product: productResFromDb,
                         minimum_order_quantity: matchedVariant?.distributor_pricing.first_time_min_order_qty,
                         user_requested_quantity: variantFromPostAPi.quantity,
                     });
+                    return;
                 }
                 if (matchedVariant) {
                     // total_boxes_in_stock is null means unlimited stock,
                     // so we don't check for it  but if it is less than the requested quantity, return error
                     if (matchedVariant?.total_boxes_in_stock !== null &&
                         matchedVariant?.total_boxes_in_stock < variantFromPostAPi.quantity) {
-                        return (0, response_1.errorResponse)(res, 401, "Insufficient stock", {
+                        (0, response_1.errorResponse)(res, 401, "Insufficient stock", {
                             message: `Insufficient stock for ${matchedVariant?.name}. Available: ${matchedVariant?.total_boxes_in_stock}, Requested: ${variantFromPostAPi.quantity}`,
                             product: productResFromDb,
                             available_stock: matchedVariant?.total_boxes_in_stock,
                             user_requested_quantity: variantFromPostAPi.quantity,
                         });
+                        return;
                     }
                     // Returns the variant with all properties from the matched database variant, and the quantity and total amount.
                     return {
@@ -182,7 +185,7 @@ const updateOrder = async (_req, res) => {
     const body = _req.body;
     const user = _req.user;
     const orderID = _req.params?.id;
-    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, res, Order_1.default);
+    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, "order_id", res, Order_1.default);
     const request = async () => {
         // Log that user filled in extra details of the order.. if it contains address
         const log = await (0, activityLog_1.logActivity)({

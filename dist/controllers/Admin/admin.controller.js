@@ -52,7 +52,7 @@ const approveUser = async (req, res) => {
     try {
         const user_id = req.params?.user_id;
         const adminId = req.user?._id;
-        const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, res, User_1.default));
+        const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, "user_id", res, User_1.default));
         //   For the User
         const log = await (0, activityLog_1.logActivity)({
             req,
@@ -92,11 +92,13 @@ const approveUser = async (req, res) => {
             $push: { logs: adminLog._id },
         });
         (0, mail_service_1.sendEmail)(req.user?.email, "Account Approved", "You just approved this account, The user has been notified.");
-        return (0, response_1.successResponse)(res, 200, "User approved successfully", updatedUser);
+        (0, response_1.successResponse)(res, 200, "User approved successfully", updatedUser);
+        return;
     }
     catch (error) {
         console.log("error :", error);
-        return (0, response_1.errorResponse)(res, 500, "Error approving user", error);
+        (0, response_1.errorResponse)(res, 500, "Error approving user", error);
+        return;
     }
 };
 exports.approveUser = approveUser;
@@ -104,7 +106,7 @@ const rejectUser = async (req, res) => {
     try {
         const user_id = req.params?.user_id;
         const adminId = req.user?._id;
-        const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, res, User_1.default));
+        const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, "user_id", res, User_1.default));
         //   For the User
         const log = await (0, activityLog_1.logActivity)({
             req,
@@ -150,10 +152,12 @@ const rejectUser = async (req, res) => {
         //     "Account Rejected",
         //     "You just rejected this account, The user has been notified."
         //   );
-        return (0, response_1.successResponse)(res, 200, "User rejected successfully", updatedUser);
+        (0, response_1.successResponse)(res, 200, "User rejected successfully", updatedUser);
+        return;
     }
     catch (error) {
-        return (0, response_1.errorResponse)(res, 500, "Error approving user", error);
+        (0, response_1.errorResponse)(res, 500, "Error approving user", error);
+        return;
     }
 };
 exports.rejectUser = rejectUser;

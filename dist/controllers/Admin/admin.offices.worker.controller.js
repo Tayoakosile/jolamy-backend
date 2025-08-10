@@ -18,14 +18,15 @@ const addOfficeWorker = (_req, res) => {
     console.log("officeId :", officeId);
     const body = _req.body;
     const request = async () => {
-        const office = (await (0, util_1.checkIfDocumentExistsById)(officeId, res, Office_1.default));
+        const office = (await (0, util_1.checkIfDocumentExistsById)(officeId, "office_id", res, Office_1.default));
         const existingWorker = await User_1.default.exists({})
             .where("email")
             .equals(body.email.trim().toLowerCase());
         if (existingWorker) {
-            return (0, response_1.errorResponse)(res, 400, "Worker with this email already exists", {
+            (0, response_1.errorResponse)(res, 400, "Worker with this email already exists", {
                 message: "Worker with this email already exists",
             });
+            return;
         }
         const worker = (await OfficeWorker_1.OfficeWorker.create({
             ..._req.body,
@@ -80,10 +81,7 @@ const getOffices = (_req, res) => {
 exports.getOffices = getOffices;
 const getSingleOffice = async (_req, res) => {
     const id = _req.params.id;
-    const office = await (0, util_1.checkIfDocumentExistsById)(id, res, Office_1.default, [
-        "created_by",
-        "logs",
-    ]);
+    const office = await (0, util_1.checkIfDocumentExistsById)(id, "office_id", res, Office_1.default, ["created_by", "logs"]);
     const request = async () => {
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
@@ -120,8 +118,8 @@ const updateWorkerDetails = async (req, res) => {
     const office_id = req.params.id;
     // if password or email is included then a mail has to be sent with the updated password
     const request = async () => {
-        await (0, util_1.checkIfDocumentExistsById)(office_id, res, Office_1.default);
-        const officeWorker = (await (0, util_1.checkIfDocumentExistsById)(id, res, OfficeWorker_1.OfficeWorker));
+        await (0, util_1.checkIfDocumentExistsById)(office_id, "office_id", res, Office_1.default);
+        const officeWorker = (await (0, util_1.checkIfDocumentExistsById)(id, "worker_id", res, OfficeWorker_1.OfficeWorker));
         delete req.body.email;
         const updatedOfficeWorker = (await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(id, {
             ...req.body,

@@ -11,7 +11,12 @@ export const validateOrder = async (
 ) => {
   const user = _req.user;
   const orderID = _req.params?.id;
-  const order = await checkIfDocumentExistsById<IOrder>(orderID, res, Order);
+  const order = await checkIfDocumentExistsById<IOrder>(
+    orderID,
+    "order_id",
+    res,
+    Order
+  );
   const checkIfOrderBelongsToUser = user?.orders.find(
     (order: any) => order._id.toString() === orderID
   );

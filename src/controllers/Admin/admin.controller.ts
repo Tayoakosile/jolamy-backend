@@ -19,6 +19,7 @@ export const approveUser = async (req: AuthRequest, res: Response) => {
 
     const user = (await checkIfDocumentExistsById<IUser>(
       user_id,
+      "user_id",
       res,
       User
     )) as IUser;
@@ -75,11 +76,13 @@ export const approveUser = async (req: AuthRequest, res: Response) => {
       "Account Approved",
       "You just approved this account, The user has been notified."
     );
-    return successResponse(res, 200, "User approved successfully", updatedUser);
+    successResponse(res, 200, "User approved successfully", updatedUser);
+    return;
   } catch (error) {
     console.log("error :", error);
 
-    return errorResponse(res, 500, "Error approving user", error);
+    errorResponse(res, 500, "Error approving user", error);
+    return;
   }
 };
 
@@ -89,6 +92,7 @@ export const rejectUser = async (req: AuthRequest, res: Response) => {
     const adminId = req.user?._id;
     const user = (await checkIfDocumentExistsById<IUser>(
       user_id,
+      "user_id",
       res,
       User
     )) as IUser;
@@ -147,8 +151,10 @@ export const rejectUser = async (req: AuthRequest, res: Response) => {
     //     "Account Rejected",
     //     "You just rejected this account, The user has been notified."
     //   );
-    return successResponse(res, 200, "User rejected successfully", updatedUser);
+    successResponse(res, 200, "User rejected successfully", updatedUser);
+    return;
   } catch (error) {
-    return errorResponse(res, 500, "Error approving user", error);
+    errorResponse(res, 500, "Error approving user", error);
+    return;
   }
 };

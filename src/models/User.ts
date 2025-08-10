@@ -1,13 +1,15 @@
 import { Schema, model } from "mongoose";
 import { IUser } from "../types/type";
 import { encrypt, isMatch } from "../utils/bcrypt.util";
-import { timestamp } from "../utils/util";
+import { generateRandom, timestamp } from "../utils/util";
+import { Counter } from "./counter";
 // Optional: enums for role and approval status
 
 const userSchema = new Schema<IUser>(
   {
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
+    user_id: { type: String, unique: true },
     username: String,
     date_joined: { type: Date, default: Date.now },
     last_login: { type: Date },
@@ -37,6 +39,7 @@ const userSchema = new Schema<IUser>(
       default: "pending_for_documents",
     },
     password: { type: String, required: true },
+    internal_sequence: { type: Number,default: 0 },
     forgot_password_expires: { type: String },
     forgot_password_token: { type: String },
     last_order_date: Date,
@@ -105,5 +108,34 @@ userSchema.methods.comparePassword = async function (
 ) {
   return await isMatch(candidatePassword, this.password);
 };
+
+userSchema.pre(
+  "save",
+  async function (this: import("mongoose").Document & IUser, next) {
+    if (this.isNew) {
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+      // Increment sequence for today
+      const counter = await Counter.findOneAndUpdate(
+        { name: "user", date: today },
+        { $inc: { sequence: 1 } },
+        { new: true, upsert: true }
+      );
+
+      const seq = counter.sequence;
+      this.internal_sequence = seq;
+
+      // Random 5-character alphanumeric
+      const randomPart = generateRandom(8, "0A").toUpperCase();
+
+      const datePart = today.replace(/-/g, "");
+      const user_id = `USR-${datePart}-${randomPart}-${String(
+        seq
+      ).padStart(4, "0")}`;
+      this.user_id = user_id;
+    }
+    next();
+  }
+);
 
 export default model<IUser>("User", userSchema);

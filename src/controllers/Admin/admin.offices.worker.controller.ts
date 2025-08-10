@@ -21,6 +21,7 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
   const request = async () => {
     const office = (await checkIfDocumentExistsById<IOffice>(
       officeId,
+      "office_id",
       res,
       Offices
     )) as IOffice;
@@ -29,9 +30,10 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
       .where("email")
       .equals(body.email.trim().toLowerCase());
     if (existingWorker) {
-      return errorResponse(res, 400, "Worker with this email already exists", {
+      errorResponse(res, 400, "Worker with this email already exists", {
         message: "Worker with this email already exists",
       });
+      return;
     }
     const worker = (await OfficeWorker.create({
       ..._req.body,
@@ -94,10 +96,13 @@ export const getOffices = (_req: AuthRequest, res: Response) => {
 };
 export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
   const id = _req.params.id;
-  const office = await checkIfDocumentExistsById<IOffice>(id, res, Offices, [
-    "created_by",
-    "logs",
-  ]);
+  const office = await checkIfDocumentExistsById<IOffice>(
+    id,
+    "office_id",
+    res,
+    Offices,
+    ["created_by", "logs"]
+  );
 
   const request = async () => {
     const log = await logActivity({
@@ -138,9 +143,15 @@ export const updateWorkerDetails = async (req: AuthRequest, res: Response) => {
   // if password or email is included then a mail has to be sent with the updated password
 
   const request = async () => {
-    await checkIfDocumentExistsById<IOffice>(office_id, res, Offices);
+    await checkIfDocumentExistsById<IOffice>(
+      office_id,
+      "office_id",
+      res,
+      Offices
+    );
     const officeWorker = (await checkIfDocumentExistsById<IOfficeWorker>(
       id,
+      "worker_id",
       res,
       OfficeWorker
     )) as IOfficeWorker;

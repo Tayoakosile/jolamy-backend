@@ -8,9 +8,10 @@ const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const auth_controllers_1 = require("../controllers/auth.controllers");
 const verify_document_controllers_1 = require("../controllers/verify-document.controllers");
 const auth_1 = require("../middlewares/auth");
+const util_1 = require("../utils/util");
 const authApiLimiter = (0, express_rate_limit_1.default)({
-    windowMs: 10 * 60 * 1000,
-    max: 15,
+    windowMs: 5 * 60 * 1000,
+    max: 10,
     standardHeaders: true, // Return rate limit info in headers
     legacyHeaders: false, // Disable `X-RateLimit-*` headers
     message: {
@@ -19,10 +20,10 @@ const authApiLimiter = (0, express_rate_limit_1.default)({
     },
 });
 const router = (0, express_1.Router)();
-router.post("/signup", authApiLimiter, auth_controllers_1.createAccount);
-router.post("/login", authApiLimiter, auth_controllers_1.loginAccount);
-router.post("/forgot-password", authApiLimiter, auth_controllers_1.forgotPassword);
-router.post("/reset-password/:token", authApiLimiter, auth_controllers_1.resetPassword);
+router.post("/signup", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.createAccount);
+router.post("/login", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.loginAccount);
+router.post("/forgot-password", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.forgotPassword);
+router.post("/reset-password/:token", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.resetPassword);
 router.post("/verify-documents", auth_1.appAuth, verify_document_controllers_1.verifyDocuments);
 router.post("/verify-documents/:id", auth_1.appAuth, verify_document_controllers_1.verifyDocuments);
 router.get("/verify-documents/:id", auth_1.appAuth, verify_document_controllers_1.getUserInfo);

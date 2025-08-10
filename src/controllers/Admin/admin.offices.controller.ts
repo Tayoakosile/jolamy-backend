@@ -18,7 +18,7 @@ export const getOffices = (_req: AuthRequest, res: Response) => {
 };
 export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
   const id = _req.params.id;
-  const office = await checkIfDocumentExistsById<IOffice>(id, res, Offices, [
+  const office = await checkIfDocumentExistsById<IOffice>(id,'office_id', res, Offices, [
     "created_by",
     "logs",
   ]);

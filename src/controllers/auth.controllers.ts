@@ -5,7 +5,7 @@ import { Types } from "mongoose";
 import { OfficeWorker } from "../models/Admin/OfficeWorker";
 import { signupService } from "../services/auth.service";
 import { sendEmail } from "../services/mail.service";
-import { IUser } from "../types/type";
+import { AuthRequest, IUser } from "../types/type";
 import { logActivity } from "../utils/activityLog";
 import { isMatch } from "../utils/bcrypt.util";
 import { generateToken } from "../utils/jwt";
@@ -13,8 +13,17 @@ import { errorResponse, successResponse } from "../utils/response";
 import { generateRandom } from "../utils/util";
 
 export const createAccount = async (req: Request, res: Response) => {
+  // return;
   if (!req.body) {
-    return errorResponse(res, 400, "Request body is required");
+    errorResponse(res, 400, "Request body is required");
+    return;
+  }
+  if (req.body.user_role === "admin") {
+    errorResponse(res, 400, "Admin role cannot be created via this endpoint");
+    return;
+  }
+  if (!req.body.email || !req.body.password) {
+    errorResponse(res, 400, "Email and password are required");
   }
   try {
     const user = await signupService(
@@ -22,7 +31,6 @@ export const createAccount = async (req: Request, res: Response) => {
         ...req.body,
         status: "pending_for_documents",
         is_distributor: req.body.user_role === "distributor",
-        is_admin: req.body.user_role === "admin",
         is_sales_agents: req.body.user_role === "sales_agent",
         is_worker: req.body.user_role === "worker",
       },
@@ -35,6 +43,7 @@ export const createAccount = async (req: Request, res: Response) => {
     );
 
     successResponse(res, 201, "User created successfully");
+    return;
   } catch (error: { error: string } | any) {
     errorResponse(res, 400, error as string, error);
   }
@@ -52,19 +61,21 @@ export const loginAccount = async (req: Request, res: Response) => {
     if (officeWorker) {
       const comparePassword = await isMatch(password, officeWorker.password);
 
-      if (!comparePassword)
+      if (!comparePassword) {
         errorResponse(res, 401, "invalid Email or Password");
-      const token = generateToken(`${officeWorker._id}`);
+        return;
+      }
+      const token = generateToken(`${officeWorker.user_id}`);
       const activityLog = await logActivity({
         req,
-        user_id: new Types.ObjectId(officeWorker._id),
-        sender: new Types.ObjectId(officeWorker._id),
-        receiver: new Types.ObjectId(officeWorker._id),
+        user_id: officeWorker.user_id,
+        sender: officeWorker.user_id,
+        receiver: officeWorker.user_id,
         action: "LOGIN",
         description: "Worker logged in successfully",
         metadata: {
           email: officeWorker.email,
-          user_id: officeWorker._id,
+          user_id: officeWorker.user_id,
         },
       });
 
@@ -84,7 +95,7 @@ export const loginAccount = async (req: Request, res: Response) => {
       successResponse(res, 200, "Login successful", {
         token,
         user: {
-          id: officeWorker._id,
+          id: officeWorker.user_id,
           email: officeWorker.email,
         },
       });
@@ -112,17 +123,17 @@ export const loginAccount = async (req: Request, res: Response) => {
 
     if (!comparePassword) errorResponse(res, 401, "invalid Email or Password");
 
-    const token = generateToken(`${user._id}`);
+    const token = generateToken(`${user.user_id}`);
     const activityLog = await logActivity({
       req,
-      user_id: new Types.ObjectId(user._id),
-      sender: new Types.ObjectId(user._id),
-      receiver: new Types.ObjectId(user._id),
+      user_id: new Types.ObjectId(user.user_id),
+      sender: new Types.ObjectId(user.user_id),
+      receiver: new Types.ObjectId(user.user_id),
       action: "LOGIN",
       description: "User logged in successfully",
       metadata: {
         email: user.email,
-        user_id: user._id,
+        user_id: user.user_id,
       },
     });
 
@@ -140,7 +151,7 @@ export const loginAccount = async (req: Request, res: Response) => {
     successResponse(res, 200, "Login successful", {
       token,
       user: {
-        id: user._id,
+        id: user.user_id,
         email: user.email,
       },
     });
@@ -156,7 +167,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
-      return errorResponse(res, 401, "No user found with that email");
+      errorResponse(res, 401, "No user found with that email");
+      return;
     }
 
     // Generate reset token
@@ -185,8 +197,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
 };
 export const resetPassword = async (req: Request, res: Response) => {
   try {
-    const { token } = req.params;
-    const { password } = req.body;
+    const token= req.params?.token;
+    const password = req.body?.password;
     // Debugging information removed for production
 
     const user = await User.findOne({
@@ -195,20 +207,21 @@ export const resetPassword = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return errorResponse(res, 400, "Invalid or expired reset token");
+      errorResponse(res, 400, "Invalid or expired reset token");
+      return;
     }
 
     const activityLog = await logActivity({
       req,
-      user_id: new Types.ObjectId(user._id),
-      sender: new Types.ObjectId(user._id),
-      receiver: new Types.ObjectId(user._id),
+      user_id: user.user_id,
+      sender: user.user_id,
+      receiver: user.user_id,
       action: "PASSWORD_RESET",
       description: "User password reset successfully",
 
       metadata: {
         email: user.email,
-        user_id: user._id,
+        user_id: user.user_id,
       },
     });
     await User.findOneAndUpdate(
@@ -228,27 +241,29 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     successResponse(res, 200, "Password has been reset successfully");
   } catch (error) {
-    return errorResponse(
+    errorResponse(
       res,
       500,
       "An error occurred while resetting the password",
       error
     );
+    return;
   }
 };
 
-export const getUserProfile = async (req: Request, res: Response) => {
+export const getUserProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user._id;
-    const user = await User.findById(userId).select("-password -__v");
+    const userId = req.user?.user_id;
+    const user = await User.findOne({ user_id: userId }).select(
+      "-password -__v -_id"
+    );
     if (!user) {
-      return errorResponse(res, 404, "User not found");
+      errorResponse(res, 404, "User not found");
+      return;
     }
     successResponse(res, 200, "User profile retrieved successfully", user);
     return;
   } catch (error) {
-    console.log("error :", error);
-
     errorResponse(
       res,
       500,

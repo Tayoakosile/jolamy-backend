@@ -1,6 +1,6 @@
-
-
-import mongoose, { Schema, Document,  } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
+import { Counter } from "./counter";
+import { generateRandom } from "../utils/util";
 
 interface Pricing {
   distributor_price_per_box: number;
@@ -36,6 +36,8 @@ interface Variant extends Document {
 
 export interface IProduct extends Document {
   name: string;
+  product_id: string;
+  internal_sequence: number;
   inventory: [];
   reference_id?: string; // optional external ID or reference
   description?: string;
@@ -94,7 +96,9 @@ const ProductSchema = new Schema<IProduct>(
     description: String,
     category: String,
     reference_id: String,
+    product_id: String,
     product_images: { type: Array, required: true },
+    internal_sequence: { type: Number, unique: true, immutable: true },
     available_weight: [{ type: String, required: true }], // e.g., '500g', '1kg'
     is_active: { type: Boolean, default: true },
     is_archived: { type: Boolean, default: false }, // added for archiving products
@@ -118,6 +122,33 @@ const ProductSchema = new Schema<IProduct>(
     created_by: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }
+);
+ProductSchema.pre(
+  "save",
+  async function (this: import("mongoose").Document & IProduct, next) {
+    if (this.isNew) {
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+      // Increment sequence for today
+      const counter = await Counter.findOneAndUpdate(
+        { name: "product", date: today },
+        { $inc: { sequence: 1 } },
+        { new: true, upsert: true }
+      );
+
+      const seq = counter.sequence;
+      this.internal_sequence = seq;
+
+      // Random 5-character alphanumeric
+      const randomPart = generateRandom(8, "00").toUpperCase();
+      const datePart = today.replace(/-/g, "");
+      const product_number = `PRD-${datePart}-${randomPart}-${String(
+        seq
+      ).padStart(4, "0")}`;
+      this.product_id = product_number;
+    }
+    next();
+  }
 );
 
 export const Product = mongoose.model<IProduct>("Product", ProductSchema);

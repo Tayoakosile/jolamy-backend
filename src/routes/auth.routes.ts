@@ -12,11 +12,12 @@ import {
   verifyDocuments,
 } from "../controllers/verify-document.controllers";
 import { appAuth } from "../middlewares/auth";
-import { apiLimiter } from "../middlewares/rate-limiter";
+import { validateOrder } from "../middlewares/order";
+import { removeSensitiveFields } from "../utils/util";
 
 const authApiLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: 15,
+  windowMs: 5 * 60 * 1000,
+  max: 10,
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   message: {
@@ -27,21 +28,24 @@ const authApiLimiter = rateLimit({
 
 const router = Router();
 
-router.post("/signup", authApiLimiter, createAccount);
-router.post("/login", authApiLimiter, loginAccount);
-router.post("/forgot-password", authApiLimiter,forgotPassword);
-router.post("/reset-password/:token",authApiLimiter, resetPassword);
+router.post("/signup", authApiLimiter, removeSensitiveFields, createAccount);
+router.post("/login", authApiLimiter, removeSensitiveFields, loginAccount);
 router.post(
-  "/verify-documents",
-  appAuth,
-
-  verifyDocuments
+  "/forgot-password",
+  authApiLimiter,
+  removeSensitiveFields,
+  forgotPassword
 );
+router.post(
+  "/reset-password/:token",
+  authApiLimiter,
+  removeSensitiveFields,
+  resetPassword
+);
+router.post("/verify-documents", appAuth, verifyDocuments);
 router.post(
   "/verify-documents/:id",
   appAuth,
-
-
 
   verifyDocuments
 );

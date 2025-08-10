@@ -23,8 +23,14 @@ const appAuth = async (req, res, next) => {
     }
     try {
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-        const user = (await User_1.default.findById(decoded.id));
-        const worker = (await OfficeWorker_1.OfficeWorker.findById(decoded.id));
+        if (!decoded || !decoded.id) {
+            (0, response_1.errorResponse)(res, 401, "Invalid token", { message: "Invalid token" });
+            return next();
+        }
+        const user = (await User_1.default.findOne({ user_id: decoded.id }));
+        const worker = (await OfficeWorker_1.OfficeWorker.findOne({
+            user_id: decoded.id,
+        }));
         if (!user && !worker) {
             (0, response_1.errorResponse)(res, 401, "User not found", { message: "User not found" });
             return next();

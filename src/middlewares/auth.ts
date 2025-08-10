@@ -33,9 +33,14 @@ export const appAuth = async (
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-
-    const user = (await User.findById(decoded.id)) as IUser;
-    const worker = (await OfficeWorker.findById(decoded.id)) as IUser;
+    if (!decoded || !decoded.id) {
+      errorResponse(res, 401, "Invalid token", { message: "Invalid token" });
+      return next();
+    }
+    const user = (await User.findOne({ user_id: decoded.id })) as IUser;
+    const worker = (await OfficeWorker.findOne({
+      user_id: decoded.id,
+    })) as IUser;
 
     if (!user && !worker) {
       errorResponse(res, 401, "User not found", { message: "User not found" });

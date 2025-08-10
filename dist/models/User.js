@@ -3,10 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
 const bcrypt_util_1 = require("../utils/bcrypt.util");
 const util_1 = require("../utils/util");
+const counter_1 = require("./counter");
 // Optional: enums for role and approval status
 const userSchema = new mongoose_1.Schema({
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
+    user_id: { type: String, unique: true },
     username: String,
     date_joined: { type: Date, default: Date.now },
     last_login: { type: Date },
@@ -36,6 +38,7 @@ const userSchema = new mongoose_1.Schema({
         default: "pending_for_documents",
     },
     password: { type: String, required: true },
+    internal_sequence: { type: Number, default: 0 },
     forgot_password_expires: { type: String },
     forgot_password_token: { type: String },
     last_order_date: Date,
@@ -94,4 +97,19 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.comparePassword = async function (candidatePassword) {
     return await (0, bcrypt_util_1.isMatch)(candidatePassword, this.password);
 };
+userSchema.pre("save", async function (next) {
+    if (this.isNew) {
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        // Increment sequence for today
+        const counter = await counter_1.Counter.findOneAndUpdate({ name: "user", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
+        const seq = counter.sequence;
+        this.internal_sequence = seq;
+        // Random 5-character alphanumeric
+        const randomPart = (0, util_1.generateRandom)(8, "0A").toUpperCase();
+        const datePart = today.replace(/-/g, "");
+        const user_id = `USR-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
+        this.user_id = user_id;
+    }
+    next();
+});
 exports.default = (0, mongoose_1.model)("User", userSchema);

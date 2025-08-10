@@ -35,6 +35,8 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Product = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
+const counter_1 = require("./counter");
+const util_1 = require("../utils/util");
 // const PricingSchema = new Schema<Pricing>(
 //   {
 //     distributor_price_per_box: { type: Number, required: true },
@@ -70,7 +72,9 @@ const ProductSchema = new mongoose_1.Schema({
     description: String,
     category: String,
     reference_id: String,
+    product_id: String,
     product_images: { type: Array, required: true },
+    internal_sequence: { type: Number, unique: true, immutable: true },
     available_weight: [{ type: String, required: true }], // e.g., '500g', '1kg'
     is_active: { type: Boolean, default: true },
     is_archived: { type: Boolean, default: false }, // added for archiving products
@@ -93,4 +97,19 @@ const ProductSchema = new mongoose_1.Schema({
     orders: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Order" }],
     created_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
 }, { timestamps: true });
+ProductSchema.pre("save", async function (next) {
+    if (this.isNew) {
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        // Increment sequence for today
+        const counter = await counter_1.Counter.findOneAndUpdate({ name: "product", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
+        const seq = counter.sequence;
+        this.internal_sequence = seq;
+        // Random 5-character alphanumeric
+        const randomPart = (0, util_1.generateRandom)(8, "00").toUpperCase();
+        const datePart = today.replace(/-/g, "");
+        const product_number = `PRD-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
+        this.product_id = product_number;
+    }
+    next();
+});
 exports.Product = mongoose_1.default.model("Product", ProductSchema);

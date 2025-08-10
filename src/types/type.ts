@@ -20,6 +20,8 @@ export type UserDocument = IUser & Document;
 export interface IUser extends Document {
   _id: Types.ObjectId;
   name: string;
+  user_id: string;
+  internal_sequence: number;
   first_name: string;
   last_name: string;
   approved_by: Types.ObjectId;

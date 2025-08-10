@@ -40,23 +40,23 @@ const createNewFinance = (req, res) => {
         });
         const log = await (0, activityLog_1.logActivity)({
             req,
-            user_id: user._id,
+            user_id: user?.user_id,
             action: "CREATE_FINANCE_RECORD",
             description: "Created a new finance record",
-            sender: user._id,
-            receiver: user._id,
+            sender: user?.user_id,
+            receiver: user?.user_id,
             metadata: {
-                cashFlowId: cashFlow._id,
+                cashFlowId: cashFlow.cashflow_id,
                 officeId: user.office_id,
             },
         });
         const log2 = await (0, activityLog_1.logActivity)({
             req,
-            user_id: user._id,
+            user_id: user?.user_id,
             action: "UPDATE_OFFICE_WALLET",
             description: `Updated office wallet after ${req.body.type} transaction`,
-            sender: user._id,
-            receiver: user._id,
+            sender: user?.user_id,
+            receiver: user?.user_id,
             metadata: {
                 officeId: user.office_id,
                 ...req.body,
@@ -73,7 +73,7 @@ const createNewFinance = (req, res) => {
                 },
                 $set: {
                     "wallet.balance": singleOffice?.wallet?.balance + Number(req.body.amount),
-                    "wallet.lastFundedBy": user._id,
+                    "wallet.lastFundedBy": user?.user_id,
                     "wallet.lastFundedAmount": singleOffice?.wallet?.balance,
                 },
             });
@@ -112,18 +112,18 @@ const updateFinance = (req, res) => {
     }
     const request = async () => {
         const financeId = req.params.id;
-        await (0, util_1.checkIfDocumentExistsById)(financeId, res, CashFlow_1.default);
-        const updatedFinance = await CashFlow_1.default.findByIdAndUpdate(financeId, { ...req.body }, { new: true });
+        await (0, util_1.checkIfDocumentExistsById)(financeId, "cashflow_id", res, CashFlow_1.default);
+        const updatedFinance = await CashFlow_1.default.findOneAndUpdate({ cashflow_id: financeId }, { ...req.body }, { new: true });
         // Log the update activity
         const log = await (0, activityLog_1.logActivity)({
             req,
-            user_id: user._id,
+            user_id: user?.user_id,
             action: "UPDATE_FINANCE_RECORD",
             description: `Updated finance record with ID ${financeId}`,
-            sender: user._id,
-            receiver: user._id,
+            sender: user?.user_id,
+            receiver: user?.user_id,
             metadata: {
-                financeId: updatedFinance?._id,
+                financeId,
                 changes: req.body,
             },
         });

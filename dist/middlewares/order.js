@@ -10,7 +10,7 @@ const Order_1 = __importDefault(require("../models/Order"));
 const validateOrder = async (_req, res, next) => {
     const user = _req.user;
     const orderID = _req.params?.id;
-    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, res, Order_1.default);
+    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, "order_id", res, Order_1.default);
     const checkIfOrderBelongsToUser = user?.orders.find((order) => order._id.toString() === orderID);
     // If payment made already or it is delivered, do not allow update
     if (order?.payment_status === "paid" ||

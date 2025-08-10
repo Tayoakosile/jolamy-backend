@@ -32,7 +32,7 @@ export const addNewProducts = (_req: AuthRequest, res: Response) => {
     });
 
     if (existingProduct) {
-      return errorResponse(
+      errorResponse(
         res,
         400,
         "Product with this name or Reference already exists, Edit instead",
@@ -41,6 +41,7 @@ export const addNewProducts = (_req: AuthRequest, res: Response) => {
           existingProduct,
         }
       );
+      return;
     }
     const product = await Product.create({
       ..._req.body,
@@ -51,9 +52,9 @@ export const addNewProducts = (_req: AuthRequest, res: Response) => {
 
     const log = await logActivity({
       req: _req,
-      user_id: new Types.ObjectId(_req.user?._id),
+      user_id: new Types.ObjectId(_req.user?.user_id),
       action: "ADD_PRODUCT",
-      sender: new Types.ObjectId(_req.user?._id),
+      sender: new Types.ObjectId(_req.user?.user_id),
       receiver: product.id,
       description: `New product added: ${product.name}`,
       metadata: {
@@ -82,9 +83,9 @@ export const getProducts = (_req: AuthRequest, res: Response) => {
 };
 export const getSingleProducts = async (_req: AuthRequest, res: Response) => {
   const id = _req.params.id;
-  await checkIfDocumentExistsById(id, res, Product);
+  await checkIfDocumentExistsById(id, "product_id", res, Product);
   const request = async () => {
-    const product = await Product.findOne({ _id: id, is_active: true });
+    const product = await Product.findOne({ product_id: id, is_active: true });
 
     const logs = await logActivity({
       req: _req,
@@ -113,7 +114,7 @@ export const getSingleProducts = async (_req: AuthRequest, res: Response) => {
 
 export const updateProduct = async (req: AuthRequest, res: Response) => {
   const id = req.params.id;
-  await checkIfDocumentExistsById(id, res, Product);
+  await checkIfDocumentExistsById(id, "product_id", res, Product);
   const body = req.body;
 
   const request = async () => {
@@ -152,7 +153,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
 
 export const archiveProduct = async (req: AuthRequest, res: Response) => {
   const id = req.params.id;
-  await checkIfDocumentExistsById(id, res, Product);
+  await checkIfDocumentExistsById(id,'product_id', res, Product);
   const request = async () => {
     const log = await logActivity({
       req,

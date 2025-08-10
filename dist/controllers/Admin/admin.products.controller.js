@@ -27,10 +27,11 @@ const addNewProducts = (_req, res) => {
             ],
         });
         if (existingProduct) {
-            return (0, response_1.errorResponse)(res, 400, "Product with this name or Reference already exists, Edit instead", {
+            (0, response_1.errorResponse)(res, 400, "Product with this name or Reference already exists, Edit instead", {
                 message: "Product with this name already exists",
                 existingProduct,
             });
+            return;
         }
         const product = await Product_1.Product.create({
             ..._req.body,
@@ -40,9 +41,9 @@ const addNewProducts = (_req, res) => {
         });
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
-            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
+            user_id: new mongoose_1.Types.ObjectId(_req.user?.user_id),
             action: "ADD_PRODUCT",
-            sender: new mongoose_1.Types.ObjectId(_req.user?._id),
+            sender: new mongoose_1.Types.ObjectId(_req.user?.user_id),
             receiver: product.id,
             description: `New product added: ${product.name}`,
             metadata: {
@@ -70,9 +71,9 @@ const getProducts = (_req, res) => {
 exports.getProducts = getProducts;
 const getSingleProducts = async (_req, res) => {
     const id = _req.params.id;
-    await (0, util_1.checkIfDocumentExistsById)(id, res, Product_1.Product);
+    await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);
     const request = async () => {
-        const product = await Product_1.Product.findOne({ _id: id, is_active: true });
+        const product = await Product_1.Product.findOne({ product_id: id, is_active: true });
         const logs = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
@@ -98,7 +99,7 @@ const getSingleProducts = async (_req, res) => {
 exports.getSingleProducts = getSingleProducts;
 const updateProduct = async (req, res) => {
     const id = req.params.id;
-    await (0, util_1.checkIfDocumentExistsById)(id, res, Product_1.Product);
+    await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);
     const body = req.body;
     const request = async () => {
         const log = await (0, activityLog_1.logActivity)({
@@ -132,7 +133,7 @@ const updateProduct = async (req, res) => {
 exports.updateProduct = updateProduct;
 const archiveProduct = async (req, res) => {
     const id = req.params.id;
-    await (0, util_1.checkIfDocumentExistsById)(id, res, Product_1.Product);
+    await (0, util_1.checkIfDocumentExistsById)(id, 'product_id', res, Product_1.Product);
     const request = async () => {
         const log = await (0, activityLog_1.logActivity)({
             req,

@@ -1,8 +1,10 @@
+import { NextFunction } from "express";
 // utils/checkIfExists.ts
 
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import mongoose, { Document } from "mongoose";
 import randomatic from "randomatic";
+import { Counter } from "../models/counter";
 import { sendEmail } from "../services/mail.service";
 import { errorResponse, successResponse } from "./response";
 
@@ -15,6 +17,7 @@ import { errorResponse, successResponse } from "./response";
  */
 export const checkIfDocumentExistsById = async <T extends Document>(
   id: string,
+  itemKey: string,
   res: Response,
   Model: mongoose.Model<T>,
   populateFields?: string | string[]
@@ -26,7 +29,9 @@ export const checkIfDocumentExistsById = async <T extends Document>(
     return;
   }
   if (populateFields) {
-    const populatedDocument = await Model.findById(id).populate(populateFields);
+    const populatedDocument = await Model.findOne({
+      [itemKey]: id,
+    } as any).populate(populateFields);
     if (!populatedDocument) {
       errorResponse(res, 404, "Document not found", {
         message: "Document not found",
@@ -86,12 +91,13 @@ export const customReqResHandler = async (
         mailOptions.message as string
       );
     }
-    return successResponse(
+    successResponse(
       res,
       responseData.statusCode,
       responseData.successMessage,
       responseData.data || response
     );
+    return;
   } catch (error) {
     console.log("error :", error);
 
@@ -149,6 +155,16 @@ export const removeSensitiveFields = (
     "order_number",
     "order_id",
     "internal_sequence",
+    "last_login",
+    "approved_at",
+    "approved_at",
+    "rejected_at",
+    "approved_by",
+    "rejected_by",
+    "is_first_login",
+    "forgot_password_expires",
+    "forgot_password_token",
+    "warehouse_verified",
     "total_amount",
     "discount_amount",
     "tax_amount",
@@ -282,3 +298,42 @@ export const transactions = {
     },
   ],
 };
+
+export async function customIDGenerator<T extends Document>(
+  this: Document & T & { internal_sequence?: number; [key: string]: any },
+  next: NextFunction,
+  db_name: string,
+  keyName: string
+): Promise<void> {
+  if (this.isNew) {
+    const today: string = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+    // Increment sequence for today
+    interface ICounter {
+      sequence: number;
+    }
+    const counter: ICounter = await Counter.findOneAndUpdate(
+      { name: db_name, date: today },
+      { $inc: { sequence: 1 } },
+      { new: true, upsert: true }
+    );
+
+    const seq: number = counter.sequence;
+    this.internal_sequence = seq;
+
+    // Random 5-character alphanumeric
+    const randomPart: string = generateRandom(8, "0A").toUpperCase();
+
+    const datePart: string = today.replace(/-/g, "");
+    const user_id: string = `USR-${datePart}-${randomPart}-${String(
+      seq
+    ).padStart(4, "0")}`;
+    Object.defineProperty(this, keyName, {
+      value: user_id,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
+  }
+  next();
+}

@@ -46,10 +46,11 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       );
       // if a product is is_active is false or is_archived is true, return error
       if (!productResFromDb?.is_active || productResFromDb?.is_archived) {
-        return errorResponse(res, 404, "Product not found", {
+        errorResponse(res, 404, "Product not found", {
           message: `Product ${productResFromDb?.name} is not available for order.`,
           product: productResFromDb,
         });
+        return;
       }
 
       /**
@@ -92,13 +93,14 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
               (matchedVariant?.distributor_pricing?.first_time_min_order_qty ||
                 0)
           ) {
-            return errorResponse(res, 401, "Minimum order quantity not met", {
+            errorResponse(res, 401, "Minimum order quantity not met", {
               message: `Minimum order quantity for ${matchedVariant?.name} is ${matchedVariant?.distributor_pricing.first_time_min_order_qty} boxes on first order.`,
               product: productResFromDb,
               minimum_order_quantity:
                 matchedVariant?.distributor_pricing.first_time_min_order_qty,
               user_requested_quantity: variantFromPostAPi.quantity,
             });
+            return;
           }
 
           if (matchedVariant) {
@@ -108,12 +110,13 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
               matchedVariant?.total_boxes_in_stock !== null &&
               matchedVariant?.total_boxes_in_stock < variantFromPostAPi.quantity
             ) {
-              return errorResponse(res, 401, "Insufficient stock", {
+              errorResponse(res, 401, "Insufficient stock", {
                 message: `Insufficient stock for ${matchedVariant?.name}. Available: ${matchedVariant?.total_boxes_in_stock}, Requested: ${variantFromPostAPi.quantity}`,
                 product: productResFromDb,
                 available_stock: matchedVariant?.total_boxes_in_stock,
                 user_requested_quantity: variantFromPostAPi.quantity,
               });
+              return;
             }
 
             // Returns the variant with all properties from the matched database variant, and the quantity and total amount.
@@ -218,7 +221,12 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
   const body = _req.body;
   const user = _req.user;
   const orderID = _req.params?.id;
-  const order = await checkIfDocumentExistsById<IOrder>(orderID, res, Order);
+  const order = await checkIfDocumentExistsById<IOrder>(
+    orderID,
+    "order_id",
+    res,
+    Order
+  );
   const request = async () => {
     // Log that user filled in extra details of the order.. if it contains address
 

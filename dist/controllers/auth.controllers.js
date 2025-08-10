@@ -15,20 +15,29 @@ const jwt_1 = require("../utils/jwt");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
 const createAccount = async (req, res) => {
+    // return;
     if (!req.body) {
-        return (0, response_1.errorResponse)(res, 400, "Request body is required");
+        (0, response_1.errorResponse)(res, 400, "Request body is required");
+        return;
+    }
+    if (req.body.user_role === "admin") {
+        (0, response_1.errorResponse)(res, 400, "Admin role cannot be created via this endpoint");
+        return;
+    }
+    if (!req.body.email || !req.body.password) {
+        (0, response_1.errorResponse)(res, 400, "Email and password are required");
     }
     try {
         const user = await (0, auth_service_1.signupService)({
             ...req.body,
             status: "pending_for_documents",
             is_distributor: req.body.user_role === "distributor",
-            is_admin: req.body.user_role === "admin",
             is_sales_agents: req.body.user_role === "sales_agent",
             is_worker: req.body.user_role === "worker",
         }, res);
         (0, mail_service_1.sendEmail)(req.body.email, "Welcome to Our Service", `Hello ${user.username}, welcome to our service!`);
         (0, response_1.successResponse)(res, 201, "User created successfully");
+        return;
     }
     catch (error) {
         (0, response_1.errorResponse)(res, 400, error, error);
@@ -45,19 +54,21 @@ const loginAccount = async (req, res) => {
         const officeWorker = (await OfficeWorker_1.OfficeWorker.findOne({ email }));
         if (officeWorker) {
             const comparePassword = await (0, bcrypt_util_1.isMatch)(password, officeWorker.password);
-            if (!comparePassword)
+            if (!comparePassword) {
                 (0, response_1.errorResponse)(res, 401, "invalid Email or Password");
-            const token = (0, jwt_1.generateToken)(`${officeWorker._id}`);
+                return;
+            }
+            const token = (0, jwt_1.generateToken)(`${officeWorker.user_id}`);
             const activityLog = await (0, activityLog_1.logActivity)({
                 req,
-                user_id: new mongoose_1.Types.ObjectId(officeWorker._id),
-                sender: new mongoose_1.Types.ObjectId(officeWorker._id),
-                receiver: new mongoose_1.Types.ObjectId(officeWorker._id),
+                user_id: officeWorker.user_id,
+                sender: officeWorker.user_id,
+                receiver: officeWorker.user_id,
                 action: "LOGIN",
                 description: "Worker logged in successfully",
                 metadata: {
                     email: officeWorker.email,
-                    user_id: officeWorker._id,
+                    user_id: officeWorker.user_id,
                 },
             });
             await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(officeWorker._id, {
@@ -71,7 +82,7 @@ const loginAccount = async (req, res) => {
             (0, response_1.successResponse)(res, 200, "Login successful", {
                 token,
                 user: {
-                    id: officeWorker._id,
+                    id: officeWorker.user_id,
                     email: officeWorker.email,
                 },
             });
@@ -95,17 +106,17 @@ const loginAccount = async (req, res) => {
         const comparePassword = await (0, bcrypt_util_1.isMatch)(password, user.password);
         if (!comparePassword)
             (0, response_1.errorResponse)(res, 401, "invalid Email or Password");
-        const token = (0, jwt_1.generateToken)(`${user._id}`);
+        const token = (0, jwt_1.generateToken)(`${user.user_id}`);
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
-            user_id: new mongoose_1.Types.ObjectId(user._id),
-            sender: new mongoose_1.Types.ObjectId(user._id),
-            receiver: new mongoose_1.Types.ObjectId(user._id),
+            user_id: new mongoose_1.Types.ObjectId(user.user_id),
+            sender: new mongoose_1.Types.ObjectId(user.user_id),
+            receiver: new mongoose_1.Types.ObjectId(user.user_id),
             action: "LOGIN",
             description: "User logged in successfully",
             metadata: {
                 email: user.email,
-                user_id: user._id,
+                user_id: user.user_id,
             },
         });
         await User_1.default.findByIdAndUpdate(user._id, {
@@ -117,7 +128,7 @@ const loginAccount = async (req, res) => {
         (0, response_1.successResponse)(res, 200, "Login successful", {
             token,
             user: {
-                id: user._id,
+                id: user.user_id,
                 email: user.email,
             },
         });
@@ -134,7 +145,8 @@ const forgotPassword = async (req, res) => {
         const { email } = req.body;
         const user = await User_1.default.findOne({ email });
         if (!user) {
-            return (0, response_1.errorResponse)(res, 401, "No user found with that email");
+            (0, response_1.errorResponse)(res, 401, "No user found with that email");
+            return;
         }
         // Generate reset token
         const resetToken = (0, util_1.generateRandom)();
@@ -152,26 +164,27 @@ const forgotPassword = async (req, res) => {
 exports.forgotPassword = forgotPassword;
 const resetPassword = async (req, res) => {
     try {
-        const { token } = req.params;
-        const { password } = req.body;
+        const token = req.params?.token;
+        const password = req.body?.password;
         // Debugging information removed for production
         const user = await User_1.default.findOne({
             forgot_password_token: token,
             forgot_password_expires: { $gt: new Date() },
         });
         if (!user) {
-            return (0, response_1.errorResponse)(res, 400, "Invalid or expired reset token");
+            (0, response_1.errorResponse)(res, 400, "Invalid or expired reset token");
+            return;
         }
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
-            user_id: new mongoose_1.Types.ObjectId(user._id),
-            sender: new mongoose_1.Types.ObjectId(user._id),
-            receiver: new mongoose_1.Types.ObjectId(user._id),
+            user_id: user.user_id,
+            sender: user.user_id,
+            receiver: user.user_id,
             action: "PASSWORD_RESET",
             description: "User password reset successfully",
             metadata: {
                 email: user.email,
-                user_id: user._id,
+                user_id: user.user_id,
             },
         });
         await User_1.default.findOneAndUpdate({ _id: user._id }, {
@@ -184,22 +197,23 @@ const resetPassword = async (req, res) => {
         (0, response_1.successResponse)(res, 200, "Password has been reset successfully");
     }
     catch (error) {
-        return (0, response_1.errorResponse)(res, 500, "An error occurred while resetting the password", error);
+        (0, response_1.errorResponse)(res, 500, "An error occurred while resetting the password", error);
+        return;
     }
 };
 exports.resetPassword = resetPassword;
 const getUserProfile = async (req, res) => {
     try {
-        const userId = req.user._id;
-        const user = await User_1.default.findById(userId).select("-password -__v");
+        const userId = req.user?.user_id;
+        const user = await User_1.default.findOne({ user_id: userId }).select("-password -__v -_id");
         if (!user) {
-            return (0, response_1.errorResponse)(res, 404, "User not found");
+            (0, response_1.errorResponse)(res, 404, "User not found");
+            return;
         }
         (0, response_1.successResponse)(res, 200, "User profile retrieved successfully", user);
         return;
     }
     catch (error) {
-        console.log("error :", error);
         (0, response_1.errorResponse)(res, 500, "An error occurred while retrieving profile", error);
     }
 };

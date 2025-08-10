@@ -19,7 +19,7 @@ const getOffices = (_req, res) => {
 exports.getOffices = getOffices;
 const getSingleOffice = async (_req, res) => {
     const id = _req.params.id;
-    const office = await (0, util_1.checkIfDocumentExistsById)(id, res, Office_1.default, [
+    const office = await (0, util_1.checkIfDocumentExistsById)(id, 'office_id', res, Office_1.default, [
         "created_by",
         "logs",
     ]);

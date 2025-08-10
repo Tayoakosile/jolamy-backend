@@ -1,13 +1,14 @@
 "use strict";
-// utils/checkIfExists.ts
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transactions = exports.statusMap = exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
 exports.generateEntityNumber = generateEntityNumber;
+exports.customIDGenerator = customIDGenerator;
 const mongoose_1 = __importDefault(require("mongoose"));
 const randomatic_1 = __importDefault(require("randomatic"));
+const counter_1 = require("../models/counter");
 const mail_service_1 = require("../services/mail.service");
 const response_1 = require("./response");
 /**
@@ -17,7 +18,7 @@ const response_1 = require("./response");
  * @returns The user document if found, or null.
  * @throws Error if the ID is invalid or the DB fails.
  */
-const checkIfDocumentExistsById = async (id, res, Model, populateFields) => {
+const checkIfDocumentExistsById = async (id, itemKey, res, Model, populateFields) => {
     if (!mongoose_1.default.Types.ObjectId.isValid(id)) {
         (0, response_1.errorResponse)(res, 400, "Invalid ID format", {
             message: "Invalid ID format",
@@ -25,7 +26,9 @@ const checkIfDocumentExistsById = async (id, res, Model, populateFields) => {
         return;
     }
     if (populateFields) {
-        const populatedDocument = await Model.findById(id).populate(populateFields);
+        const populatedDocument = await Model.findOne({
+            [itemKey]: id,
+        }).populate(populateFields);
         if (!populatedDocument) {
             (0, response_1.errorResponse)(res, 404, "Document not found", {
                 message: "Document not found",
@@ -60,7 +63,8 @@ const customReqResHandler = async (res, reqFunction, errorFunction, responseData
         if (mailOptions.shouldSendMail) {
             await (0, mail_service_1.sendEmail)(mailOptions.mailTo, mailOptions.title, mailOptions.message);
         }
-        return (0, response_1.successResponse)(res, responseData.statusCode, responseData.successMessage, responseData.data || response);
+        (0, response_1.successResponse)(res, responseData.statusCode, responseData.successMessage, responseData.data || response);
+        return;
     }
     catch (error) {
         console.log("error :", error);
@@ -98,6 +102,16 @@ const removeSensitiveFields = (req, _res, next) => {
         "order_number",
         "order_id",
         "internal_sequence",
+        "last_login",
+        "approved_at",
+        "approved_at",
+        "rejected_at",
+        "approved_by",
+        "rejected_by",
+        "is_first_login",
+        "forgot_password_expires",
+        "forgot_password_token",
+        "warehouse_verified",
         "total_amount",
         "discount_amount",
         "tax_amount",
@@ -229,3 +243,22 @@ exports.transactions = {
         },
     ],
 };
+async function customIDGenerator(next, db_name, keyName) {
+    if (this.isNew) {
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        const counter = await counter_1.Counter.findOneAndUpdate({ name: db_name, date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
+        const seq = counter.sequence;
+        this.internal_sequence = seq;
+        // Random 5-character alphanumeric
+        const randomPart = (0, exports.generateRandom)(8, "0A").toUpperCase();
+        const datePart = today.replace(/-/g, "");
+        const user_id = `USR-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
+        Object.defineProperty(this, keyName, {
+            value: user_id,
+            writable: true,
+            enumerable: true,
+            configurable: true,
+        });
+    }
+    next();
+}

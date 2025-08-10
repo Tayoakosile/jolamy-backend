@@ -14,11 +14,11 @@ export const logActivity = async ({
   metadata,
 }: {
   req: Request;
-  user_id: Types.ObjectId;
+  user_id: string | Types.ObjectId;
   action: string;
   description?: string;
-  sender?: Types.ObjectId;
-  receiver?: Types.ObjectId;
+  sender?: string | Types.ObjectId;
+  receiver?: string | Types.ObjectId;
   metadata?: any;
 }) => {
   const ip =
