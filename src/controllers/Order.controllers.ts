@@ -12,6 +12,7 @@ import {
   customReqResHandler,
   generateRandom,
 } from "../utils/util";
+import Transaction from "../models/Transaction";
 
 export const getAllOrders = (_req: AuthRequest, res: Response) => {
   const id = _req.user?._id;
@@ -152,6 +153,21 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       user_id: id,
     });
 
+    const transaction = await Transaction.create({
+      user_id: new Types.ObjectId(id),
+      user_role: user?.user_role,
+      order_id: order._id,
+      transaction_type: "debit",
+      category: "order_payment",
+      description: `Payment for order ${order._id}`,
+      total: order.total_amount,
+      status: "pending",
+      metadata: {
+        order_id: order._id,
+        user_id: id,
+      },
+    });
+
     const log = await logActivity({
       req: _req,
       user_id: new Types.ObjectId(id),
@@ -166,9 +182,14 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
     });
     await order.updateOne({
       $push: { logs: log._id },
+      transaction_id: transaction._id,
     });
     await User.findByIdAndUpdate(new Types.ObjectId(user?.id), {
-      $push: { orders: order._id },
+      $push: {
+        orders: order._id,
+        transaction_history: transaction._id,
+        logs: log._id,
+      },
     });
 
     return order;

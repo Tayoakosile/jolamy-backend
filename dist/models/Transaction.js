@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const counter_1 = require("./counter");
+const util_1 = require("../utils/util");
 // const PricingSchema = new Schema<Pricing>(
 //   {
 //     distributor_price_per_box: { type: Number, required: true },
@@ -47,13 +48,14 @@ const counter_1 = require("./counter");
 //   { _id: false }
 // );
 const TransactionSchema = new mongoose_1.Schema({
-    transaction_id: { type: String, required: true, unique: true },
+    transaction_id: { type: String, immutable: true },
     user_id: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
     user_role: {
         type: String,
         enum: ["admin", "distributor", "sales_agent"],
         required: true,
     },
+    date: { type: Date, default: Date.now },
     internal_sequence: { type: Number, default: 0 },
     office_id: { type: mongoose_1.Schema.Types.ObjectId, ref: "Office" },
     order_id: { type: mongoose_1.Schema.Types.ObjectId, ref: "Order" },
@@ -88,12 +90,9 @@ TransactionSchema.pre("save", async function (next) {
         const seq = counter.sequence;
         this.internal_sequence = seq;
         // Random 5-character alphanumeric
-        const randomPart = Math.random()
-            .toString(36)
-            .substring(2, 7)
-            .toUpperCase();
+        const randomPart = (0, util_1.generateRandom)(8, "0A").toUpperCase();
         const datePart = today.replace(/-/g, "");
-        const transaction_id = `ORD-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
+        const transaction_id = `TRX-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
         this.transaction_id = transaction_id;
     }
     next();

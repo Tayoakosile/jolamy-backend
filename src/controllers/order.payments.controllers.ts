@@ -9,6 +9,7 @@ import { Types } from "mongoose";
 import { Cart } from "../models/Cart";
 import { statusMap } from "../utils/util";
 import { sendEmail } from "../services/mail.service";
+import Transaction from "../models/Transaction";
 
 export const initiatePayment = async (_req: AuthRequest, res: Response) => {
   try {
@@ -137,7 +138,10 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       await User.findByIdAndUpdate(user._id, {
         $push: { logs: new Types.ObjectId(log.id) },
       });
-
+      await Transaction.findOneAndUpdate(new Types.ObjectId(order_id), {
+        status: "completed",
+        payment_method: "Paystack - ",
+      });
       //   find the cart and delete it items array, if the id is in items then delete the collection
       await Cart.updateOne(
         { user_id: user._id, order_id },

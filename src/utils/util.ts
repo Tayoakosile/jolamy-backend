@@ -46,8 +46,8 @@ export const checkIfDocumentExistsById = async <T extends Document>(
   return document;
 };
 
-export const generateRandom = (howMuch?: number) => {
-  return randomatic("a0", howMuch || 18);
+export const generateRandom = (howMuch?: number, pattern?: string) => {
+  return randomatic(pattern || "a0", howMuch || 18);
 };
 
 export const customReqResHandler = async (

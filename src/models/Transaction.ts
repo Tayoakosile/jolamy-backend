@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 import { Counter } from "./counter";
+import { generateRandom } from "../utils/util";
 
 export interface ITransaction extends Document {
   transaction_id: string;
@@ -33,13 +34,14 @@ export interface ITransaction extends Document {
 
 const TransactionSchema = new Schema<ITransaction>(
   {
-    transaction_id: { type: String, required: true, unique: true },
+    transaction_id: { type: String, immutable: true },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
     user_role: {
       type: String,
       enum: ["admin", "distributor", "sales_agent"],
       required: true,
     },
+    date: { type: Date, default: Date.now },
     internal_sequence: { type: Number, default: 0 },
     office_id: { type: Schema.Types.ObjectId, ref: "Office" },
     order_id: { type: Schema.Types.ObjectId, ref: "Order" },
@@ -88,13 +90,10 @@ TransactionSchema.pre(
       this.internal_sequence = seq;
 
       // Random 5-character alphanumeric
-      const randomPart = Math.random()
-        .toString(36)
-        .substring(2, 7)
-        .toUpperCase();
+      const randomPart = generateRandom(8, "0A").toUpperCase();
 
       const datePart = today.replace(/-/g, "");
-      const transaction_id = `ORD-${datePart}-${randomPart}-${String(
+      const transaction_id = `TRX-${datePart}-${randomPart}-${String(
         seq
       ).padStart(4, "0")}`;
       this.transaction_id = transaction_id;

@@ -1,6 +1,7 @@
 import { timeStamp } from "console";
 import { Document, model, Schema, Types } from "mongoose";
 import { Counter } from "./counter";
+import { generateRandom } from "../utils/util";
 
 const ProductItemSchema = new Schema(
   {
@@ -187,11 +188,7 @@ OrderSchema.pre(
       this.internal_sequence = seq;
 
       // Random 5-character alphanumeric
-      const randomPart = Math.random()
-        .toString(36)
-        .substring(2, 7)
-        .toUpperCase();
-
+      const randomPart = generateRandom(8, "00").toUpperCase();
       const datePart = today.replace(/-/g, "");
       const order_number = `ORD-${datePart}-${randomPart}-${String(
         seq

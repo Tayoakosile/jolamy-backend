@@ -13,6 +13,7 @@ const mongoose_1 = require("mongoose");
 const Cart_1 = require("../models/Cart");
 const util_1 = require("../utils/util");
 const mail_service_1 = require("../services/mail.service");
+const Transaction_1 = __importDefault(require("../models/Transaction"));
 const initiatePayment = async (_req, res) => {
     try {
         const user = _req.user;
@@ -123,6 +124,10 @@ const verifyPayment = async (_req, res) => {
             });
             await User_1.default.findByIdAndUpdate(user._id, {
                 $push: { logs: new mongoose_1.Types.ObjectId(log.id) },
+            });
+            await Transaction_1.default.findOneAndUpdate(new mongoose_1.Types.ObjectId(order_id), {
+                status: "completed",
+                payment_method: "Paystack - ",
             });
             //   find the cart and delete it items array, if the id is in items then delete the collection
             await Cart_1.Cart.updateOne({ user_id: user._id, order_id }, { $pull: { items: { order_id } } });

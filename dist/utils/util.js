@@ -44,8 +44,8 @@ const checkIfDocumentExistsById = async (id, res, Model, populateFields) => {
     return document;
 };
 exports.checkIfDocumentExistsById = checkIfDocumentExistsById;
-const generateRandom = (howMuch) => {
-    return (0, randomatic_1.default)("a0", howMuch || 18);
+const generateRandom = (howMuch, pattern) => {
+    return (0, randomatic_1.default)(pattern || "a0", howMuch || 18);
 };
 exports.generateRandom = generateRandom;
 const customReqResHandler = async (res, reqFunction, errorFunction, responseData = {

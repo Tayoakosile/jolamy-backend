@@ -11,6 +11,7 @@ const User_1 = __importDefault(require("../models/User"));
 const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
+const Transaction_1 = __importDefault(require("../models/Transaction"));
 const getAllOrders = (_req, res) => {
     const id = _req.user?._id;
     const request = async () => {
@@ -126,6 +127,20 @@ const createNewOrder = (_req, res) => {
             total_amount: Products.reduce((sum, item) => sum + item.total, 0),
             user_id: id,
         });
+        const transaction = await Transaction_1.default.create({
+            user_id: new mongoose_1.Types.ObjectId(id),
+            user_role: user?.user_role,
+            order_id: order._id,
+            transaction_type: "debit",
+            category: "order_payment",
+            description: `Payment for order ${order._id}`,
+            total: order.total_amount,
+            status: "pending",
+            metadata: {
+                order_id: order._id,
+                user_id: id,
+            },
+        });
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(id),
@@ -140,9 +155,14 @@ const createNewOrder = (_req, res) => {
         });
         await order.updateOne({
             $push: { logs: log._id },
+            transaction_id: transaction._id,
         });
         await User_1.default.findByIdAndUpdate(new mongoose_1.Types.ObjectId(user?.id), {
-            $push: { orders: order._id },
+            $push: {
+                orders: order._id,
+                transaction_history: transaction._id,
+                logs: log._id,
+            },
         });
         return order;
     };

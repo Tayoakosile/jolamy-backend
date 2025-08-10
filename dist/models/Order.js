@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
 const counter_1 = require("./counter");
+const util_1 = require("../utils/util");
 const ProductItemSchema = new mongoose_1.Schema({
     variants: [
         {
@@ -103,10 +104,7 @@ OrderSchema.pre("save", async function (next) {
         const seq = counter.sequence;
         this.internal_sequence = seq;
         // Random 5-character alphanumeric
-        const randomPart = Math.random()
-            .toString(36)
-            .substring(2, 7)
-            .toUpperCase();
+        const randomPart = (0, util_1.generateRandom)(8, "00").toUpperCase();
         const datePart = today.replace(/-/g, "");
         const order_number = `ORD-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
         this.order_number = order_number;
