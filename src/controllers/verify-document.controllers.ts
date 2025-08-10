@@ -11,7 +11,12 @@ export const verifyDocuments = async (req: Request, res: Response) => {
   const user_id = req.params.id;
 
   try {
-    const user = (await checkIfDocumentExistsById(user_id, res, User)) as IUser;
+    const user = (await checkIfDocumentExistsById(
+      user_id,
+      "user_id",
+      res,
+      User
+    )) as IUser;
 
     const userLog = await logActivity({
       req,
@@ -55,6 +60,11 @@ export const verifyDocuments = async (req: Request, res: Response) => {
 
 export const getUserInfo = async (req: Request, res: Response) => {
   const user_id = req.params.id;
-  const user = (await checkIfDocumentExistsById(user_id, res, User)) as IUser;
+  const user = (await checkIfDocumentExistsById(
+    user_id,
+    "user_id",
+    res,
+    User
+  )) as IUser;
   successResponse(res, 200, "User information retrieved successfully", user);
 };

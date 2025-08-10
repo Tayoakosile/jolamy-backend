@@ -21,11 +21,11 @@ const initiatePayment = async (_req, res) => {
         const order_id = _req.params.id;
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
-            user_id: user._id,
+            user_id: user?.user_id,
             action: "initiate_payment",
             description: "User initiated payment for an order",
-            receiver: user._id,
-            sender: user._id,
+            receiver: user.user_id,
+            sender: user.user_id,
             metadata: {
                 order_id,
                 total_amount: order.total_amount,
@@ -42,7 +42,7 @@ const initiatePayment = async (_req, res) => {
         });
         (0, response_1.successResponse)(res, 200, "Payment initiated successfully", {
             order_id,
-            user_id: user._id,
+            user_id: user?.user_id,
             user_name: user.username,
             user_email: user.email,
             order_details: {
@@ -101,11 +101,11 @@ const verifyPayment = async (_req, res) => {
         // return;
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
-            user_id: user._id,
+            user_id: user?.user_id,
             action: "VERIFY_PAYMENT",
             description: "User verified payment for an order",
-            receiver: user._id,
-            sender: user._id,
+            receiver: user.user_id,
+            sender: user.user_id,
             metadata: {
                 order_id,
                 total_amount: order.total_amount,
@@ -130,14 +130,14 @@ const verifyPayment = async (_req, res) => {
                 payment_method: "Paystack - ",
             });
             //   find the cart and delete it items array, if the id is in items then delete the collection
-            await Cart_1.Cart.updateOne({ user_id: user._id, order_id }, { $pull: { items: { order_id } } });
+            await Cart_1.Cart.updateOne({ user_id: user?.user_id, order_id }, { $pull: { items: { order_id } } });
             await Cart_1.Cart.findByIdAndDelete(user.id, {
                 $or: [{ user_id: user._id }, { order_id }],
             });
             (0, mail_service_1.sendEmail)(user.email, "Payment Successful", `Your payment for order ${order_id} has been successfully verified. Thank you for your purchase!`);
             (0, response_1.successResponse)(res, 200, "Payment verified successfully", {
                 order_id,
-                user_id: user._id,
+                user_id: user?.user_id,
                 user_name: user.username,
                 user_email: user.email,
                 order_details: {
@@ -157,7 +157,7 @@ const verifyPayment = async (_req, res) => {
             });
             (0, response_1.successResponse)(res, 202, "Payment is pending", {
                 order_id,
-                user_id: user._id,
+                user_id: user?.user_id,
                 user_name: user.username,
                 user_email: user.email,
                 order_details: {
@@ -180,7 +180,7 @@ const verifyPayment = async (_req, res) => {
             (0, mail_service_1.sendEmail)(user.email, "Payment Failed", `Your payment for order ${order_id} has failed or been reversed. Please try again or contact support.`);
             (0, response_1.errorResponse)(res, 400, "Payment failed,abadoned or reversed", {
                 order_id,
-                user_id: user._id,
+                user_id: user?.user_id,
                 user_name: user.username,
                 user_email: user.email,
                 order_details: {

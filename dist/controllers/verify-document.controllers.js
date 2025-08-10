@@ -13,7 +13,7 @@ const mongoose_1 = require("mongoose");
 const verifyDocuments = async (req, res) => {
     const user_id = req.params.id;
     try {
-        const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, res, User_1.default));
+        const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, "user_id", res, User_1.default));
         const userLog = await (0, activityLog_1.logActivity)({
             req,
             user_id: new mongoose_1.Types.ObjectId(user._id),
@@ -42,7 +42,7 @@ const verifyDocuments = async (req, res) => {
 exports.verifyDocuments = verifyDocuments;
 const getUserInfo = async (req, res) => {
     const user_id = req.params.id;
-    const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, res, User_1.default));
+    const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, "user_id", res, User_1.default));
     (0, response_1.successResponse)(res, 200, "User information retrieved successfully", user);
 };
 exports.getUserInfo = getUserInfo;

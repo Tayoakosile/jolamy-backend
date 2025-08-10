@@ -31,10 +31,13 @@ export const getAllCashFlow = (_req: AuthRequest, res: Response) => {
 
 export const getSingleCashFlow = async (_req: AuthRequest, res: Response) => {
   const id = _req.params.id;
-  const cash_flow = await checkIfDocumentExistsById<IOffice>(id, res, Offices, [
-    "created_by",
-    "logs",
-  ]);
+  const cash_flow = await checkIfDocumentExistsById<IOffice>(
+    id,
+    "office_id",
+    res,
+    Offices,
+    ["created_by", "logs"]
+  );
 
   const request = async () => {
     const log = await logActivity({
@@ -121,7 +124,7 @@ export const createNewOffices = (req: AuthRequest, res: Response) => {
 
 export const updateOffice = async (req: AuthRequest, res: Response) => {
   const id = req.params.id;
-  await checkIfDocumentExistsById<IOffice>(id, res, Offices);
+  await checkIfDocumentExistsById<IOffice>(id, "office_id", res, Offices);
 
   const request = async () => {
     const updatedOffice = (await Offices.findByIdAndUpdate(

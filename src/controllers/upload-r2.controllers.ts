@@ -1,15 +1,15 @@
 // controllers/upload.controller.ts
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
+import path from "path";
 import { r2 } from "../utils/R2";
 import { errorResponse, successResponse } from "../utils/response";
-import path from "path";
 import { generateRandom } from "../utils/util";
-import { error } from "console";
 
 export const uploadToR2 = async (
   req: Request,
   res: Response,
+  next: NextFunction,
   shouldIncludeSuccessResponse?: boolean
 ) => {
   if (!req.files) {
@@ -49,11 +49,13 @@ export const uploadToR2 = async (
     return publicUrls;
   } catch (err) {
     res.status(500).json({ message: "Upload failed", error: err });
+
     errorResponse(
       res,
       500,
       "Failed to upload file to R2",
       err instanceof Error ? err.message : "Unknown error"
     );
+    next ? next() : undefined;
   }
 };

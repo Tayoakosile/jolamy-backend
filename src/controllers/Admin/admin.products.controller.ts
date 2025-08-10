@@ -58,7 +58,7 @@ export const addNewProducts = (_req: AuthRequest, res: Response) => {
       receiver: product.id,
       description: `New product added: ${product.name}`,
       metadata: {
-        product_id: product._id,
+        product_id: product.product_id,
         user_id: _req.user?._id,
       },
     });

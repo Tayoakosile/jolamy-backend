@@ -16,7 +16,7 @@ export const getSingleProductForNotAdmin = async (
   res: Response
 ) => {
   const id = _req.params.id;
-  await checkIfDocumentExistsById(id, res, Product);
+  await checkIfDocumentExistsById(id, "product_id", res, Product);
   const request = async () => {
     const product = await Product.findOne({ _id: id });
 
@@ -49,7 +49,7 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
   const user_id = (_req as any).user._id;
   const product_id = _req.params.id;
   const request = async () => {
-    await checkIfDocumentExistsById(product_id, res, Product);
+    await checkIfDocumentExistsById(product_id,'product_id', res, Product);
     const product = await Product.findById(product_id);
     if (!product) {
       errorResponse(res, 404, "Product not found");

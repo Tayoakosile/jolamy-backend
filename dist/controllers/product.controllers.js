@@ -13,7 +13,7 @@ const User_1 = __importDefault(require("../models/User"));
 const Cart_1 = require("../models/Cart");
 const getSingleProductForNotAdmin = async (_req, res) => {
     const id = _req.params.id;
-    await (0, util_1.checkIfDocumentExistsById)(id, res, Product_1.Product);
+    await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);
     const request = async () => {
         const product = await Product_1.Product.findOne({ _id: id });
         const logs = await (0, activityLog_1.logActivity)({
@@ -43,7 +43,7 @@ const addToCart = (_req, res) => {
     const user_id = _req.user._id;
     const product_id = _req.params.id;
     const request = async () => {
-        await (0, util_1.checkIfDocumentExistsById)(product_id, res, Product_1.Product);
+        await (0, util_1.checkIfDocumentExistsById)(product_id, 'product_id', res, Product_1.Product);
         const product = await Product_1.Product.findById(product_id);
         if (!product) {
             (0, response_1.errorResponse)(res, 404, "Product not found");

@@ -19,11 +19,11 @@ export const initiatePayment = async (_req: AuthRequest, res: Response) => {
 
     const log = await logActivity({
       req: _req,
-      user_id: user._id,
+      user_id: user?.user_id,
       action: "initiate_payment",
       description: "User initiated payment for an order",
-      receiver: user._id,
-      sender: user._id,
+      receiver: user.user_id,
+      sender: user.user_id,
       metadata: {
         order_id,
         total_amount: order.total_amount,
@@ -42,7 +42,7 @@ export const initiatePayment = async (_req: AuthRequest, res: Response) => {
 
     successResponse(res, 200, "Payment initiated successfully", {
       order_id,
-      user_id: user._id,
+      user_id: user?.user_id,
       user_name: user.username,
       user_email: user.email,
       order_details: {
@@ -111,11 +111,11 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
     // return;
     const log = await logActivity({
       req: _req,
-      user_id: user._id,
+      user_id: user?.user_id,
       action: "VERIFY_PAYMENT",
       description: "User verified payment for an order",
-      receiver: user._id,
-      sender: user._id,
+      receiver: user.user_id,
+      sender: user.user_id,
       metadata: {
         order_id,
         total_amount: order.total_amount,
@@ -144,7 +144,7 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       });
       //   find the cart and delete it items array, if the id is in items then delete the collection
       await Cart.updateOne(
-        { user_id: user._id, order_id },
+        { user_id: user?.user_id, order_id },
         { $pull: { items: { order_id } } }
       );
       await Cart.findByIdAndDelete(user.id, {
@@ -157,7 +157,7 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       );
       successResponse(res, 200, "Payment verified successfully", {
         order_id,
-        user_id: user._id,
+        user_id: user?.user_id,
         user_name: user.username,
         user_email: user.email,
         order_details: {
@@ -179,7 +179,7 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
 
       successResponse(res, 202, "Payment is pending", {
         order_id,
-        user_id: user._id,
+        user_id: user?.user_id,
         user_name: user.username,
         user_email: user.email,
         order_details: {
@@ -209,7 +209,7 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       );
       errorResponse(res, 400, "Payment failed,abadoned or reversed", {
         order_id,
-        user_id: user._id,
+        user_id: user?.user_id,
         user_name: user.username,
         user_email: user.email,
         order_details: {

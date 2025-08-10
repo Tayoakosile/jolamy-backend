@@ -60,7 +60,7 @@ const approveUser = async (req, res) => {
             action: "APPROVED",
             description: "Your account has been approved",
             metadata: {
-                user_id: user._id,
+                user_id: user?.user_id,
                 adminId: adminId,
             },
         });
@@ -116,7 +116,7 @@ const rejectUser = async (req, res) => {
             action: "REJECTED",
             description: "Your account has been rejected",
             metadata: {
-                user_id: user._id,
+                user_id: user?.user_id,
                 adminId: adminId,
             },
         });

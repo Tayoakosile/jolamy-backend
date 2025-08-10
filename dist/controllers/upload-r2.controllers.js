@@ -6,11 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadToR2 = void 0;
 // controllers/upload.controller.ts
 const client_s3_1 = require("@aws-sdk/client-s3");
+const path_1 = __importDefault(require("path"));
 const R2_1 = require("../utils/R2");
 const response_1 = require("../utils/response");
-const path_1 = __importDefault(require("path"));
 const util_1 = require("../utils/util");
-const uploadToR2 = async (req, res, shouldIncludeSuccessResponse) => {
+const uploadToR2 = async (req, res, next, shouldIncludeSuccessResponse) => {
     if (!req.files) {
         (0, response_1.errorResponse)(res, 400, "No file uploaded");
         return;
@@ -43,6 +43,7 @@ const uploadToR2 = async (req, res, shouldIncludeSuccessResponse) => {
     catch (err) {
         res.status(500).json({ message: "Upload failed", error: err });
         (0, response_1.errorResponse)(res, 500, "Failed to upload file to R2", err instanceof Error ? err.message : "Unknown error");
+        next ? next() : undefined;
     }
 };
 exports.uploadToR2 = uploadToR2;
