@@ -74,6 +74,7 @@ const OrderSchema = new mongoose_1.Schema({
     tracking_number: { type: String },
     courier_service: { type: String },
     cancelled_at: { type: Date },
+    transaction_id: { type: mongoose_1.Types.ObjectId, ref: "Transaction" },
     refund_status: {
         type: String,
         enum: ["none", "pending", "processed"],

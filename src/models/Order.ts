@@ -69,6 +69,7 @@ export interface IOrder extends Document {
   delivery_status?: DeliveryStatus;
   internal_notes?: string;
   internal_sequence?: number;
+  transaction_id?: Types.ObjectId;
   total_amount?: number;
   estimated_delivery_date?: Date;
   actual_delivery_date?: Date;
@@ -144,6 +145,7 @@ const OrderSchema = new Schema<IOrder>(
     tracking_number: { type: String },
     courier_service: { type: String },
     cancelled_at: { type: Date },
+    transaction_id: { type: Types.ObjectId, ref: "Transaction" },
     refund_status: {
       type: String,
       enum: ["none", "pending", "processed"],
