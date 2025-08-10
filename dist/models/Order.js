@@ -47,13 +47,17 @@ const OrderSchema = new mongoose_1.Schema({
         ],
         default: "initiated",
     },
+    status: {
+        type: String,
+        enum: ["pending", "processing", "completed", "cancelled"],
+        default: "pending",
+    },
     delivery_status: {
         type: String,
         enum: ["not_assigned", "in_transit", "delivered", "pending"],
         default: "not_assigned",
     },
     internal_notes: { type: String },
-    order_id: { type: String, required: false, unique: false },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number },
     estimated_delivery_date: { type: Date },

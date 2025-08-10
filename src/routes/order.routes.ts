@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  cancelOrder,
   createNewOrder,
   getAllOrders,
   updateOrder,
@@ -32,6 +33,22 @@ router.patch(
   removeSensitiveFields,
   validateOrder,
   updateOrder
+);
+router.put(
+  "/:id/cancel-order",
+  appAuth,
+  isWorker,
+  removeSensitiveFields,
+  validateOrder,
+  cancelOrder
+);
+router.patch(
+  "/:id/cancel-order",
+  appAuth,
+  isWorker,
+  removeSensitiveFields,
+  validateOrder,
+  cancelOrder
 );
 
 // Initiate payment

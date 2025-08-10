@@ -169,7 +169,6 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
     });
     await User.findByIdAndUpdate(new Types.ObjectId(user?.id), {
       $push: { orders: order._id },
-      last_order_date: new Date(),
     });
 
     return order;
@@ -204,15 +203,6 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
       (order: any) => order._id.toString() === orderID
     );
 
-    // If payment made already or it is delivered, do not allow update
-    if (
-      order?.payment_status === "paid" ||
-      order?.delivery_status === "delivered"
-    ) {
-      return errorResponse(res, 400, "Order cannot be updated", {
-        message: "Order has already been paid or delivered",
-      });
-    }
     if (!checkIfOrderBelongsToUser)
       return errorResponse(res, 404, "Order not found", {
         message: "Order not found or does not belong to the user",
@@ -244,6 +234,7 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
     });
     await User?.findByIdAndUpdate(user?.id, {
       $push: { logs: log._id },
+      last_order_date: new Date(),
     });
     return updatedOrder;
   };
@@ -264,3 +255,5 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
     }
   );
 };
+
+export const cancelOrder = async (_req: AuthRequest, res: Response) => {};

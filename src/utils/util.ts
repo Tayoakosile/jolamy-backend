@@ -158,6 +158,7 @@ export const removeSensitiveFields = (
     "createdAt",
     "updatedAt",
     "logs",
+    "status",
     "cancelled_at",
     "actual_delivery_date",
   ];

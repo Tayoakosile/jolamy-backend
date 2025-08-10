@@ -107,6 +107,7 @@ const removeSensitiveFields = (req, _res, next) => {
         "createdAt",
         "updatedAt",
         "logs",
+        "status",
         "cancelled_at",
         "actual_delivery_date",
     ];

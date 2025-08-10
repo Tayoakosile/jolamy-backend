@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateOrder = exports.createNewOrder = exports.getSingleOrder = exports.getAllOrders = void 0;
+exports.cancelOrder = exports.updateOrder = exports.createNewOrder = exports.getSingleOrder = exports.getAllOrders = void 0;
 const mongoose_1 = require("mongoose");
 const Order_1 = __importDefault(require("../models/Order"));
 const Product_1 = require("../models/Product");
@@ -143,7 +143,6 @@ const createNewOrder = (_req, res) => {
         });
         await User_1.default.findByIdAndUpdate(new mongoose_1.Types.ObjectId(user?.id), {
             $push: { orders: order._id },
-            last_order_date: new Date(),
         });
         return order;
     };
@@ -166,13 +165,6 @@ const updateOrder = async (_req, res) => {
     const order = await (0, util_1.checkIfDocumentExistsById)(orderID, res, Order_1.default);
     const request = async () => {
         const checkIfOrderBelongsToUser = user?.orders.find((order) => order._id.toString() === orderID);
-        // If payment made already or it is delivered, do not allow update
-        if (order?.payment_status === "paid" ||
-            order?.delivery_status === "delivered") {
-            return (0, response_1.errorResponse)(res, 400, "Order cannot be updated", {
-                message: "Order has already been paid or delivered",
-            });
-        }
         if (!checkIfOrderBelongsToUser)
             return (0, response_1.errorResponse)(res, 404, "Order not found", {
                 message: "Order not found or does not belong to the user",
@@ -202,6 +194,7 @@ const updateOrder = async (_req, res) => {
         });
         await User_1.default?.findByIdAndUpdate(user?.id, {
             $push: { logs: log._id },
+            last_order_date: new Date(),
         });
         return updatedOrder;
     };
@@ -217,3 +210,5 @@ const updateOrder = async (_req, res) => {
     });
 };
 exports.updateOrder = updateOrder;
+const cancelOrder = async (_req, res) => { };
+exports.cancelOrder = cancelOrder;

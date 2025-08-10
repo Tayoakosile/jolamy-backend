@@ -12,6 +12,8 @@ router.post("/", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, 
 router.get("/:id", auth_1.appAuth, auth_1.isWorker, Order_controllers_1.getAllOrders);
 router.put("/:id", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.updateOrder);
 router.patch("/:id", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.updateOrder);
+router.put("/:id/cancel-order", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.cancelOrder);
+router.patch("/:id/cancel-order", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.cancelOrder);
 // Initiate payment
 router.put("/:id/initiate-payment", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, order_1.validateOrder, order_payments_controllers_1.initiatePayment);
 // Initiate payment

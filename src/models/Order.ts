@@ -68,7 +68,6 @@ export interface IOrder extends Document {
   payment_status?: PaymentStatus;
   delivery_status?: DeliveryStatus;
   internal_notes?: string;
-  order_id?: string;
   internal_sequence?: number;
   total_amount?: number;
   estimated_delivery_date?: Date;
@@ -80,6 +79,7 @@ export interface IOrder extends Document {
   cancelled_at?: Date;
   refund_status?: RefundStatus;
   fulfillment_type?: string;
+  status: string;
   payment_method?: PaymentMethod;
   payment_reference?: string;
   logs?: any[];
@@ -117,13 +117,17 @@ const OrderSchema = new Schema<IOrder>(
       ],
       default: "initiated",
     },
+    status: {
+      type: String,
+      enum: ["pending", "processing", "completed", "cancelled"],
+      default: "pending",
+    },
     delivery_status: {
       type: String,
       enum: ["not_assigned", "in_transit", "delivered", "pending"],
       default: "not_assigned",
     },
     internal_notes: { type: String },
-    order_id: { type: String, required: false, unique: false },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number },
     estimated_delivery_date: { type: Date },
