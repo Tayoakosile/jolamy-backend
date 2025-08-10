@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
+exports.transactions = exports.statusMap = exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
 exports.generateEntityNumber = generateEntityNumber;
 const mongoose_1 = __importDefault(require("mongoose"));
 const randomatic_1 = __importDefault(require("randomatic"));
@@ -44,8 +44,8 @@ const checkIfDocumentExistsById = async (id, res, Model, populateFields) => {
     return document;
 };
 exports.checkIfDocumentExistsById = checkIfDocumentExistsById;
-const generateRandom = (howMuch) => {
-    return (0, randomatic_1.default)("a0", howMuch || 18);
+const generateRandom = (howMuch, pattern) => {
+    return (0, randomatic_1.default)(pattern || "a0", howMuch || 18);
 };
 exports.generateRandom = generateRandom;
 const customReqResHandler = async (res, reqFunction, errorFunction, responseData = {
@@ -107,6 +107,7 @@ const removeSensitiveFields = (req, _res, next) => {
         "createdAt",
         "updatedAt",
         "logs",
+        "status",
         "cancelled_at",
         "actual_delivery_date",
     ];
@@ -114,3 +115,117 @@ const removeSensitiveFields = (req, _res, next) => {
     next();
 };
 exports.removeSensitiveFields = removeSensitiveFields;
+exports.statusMap = {
+    success: "paid",
+    failed: "failed",
+    abandoned: "cancelled",
+    ongoing: "pending",
+    pending: "pending",
+    processing: "pending",
+    queued: "processing",
+    reversed: "refunded",
+};
+// data: {
+// with metadata
+//   [1]     status: true,
+//   [1]     message: 'Authorization URL created',
+//   [1]     data: {
+//   [1]       authorization_url: 'https://checkout.paystack.com/pxwwj3o0z3c76n1',
+//   [1]       access_code: 'pxwwj3o0z3c76n1',
+//   [1]       reference: 'ie6ux1e48c'
+//   [1]     }
+//   [1]   }
+exports.transactions = {
+    paystackResults: [
+        {
+            status: true,
+            message: "Authorization URL created",
+            data: {
+                authorization_url: "https://checkout.paystack.com/8y9hub8tlf5bbdq",
+                access_code: "8y9hub8tlf5bbdq",
+                reference: "y91l1is09t",
+            },
+        },
+        {
+            status: true,
+            message: "Authorization URL created",
+            data: {
+                authorization_url: "https://checkout.paystack.com/7mk9lj0fv96d4am",
+                access_code: "7mk9lj0fv96d4am",
+                reference: "9vco0u3cgf",
+            },
+        },
+        {
+            status: true,
+            message: "Authorization URL created",
+            data: {
+                authorization_url: "https://checkout.paystack.com/mwvoumxtexzfloa",
+                access_code: "mwvoumxtexzfloa",
+                reference: "0efe4vju3q",
+            },
+        },
+        {
+            status: true,
+            message: "Authorization URL created",
+            data: {
+                authorization_url: "https://checkout.paystack.com/qeh1sqg5h4auwd9",
+                access_code: "qeh1sqg5h4auwd9",
+                reference: "tfcymoth16",
+            },
+        },
+        {
+            status: true,
+            message: "Authorization URL created",
+            data: {
+                authorization_url: "https://checkout.paystack.com/bn3sklrx6db89zz",
+                access_code: "bn3sklrx6db89zz",
+                reference: "tig38bxsv8",
+            },
+        },
+        {
+            status: true,
+            message: "Authorization URL created",
+            data: {
+                authorization_url: "https://checkout.paystack.com/10gtaqc74tax218",
+                access_code: "10gtaqc74tax218",
+                reference: "ef4hx6i3ji",
+            },
+        },
+        {
+            status: true,
+            message: "Authorization URL created",
+            data: {
+                authorization_url: "https://checkout.paystack.com/9lmti3hqgsfzfzv",
+                access_code: "9lmti3hqgsfzfzv",
+                reference: "8lhepcsawl",
+            },
+        },
+        {
+            status: true,
+            message: "Authorization URL created",
+            data: {
+                authorization_url: "https://checkout.paystack.com/5z3x9ejpj1obieh",
+                access_code: "5z3x9ejpj1obieh",
+                reference: "dkdhrqt5l1",
+            },
+        },
+        {
+            status: true,
+            message: "Authorization URL created",
+            data: {
+                authorization_url: "https://checkout.paystack.com/scsxmk7d0r8mtsa",
+                access_code: "scsxmk7d0r8mtsa",
+                reference: "5vqd08ie5t",
+            },
+        },
+        {
+            status: true,
+            message: "Authorization URL created",
+            data: {
+                authorization_url: "https://checkout.paystack.com/jaitxd3cmtb7uxa",
+                access_code: "jaitxd3cmtb7uxa",
+                reference: "u7rppa3dyt",
+            },
+        },
+    ],
+};

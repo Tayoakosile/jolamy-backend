@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
 const counter_1 = require("./counter");
+const util_1 = require("../utils/util");
 const ProductItemSchema = new mongoose_1.Schema({
     variants: [
         {
@@ -35,7 +36,28 @@ const OrderSchema = new mongoose_1.Schema({
     },
     payment_status: {
         type: String,
-        enum: ["pending", "paid", "cancelled"],
+        enum: [
+            "unpaid",
+            "failed",
+            "pending",
+            "initiated",
+            "paid",
+            "cancelled",
+            "reversed",
+            "abandoned",
+        ],
+        default: "initiated",
+    },
+    status: {
+        type: String,
+        enum: [
+            "pending",
+            "processing",
+            "completed",
+            "cancelled",
+            "failed",
+            "refunded",
+        ],
         default: "pending",
     },
     delivery_status: {
@@ -44,7 +66,6 @@ const OrderSchema = new mongoose_1.Schema({
         default: "not_assigned",
     },
     internal_notes: { type: String },
-    order_id: { type: String, required: false, unique: false },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number },
     estimated_delivery_date: { type: Date },
@@ -54,6 +75,7 @@ const OrderSchema = new mongoose_1.Schema({
     tracking_number: { type: String },
     courier_service: { type: String },
     cancelled_at: { type: Date },
+    transaction_id: { type: mongoose_1.Types.ObjectId, ref: "Transaction" },
     refund_status: {
         type: String,
         enum: ["none", "pending", "processed"],
@@ -82,10 +104,7 @@ OrderSchema.pre("save", async function (next) {
         const seq = counter.sequence;
         this.internal_sequence = seq;
         // Random 5-character alphanumeric
-        const randomPart = Math.random()
-            .toString(36)
-            .substring(2, 7)
-            .toUpperCase();
+        const randomPart = (0, util_1.generateRandom)(8, "00").toUpperCase();
         const datePart = today.replace(/-/g, "");
         const order_number = `ORD-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
         this.order_number = order_number;

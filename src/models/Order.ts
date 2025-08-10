@@ -1,6 +1,7 @@
 import { timeStamp } from "console";
 import { Document, model, Schema, Types } from "mongoose";
 import { Counter } from "./counter";
+import { generateRandom } from "../utils/util";
 
 const ProductItemSchema = new Schema(
   {
@@ -56,7 +57,7 @@ type PaymentMethod =
   | "paystack"
   | null;
 
-export interface IOrder extends Document{
+export interface IOrder extends Document {
   user_id: { type: Types.ObjectId; ref: "User"; required: true };
   assigned_to?: Types.ObjectId;
   order_number?: string;
@@ -68,8 +69,8 @@ export interface IOrder extends Document{
   payment_status?: PaymentStatus;
   delivery_status?: DeliveryStatus;
   internal_notes?: string;
-  order_id?: string;
   internal_sequence?: number;
+  transaction_id?: Types.ObjectId;
   total_amount?: number;
   estimated_delivery_date?: Date;
   actual_delivery_date?: Date;
@@ -80,6 +81,7 @@ export interface IOrder extends Document{
   cancelled_at?: Date;
   refund_status?: RefundStatus;
   fulfillment_type?: string;
+  status: string;
   payment_method?: PaymentMethod;
   payment_reference?: string;
   logs?: any[];
@@ -105,7 +107,28 @@ const OrderSchema = new Schema<IOrder>(
     },
     payment_status: {
       type: String,
-      enum: ["pending", "paid", "cancelled"],
+      enum: [
+        "unpaid",
+        "failed",
+        "pending",
+        "initiated",
+        "paid",
+        "cancelled",
+        "reversed",
+        "abandoned",
+      ],
+      default: "initiated",
+    },
+    status: {
+      type: String,
+      enum: [
+        "pending",
+        "processing",
+        "completed",
+        "cancelled",
+        "failed",
+        "refunded",
+      ],
       default: "pending",
     },
     delivery_status: {
@@ -114,7 +137,6 @@ const OrderSchema = new Schema<IOrder>(
       default: "not_assigned",
     },
     internal_notes: { type: String },
-    order_id: { type: String, required: false, unique: false },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number },
     estimated_delivery_date: { type: Date },
@@ -124,6 +146,7 @@ const OrderSchema = new Schema<IOrder>(
     tracking_number: { type: String },
     courier_service: { type: String },
     cancelled_at: { type: Date },
+    transaction_id: { type: Types.ObjectId, ref: "Transaction" },
     refund_status: {
       type: String,
       enum: ["none", "pending", "processed"],
@@ -165,11 +188,7 @@ OrderSchema.pre(
       this.internal_sequence = seq;
 
       // Random 5-character alphanumeric
-      const randomPart = Math.random()
-        .toString(36)
-        .substring(2, 7)
-        .toUpperCase();
-
+      const randomPart = generateRandom(8, "00").toUpperCase();
       const datePart = today.replace(/-/g, "");
       const order_number = `ORD-${datePart}-${randomPart}-${String(
         seq

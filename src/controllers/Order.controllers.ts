@@ -12,6 +12,7 @@ import {
   customReqResHandler,
   generateRandom,
 } from "../utils/util";
+import Transaction from "../models/Transaction";
 
 export const getAllOrders = (_req: AuthRequest, res: Response) => {
   const id = _req.user?._id;
@@ -152,6 +153,21 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       user_id: id,
     });
 
+    const transaction = await Transaction.create({
+      user_id: new Types.ObjectId(id),
+      user_role: user?.user_role,
+      order_id: order._id,
+      transaction_type: "debit",
+      category: "order_payment",
+      description: `Payment for order ${order._id}`,
+      total: order.total_amount,
+      status: "pending",
+      metadata: {
+        order_id: order._id,
+        user_id: id,
+      },
+    });
+
     const log = await logActivity({
       req: _req,
       user_id: new Types.ObjectId(id),
@@ -166,10 +182,14 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
     });
     await order.updateOne({
       $push: { logs: log._id },
+      transaction_id: transaction._id,
     });
     await User.findByIdAndUpdate(new Types.ObjectId(user?.id), {
-      $push: { orders: order._id },
-      last_order_date: new Date(),
+      $push: {
+        orders: order._id,
+        transaction_history: transaction._id,
+        logs: log._id,
+      },
     });
 
     return order;
@@ -200,23 +220,6 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
   const orderID = _req.params?.id;
   const order = await checkIfDocumentExistsById<IOrder>(orderID, res, Order);
   const request = async () => {
-    const checkIfOrderBelongsToUser = user?.orders.find(
-      (order: any) => order._id.toString() === orderID
-    );
-
-    // If payment made already or it is delivered, do not allow update
-    if (
-      order?.payment_status === "paid" ||
-      order?.delivery_status === "delivered"
-    ) {
-      return errorResponse(res, 400, "Order cannot be updated", {
-        message: "Order has already been paid or delivered",
-      });
-    }
-    if (!checkIfOrderBelongsToUser)
-      return errorResponse(res, 404, "Order not found", {
-        message: "Order not found or does not belong to the user",
-      });
     // Log that user filled in extra details of the order.. if it contains address
 
     const log = await logActivity({
@@ -244,6 +247,7 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
     });
     await User?.findByIdAndUpdate(user?.id, {
       $push: { logs: log._id },
+      last_order_date: new Date(),
     });
     return updatedOrder;
   };
@@ -264,3 +268,5 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
     }
   );
 };
+
+export const cancelOrder = async (_req: AuthRequest, res: Response) => {};

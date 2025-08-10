@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateOrder = exports.createNewOrder = exports.getSingleOrder = exports.getAllOrders = void 0;
+exports.cancelOrder = exports.updateOrder = exports.createNewOrder = exports.getSingleOrder = exports.getAllOrders = void 0;
 const mongoose_1 = require("mongoose");
 const Order_1 = __importDefault(require("../models/Order"));
 const Product_1 = require("../models/Product");
@@ -11,6 +11,7 @@ const User_1 = __importDefault(require("../models/User"));
 const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
+const Transaction_1 = __importDefault(require("../models/Transaction"));
 const getAllOrders = (_req, res) => {
     const id = _req.user?._id;
     const request = async () => {
@@ -126,6 +127,20 @@ const createNewOrder = (_req, res) => {
             total_amount: Products.reduce((sum, item) => sum + item.total, 0),
             user_id: id,
         });
+        const transaction = await Transaction_1.default.create({
+            user_id: new mongoose_1.Types.ObjectId(id),
+            user_role: user?.user_role,
+            order_id: order._id,
+            transaction_type: "debit",
+            category: "order_payment",
+            description: `Payment for order ${order._id}`,
+            total: order.total_amount,
+            status: "pending",
+            metadata: {
+                order_id: order._id,
+                user_id: id,
+            },
+        });
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(id),
@@ -140,10 +155,14 @@ const createNewOrder = (_req, res) => {
         });
         await order.updateOne({
             $push: { logs: log._id },
+            transaction_id: transaction._id,
         });
         await User_1.default.findByIdAndUpdate(new mongoose_1.Types.ObjectId(user?.id), {
-            $push: { orders: order._id },
-            last_order_date: new Date(),
+            $push: {
+                orders: order._id,
+                transaction_history: transaction._id,
+                logs: log._id,
+            },
         });
         return order;
     };
@@ -165,18 +184,6 @@ const updateOrder = async (_req, res) => {
     const orderID = _req.params?.id;
     const order = await (0, util_1.checkIfDocumentExistsById)(orderID, res, Order_1.default);
     const request = async () => {
-        const checkIfOrderBelongsToUser = user?.orders.find((order) => order._id.toString() === orderID);
-        // If payment made already or it is delivered, do not allow update
-        if (order?.payment_status === "paid" ||
-            order?.delivery_status === "delivered") {
-            return (0, response_1.errorResponse)(res, 400, "Order cannot be updated", {
-                message: "Order has already been paid or delivered",
-            });
-        }
-        if (!checkIfOrderBelongsToUser)
-            return (0, response_1.errorResponse)(res, 404, "Order not found", {
-                message: "Order not found or does not belong to the user",
-            });
         // Log that user filled in extra details of the order.. if it contains address
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
@@ -202,6 +209,7 @@ const updateOrder = async (_req, res) => {
         });
         await User_1.default?.findByIdAndUpdate(user?.id, {
             $push: { logs: log._id },
+            last_order_date: new Date(),
         });
         return updatedOrder;
     };
@@ -217,3 +225,5 @@ const updateOrder = async (_req, res) => {
     });
 };
 exports.updateOrder = updateOrder;
+const cancelOrder = async (_req, res) => { };
+exports.cancelOrder = cancelOrder;
