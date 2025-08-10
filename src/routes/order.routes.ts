@@ -6,7 +6,10 @@ import {
 } from "../controllers/Order.controllers";
 import { appAuth, isWorker } from "../middlewares/auth";
 import { removeSensitiveFields } from "../utils/util";
-import { initiatePayment } from "../controllers/order.payments.controllers";
+import {
+  initiatePayment,
+  verifyPayment,
+} from "../controllers/order.payments.controllers";
 import { validateOrder } from "../middlewares/order";
 
 const router = Router();
@@ -48,7 +51,7 @@ router.put(
   isWorker,
   removeSensitiveFields,
   validateOrder,
-  initiatePayment
+  verifyPayment
 );
 // Initiate payment
 export default router;

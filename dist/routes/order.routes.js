@@ -15,6 +15,6 @@ router.patch("/:id", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFiel
 // Initiate payment
 router.put("/:id/initiate-payment", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, order_1.validateOrder, order_payments_controllers_1.initiatePayment);
 // Initiate payment
-router.put("/:id/verify-payment", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, order_1.validateOrder, order_payments_controllers_1.initiatePayment);
+router.put("/:id/verify-payment", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, order_1.validateOrder, order_payments_controllers_1.verifyPayment);
 // Initiate payment
 exports.default = router;
