@@ -129,6 +129,7 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       await Order.findByIdAndUpdate(order_id, {
         payment_status: "paid",
         delivery_status: "processing",
+        status: "processing",
         payment_reference: response.data?.data?.reference,
         $push: { logs: new Types.ObjectId(log.id) },
       });
@@ -190,6 +191,7 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       await Order.findByIdAndUpdate(order_id, {
         payment_status: statusMap[status],
         $push: { logs: new Types.ObjectId(log.id) },
+        status: statusMap[status],
       });
 
       await User.findByIdAndUpdate(user._id, {

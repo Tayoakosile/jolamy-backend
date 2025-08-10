@@ -164,11 +164,6 @@ const updateOrder = async (_req, res) => {
     const orderID = _req.params?.id;
     const order = await (0, util_1.checkIfDocumentExistsById)(orderID, res, Order_1.default);
     const request = async () => {
-        const checkIfOrderBelongsToUser = user?.orders.find((order) => order._id.toString() === orderID);
-        if (!checkIfOrderBelongsToUser)
-            return (0, response_1.errorResponse)(res, 404, "Order not found", {
-                message: "Order not found or does not belong to the user",
-            });
         // Log that user filled in extra details of the order.. if it contains address
         const log = await (0, activityLog_1.logActivity)({
             req: _req,

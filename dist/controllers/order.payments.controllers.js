@@ -117,6 +117,7 @@ const verifyPayment = async (_req, res) => {
             await Order_1.default.findByIdAndUpdate(order_id, {
                 payment_status: "paid",
                 delivery_status: "processing",
+                status: "processing",
                 payment_reference: response.data?.data?.reference,
                 $push: { logs: new mongoose_1.Types.ObjectId(log.id) },
             });
@@ -166,6 +167,7 @@ const verifyPayment = async (_req, res) => {
             await Order_1.default.findByIdAndUpdate(order_id, {
                 payment_status: util_1.statusMap[status],
                 $push: { logs: new mongoose_1.Types.ObjectId(log.id) },
+                status: util_1.statusMap[status],
             });
             await User_1.default.findByIdAndUpdate(user._id, {
                 $push: { logs: new mongoose_1.Types.ObjectId(log.id) },
