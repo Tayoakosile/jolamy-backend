@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
 import Offices, { IOffice } from "../../models/Admin/Office";
-import { IOfficeWorker, OfficeWorker } from "../../models/Admin/OfficeWorker";
+import OfficeWorker, { IOfficeWorker } from "../../models/Admin/OfficeWorker";
+
 import User from "../../models/User";
 import { sendEmail } from "../../services/mail.service";
 import { logActivity } from "../../utils/activityLog";
@@ -15,7 +16,6 @@ import { AuthRequest } from "../../types/type";
 
 export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
   const officeId = _req.params.id;
-  console.log("officeId :", officeId);
 
   const body = _req.body;
   const request = async () => {
@@ -26,10 +26,14 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
       Offices
     )) as IOffice;
 
-    const existingWorker = await User.exists({})
-      .where("email")
-      .equals(body.email.trim().toLowerCase());
-    if (existingWorker) {
+    const existingUser = await User.findOne({
+      email: body.email.trim().toLowerCase(),
+    });
+    const existingWorker = await OfficeWorker.findOne({
+      email: body.email.trim().toLowerCase(),
+    });
+
+    if (existingWorker || existingUser) {
       errorResponse(res, 400, "Worker with this email already exists", {
         message: "Worker with this email already exists",
       });
@@ -47,21 +51,24 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
 
     const log = (await logActivity({
       req: _req,
-      user_id: new Types.ObjectId(_req.user?._id),
+      user_id: _req.user?.user_id,
       action: "ADD_OFFICE_WORKER",
-      sender: new Types.ObjectId(_req.user?._id),
+      sender: _req.user?.user_id,
       receiver: worker.id,
       description: `New office worker added to office ${office.name}`,
       metadata: {
         ...worker,
         officeId: office._id,
-        user_id: new Types.ObjectId(_req.user?._id),
+        user_id: _req.user?.user_id,
       },
     })) as any;
 
-    await Offices.findByIdAndUpdate(officeId, {
-      $push: { workers: worker._id, logs: log._id },
-    });
+    await Offices.findOneAndUpdate(
+      { office_id: officeId },
+      {
+        $push: { workers: worker._id, logs: log._id },
+      }
+    );
     await OfficeWorker.findByIdAndUpdate(worker._id, {
       $push: { logs: log._id },
     });
@@ -107,9 +114,9 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
   const request = async () => {
     const log = await logActivity({
       req: _req,
-      user_id: new Types.ObjectId(_req.user?._id),
+      user_id: _req.user?.user_id,
       action: "GET_OFFICE",
-      sender: new Types.ObjectId(_req.user?._id),
+      sender: _req.user?.user_id,
       receiver: new Types.ObjectId(id),
       description: `Office fetched: ${(office as any).name}`,
       metadata: {
@@ -156,8 +163,8 @@ export const updateWorkerDetails = async (req: AuthRequest, res: Response) => {
       OfficeWorker
     )) as IOfficeWorker;
     delete req.body.email;
-    const updatedOfficeWorker = (await OfficeWorker.findByIdAndUpdate(
-      id,
+    const updatedOfficeWorker = (await OfficeWorker.findOneAndUpdate(
+      { worker_id: id },
       {
         ...req.body,
         email: officeWorker.email,

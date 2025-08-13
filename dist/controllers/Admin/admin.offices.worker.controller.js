@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateWorkerDetails = exports.getSingleOffice = exports.getOffices = exports.addOfficeWorker = void 0;
 const mongoose_1 = require("mongoose");
 const Office_1 = __importDefault(require("../../models/Admin/Office"));
-const OfficeWorker_1 = require("../../models/Admin/OfficeWorker");
+const OfficeWorker_1 = __importDefault(require("../../models/Admin/OfficeWorker"));
 const User_1 = __importDefault(require("../../models/User"));
 const mail_service_1 = require("../../services/mail.service");
 const activityLog_1 = require("../../utils/activityLog");
@@ -15,20 +15,22 @@ const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
 const addOfficeWorker = (_req, res) => {
     const officeId = _req.params.id;
-    console.log("officeId :", officeId);
     const body = _req.body;
     const request = async () => {
         const office = (await (0, util_1.checkIfDocumentExistsById)(officeId, "office_id", res, Office_1.default));
-        const existingWorker = await User_1.default.exists({})
-            .where("email")
-            .equals(body.email.trim().toLowerCase());
-        if (existingWorker) {
+        const existingUser = await User_1.default.findOne({
+            email: body.email.trim().toLowerCase(),
+        });
+        const existingWorker = await OfficeWorker_1.default.findOne({
+            email: body.email.trim().toLowerCase(),
+        });
+        if (existingWorker || existingUser) {
             (0, response_1.errorResponse)(res, 400, "Worker with this email already exists", {
                 message: "Worker with this email already exists",
             });
             return;
         }
-        const worker = (await OfficeWorker_1.OfficeWorker.create({
+        const worker = (await OfficeWorker_1.default.create({
             ..._req.body,
             added_by: _req.user?._id,
             is_active: true,
@@ -39,21 +41,21 @@ const addOfficeWorker = (_req, res) => {
         }));
         const log = (await (0, activityLog_1.logActivity)({
             req: _req,
-            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
+            user_id: _req.user?.user_id,
             action: "ADD_OFFICE_WORKER",
-            sender: new mongoose_1.Types.ObjectId(_req.user?._id),
+            sender: _req.user?.user_id,
             receiver: worker.id,
             description: `New office worker added to office ${office.name}`,
             metadata: {
                 ...worker,
                 officeId: office._id,
-                user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
+                user_id: _req.user?.user_id,
             },
         }));
-        await Office_1.default.findByIdAndUpdate(officeId, {
+        await Office_1.default.findOneAndUpdate({ office_id: officeId }, {
             $push: { workers: worker._id, logs: log._id },
         });
-        await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(worker._id, {
+        await OfficeWorker_1.default.findByIdAndUpdate(worker._id, {
             $push: { logs: log._id },
         });
         return { worker, password: _req.body.password, officeId: office._id };
@@ -85,9 +87,9 @@ const getSingleOffice = async (_req, res) => {
     const request = async () => {
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
-            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
+            user_id: _req.user?.user_id,
             action: "GET_OFFICE",
-            sender: new mongoose_1.Types.ObjectId(_req.user?._id),
+            sender: _req.user?.user_id,
             receiver: new mongoose_1.Types.ObjectId(id),
             description: `Office fetched: ${office.name}`,
             metadata: {
@@ -119,9 +121,9 @@ const updateWorkerDetails = async (req, res) => {
     // if password or email is included then a mail has to be sent with the updated password
     const request = async () => {
         await (0, util_1.checkIfDocumentExistsById)(office_id, "office_id", res, Office_1.default);
-        const officeWorker = (await (0, util_1.checkIfDocumentExistsById)(id, "worker_id", res, OfficeWorker_1.OfficeWorker));
+        const officeWorker = (await (0, util_1.checkIfDocumentExistsById)(id, "worker_id", res, OfficeWorker_1.default));
         delete req.body.email;
-        const updatedOfficeWorker = (await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(id, {
+        const updatedOfficeWorker = (await OfficeWorker_1.default.findOneAndUpdate({ worker_id: id }, {
             ...req.body,
             email: officeWorker.email,
             password: req.body.password
@@ -142,7 +144,7 @@ const updateWorkerDetails = async (req, res) => {
                 user_id: req.user?._id,
             },
         });
-        await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(updatedOfficeWorker._id, {
+        await OfficeWorker_1.default.findByIdAndUpdate(updatedOfficeWorker._id, {
             $push: { logs: log._id },
         });
         return updatedOfficeWorker;
