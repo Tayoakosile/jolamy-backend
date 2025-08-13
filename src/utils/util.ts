@@ -22,12 +22,12 @@ export const checkIfDocumentExistsById = async <T extends Document>(
   Model: mongoose.Model<T>,
   populateFields?: string | string[]
 ) => {
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    errorResponse(res, 400, "Invalid ID format", {
-      message: "Invalid ID format",
-    });
-    return;
-  }
+  // if (!mongoose.Types.ObjectId.isValid(id)) {
+  //   errorResponse(res, 400, "Invalid ID format", {
+  //     message: "Invalid ID format",
+  //   });
+  //   return;
+  // }
   if (populateFields) {
     const populatedDocument = await Model.findOne({
       [itemKey]: id,
@@ -41,7 +41,9 @@ export const checkIfDocumentExistsById = async <T extends Document>(
 
     return populatedDocument;
   }
-  const document = await Model.findById(id);
+  const document = await Model.findOne({
+    [itemKey]: id,
+  } as any);
   if (!document) {
     errorResponse(res, 404, "Document not found", {
       message: "Document not found",
