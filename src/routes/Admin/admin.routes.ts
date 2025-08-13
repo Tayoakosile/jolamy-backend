@@ -1,19 +1,14 @@
 // routes/admin.routes.ts
 
 import { Router } from "express";
-import { appAuth, isAdmin } from "../../middlewares/auth";
 import {
-  addNewProducts,
-  archiveProduct,
-  getProducts,
-  getSingleProducts,
-  updateProduct,
-} from "../../controllers/Admin/admin.products.controller";
-import {
-  getPendingUsers,
   approveUser,
   rejectUser,
 } from "../../controllers/Admin/admin.controller";
+import {
+  getAllCashFlow,
+  getSingleCashFlow,
+} from "../../controllers/Admin/admin.finance.controller";
 import {
   createNewOffices,
   getOffices,
@@ -21,19 +16,24 @@ import {
   updateOffice,
 } from "../../controllers/Admin/admin.offices.controller";
 import {
-  getAllCashFlow,
-  getSingleCashFlow,
-} from "../../controllers/Admin/admin.finance.controller";
-import {
   addOfficeWorker,
   updateWorkerDetails,
 } from "../../controllers/Admin/admin.offices.worker.controller";
-import { upload } from "../../utils/upload";
+import {
+  addNewProducts,
+  archiveProduct,
+  getProducts,
+  getSingleProducts,
+  updateProduct,
+} from "../../controllers/Admin/admin.products.controller";
+import { getStats } from "../../controllers/Admin/admin.stats.controller";
+import { getPendingUsers } from "../../controllers/Admin/admin.users.controller";
+import { appAuth, isAdmin } from "../../middlewares/auth";
 
 const router = Router();
 
 // users
-router.get("/pending-users", appAuth, isAdmin, getPendingUsers);
+
 router.post("/approve/:user_id", appAuth, isAdmin, approveUser);
 router.post("/reject/:user_id", appAuth, isAdmin, rejectUser);
 // users
@@ -81,6 +81,13 @@ router.patch("/products/:id", appAuth, isAdmin, updateProduct);
 router.patch("/products/:id/archive", appAuth, isAdmin, archiveProduct);
 // users
 
-// products
+// stats
+router.get("/stats", appAuth, isAdmin, getStats);
+
+// users
+router.get("/pending-users", appAuth, isAdmin, getPendingUsers);
+
+
+// users
 
 export default router;
