@@ -9,7 +9,7 @@ const order_1 = require("../middlewares/order");
 const router = (0, express_1.Router)();
 router.get("/", auth_1.appAuth, auth_1.isWorker, Order_controllers_1.getAllOrders);
 router.post("/", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, Order_controllers_1.createNewOrder);
-router.get("/:id", auth_1.appAuth, auth_1.isWorker, Order_controllers_1.getAllOrders);
+router.get("/:id", auth_1.appAuth, auth_1.isWorker, order_1.validateOrder, Order_controllers_1.getSingleOrder);
 router.put("/:id", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.updateOrder);
 router.patch("/:id", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.updateOrder);
 router.put("/:id/cancel-order", auth_1.appAuth, auth_1.isWorker, util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.cancelOrder);

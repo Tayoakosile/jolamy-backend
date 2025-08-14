@@ -3,6 +3,7 @@ import {
   cancelOrder,
   createNewOrder,
   getAllOrders,
+  getSingleOrder,
   updateOrder,
 } from "../controllers/Order.controllers";
 import { appAuth, isWorker } from "../middlewares/auth";
@@ -17,7 +18,7 @@ const router = Router();
 
 router.get("/", appAuth, isWorker, getAllOrders);
 router.post("/", appAuth, isWorker, removeSensitiveFields, createNewOrder);
-router.get("/:id", appAuth, isWorker, getAllOrders);
+router.get("/:id", appAuth, isWorker, validateOrder, getSingleOrder);
 router.put(
   "/:id",
   appAuth,

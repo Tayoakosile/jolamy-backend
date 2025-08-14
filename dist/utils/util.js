@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.transactions = exports.statusMap = exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
 exports.generateEntityNumber = generateEntityNumber;
 exports.customIDGenerator = customIDGenerator;
-const mongoose_1 = __importDefault(require("mongoose"));
 const randomatic_1 = __importDefault(require("randomatic"));
 const counter_1 = require("../models/counter");
 const mail_service_1 = require("../services/mail.service");
@@ -19,12 +18,12 @@ const response_1 = require("./response");
  * @throws Error if the ID is invalid or the DB fails.
  */
 const checkIfDocumentExistsById = async (id, itemKey, res, Model, populateFields) => {
-    if (!mongoose_1.default.Types.ObjectId.isValid(id)) {
-        (0, response_1.errorResponse)(res, 400, "Invalid ID format", {
-            message: "Invalid ID format",
-        });
-        return;
-    }
+    // if (!mongoose.Types.ObjectId.isValid(id)) {
+    //   errorResponse(res, 400, "Invalid ID format", {
+    //     message: "Invalid ID format",
+    //   });
+    //   return;
+    // }
     if (populateFields) {
         const populatedDocument = await Model.findOne({
             [itemKey]: id,
@@ -37,7 +36,9 @@ const checkIfDocumentExistsById = async (id, itemKey, res, Model, populateFields
         }
         return populatedDocument;
     }
-    const document = await Model.findById(id);
+    const document = await Model.findOne({
+        [itemKey]: id,
+    });
     if (!document) {
         (0, response_1.errorResponse)(res, 404, "Document not found", {
             message: "Document not found",

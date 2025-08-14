@@ -41,9 +41,9 @@ const addNewProducts = (_req, res) => {
         });
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
-            user_id: new mongoose_1.Types.ObjectId(_req.user?.user_id),
+            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
             action: "ADD_PRODUCT",
-            sender: new mongoose_1.Types.ObjectId(_req.user?.user_id),
+            sender: new mongoose_1.Types.ObjectId(_req.user?._id),
             receiver: product.id,
             description: `New product added: ${product.name}`,
             metadata: {

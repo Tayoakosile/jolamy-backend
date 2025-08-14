@@ -3,6 +3,7 @@
 import { Router } from "express";
 import {
   approveUser,
+  getPendingUsers,
   rejectUser,
 } from "../../controllers/Admin/admin.controller";
 import {
@@ -27,7 +28,7 @@ import {
   updateProduct,
 } from "../../controllers/Admin/admin.products.controller";
 import { getStats } from "../../controllers/Admin/admin.stats.controller";
-import { getPendingUsers } from "../../controllers/Admin/admin.users.controller";
+
 import { appAuth, isAdmin } from "../../middlewares/auth";
 
 const router = Router();

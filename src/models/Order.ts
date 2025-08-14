@@ -1,7 +1,6 @@
-import { timeStamp } from "console";
 import { Document, model, Schema, Types } from "mongoose";
 import { Counter } from "./counter";
-import { generateRandom } from "../utils/util";
+import { generateRandom, timestamp } from "../utils/util";
 
 const ProductItemSchema = new Schema(
   {
@@ -59,7 +58,10 @@ type PaymentMethod =
 
 export interface IOrder extends Document {
   user_id: { type: Types.ObjectId; ref: "User"; required: true };
-  assigned_to?: Types.ObjectId;
+  assigned_to?: {
+    office: Types.ObjectId;
+    office_worker: Types.ObjectId;
+  };
   order_number?: string;
   date?: Date;
   delivery_fee?: number;
@@ -72,6 +74,7 @@ export interface IOrder extends Document {
   internal_sequence?: number;
   transaction_id?: Types.ObjectId;
   total_amount?: number;
+  total_quantity?: number;
   estimated_delivery_date?: Date;
   actual_delivery_date?: Date;
   discount_amount?: number;
@@ -91,8 +94,17 @@ export interface IOrder extends Document {
 
 const OrderSchema = new Schema<IOrder>(
   {
+    assigned_to: {
+      office: { type: Types.ObjectId, ref: "Office", required: false },
+      office_worker: {
+        type: Types.ObjectId,
+        ref: "OfficeWorker",
+        required: false,
+      },
+    },
+
     user_id: { type: Types.ObjectId, ref: "User", required: true },
-    assigned_to: { type: Types.ObjectId, ref: "OfficeWorker" },
+
     order_number: { type: String },
     date: { type: Date, default: Date.now },
     delivery_fee: { type: Number },
@@ -138,7 +150,8 @@ const OrderSchema = new Schema<IOrder>(
     },
     internal_notes: { type: String },
     internal_sequence: { type: Number, default: 0 },
-    total_amount: { type: Number },
+    total_amount: { type: Number, default: 0 },
+    total_quantity: { type: Number, default: 0 },
     estimated_delivery_date: { type: Date },
     actual_delivery_date: { type: Date },
     discount_amount: { type: Number, default: 0 },
@@ -164,10 +177,10 @@ const OrderSchema = new Schema<IOrder>(
       default: null,
     },
     payment_reference: { type: String },
-    logs: { type: [Schema.Types.Mixed], default: [] },
+    logs: { type: Types.ObjectId, ref: "Log" },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
   }
 );
 

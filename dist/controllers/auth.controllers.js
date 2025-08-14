@@ -5,8 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserProfile = exports.resetPassword = exports.forgotPassword = exports.loginAccount = exports.createAccount = void 0;
 const User_1 = __importDefault(require("../models/User"));
-const mongoose_1 = require("mongoose");
-const OfficeWorker_1 = require("../models/Admin/OfficeWorker");
 const auth_service_1 = require("../services/auth.service");
 const mail_service_1 = require("../services/mail.service");
 const activityLog_1 = require("../utils/activityLog");
@@ -14,6 +12,7 @@ const bcrypt_util_1 = require("../utils/bcrypt.util");
 const jwt_1 = require("../utils/jwt");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
+const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
 const createAccount = async (req, res) => {
     // return;
     if (!req.body) {
@@ -26,6 +25,7 @@ const createAccount = async (req, res) => {
     }
     if (!req.body.email || !req.body.password) {
         (0, response_1.errorResponse)(res, 400, "Email and password are required");
+        return;
     }
     try {
         const user = await (0, auth_service_1.signupService)({
@@ -46,53 +46,62 @@ const createAccount = async (req, res) => {
 exports.createAccount = createAccount;
 const loginAccount = async (req, res) => {
     try {
-        if (!req.body || !req.body.email || !req.body.password) {
-            (0, response_1.errorResponse)(res, 400, "Email and password are required");
-        }
-        const email = req.body?.email;
+        const email = req.body?.username || req.body?.email;
         const password = req.body?.password;
-        const officeWorker = (await OfficeWorker_1.OfficeWorker.findOne({ email }));
+        if (!req.body || !email || !req.body.password) {
+            (0, response_1.errorResponse)(res, 400, "Email and password are required");
+            return;
+        }
+        // search username or email fields
+        const officeWorker = (await OfficeWorker_1.default.findOne({
+            $or: [{ email }, { username: email }],
+        }));
         if (officeWorker) {
             const comparePassword = await (0, bcrypt_util_1.isMatch)(password, officeWorker.password);
             if (!comparePassword) {
                 (0, response_1.errorResponse)(res, 401, "invalid Email or Password");
                 return;
             }
-            const token = (0, jwt_1.generateToken)(`${officeWorker.user_id}`);
+            const token = (0, jwt_1.generateToken)(`${officeWorker?.worker_id}`);
             const activityLog = await (0, activityLog_1.logActivity)({
                 req,
-                user_id: officeWorker.user_id,
-                sender: officeWorker.user_id,
-                receiver: officeWorker.user_id,
+                user_id: officeWorker.id,
+                sender: officeWorker.id,
+                receiver: officeWorker.id,
                 action: "LOGIN",
                 description: "Worker logged in successfully",
                 metadata: {
                     email: officeWorker.email,
-                    user_id: officeWorker.user_id,
+                    user_id: officeWorker.id,
                 },
             });
-            await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(officeWorker._id, {
+            await OfficeWorker_1.default.findOneAndUpdate({ worker_id: officeWorker }, {
                 last_login: new Date(),
                 is_first_login: officeWorker.last_login ? false : true,
                 $push: { logs: activityLog._id },
             });
-            await (0, mail_service_1.sendEmail)(officeWorker.email, "Login Notification", officeWorker.is_first_login
-                ? "You have successfully logged in to your account for the first time. Welcome aboard!"
-                : "You have successfully logged in to your account.");
+            await (0, mail_service_1.sendEmail)(officeWorker.email, "Login Notification", "You have successfully logged in to your account."
+            // officeWorker.is_first_login
+            //   ? "You have successfully logged in to your account for the first time. Welcome aboard!"
+            //   : "You have successfully logged in to your account."
+            );
             (0, response_1.successResponse)(res, 200, "Login successful", {
                 token,
                 user: {
-                    id: officeWorker.user_id,
+                    id: officeWorker.worker_id,
                     email: officeWorker.email,
                 },
             });
             return;
         }
-        const user = (await User_1.default.findOne({ email }));
+        const user = (await User_1.default.findOne({
+            $or: [{ email }, { username: email }],
+        }));
         if (!user) {
             (0, response_1.errorResponse)(res, 404, "User not found with this email", {
                 message: "User not found with this email",
             });
+            return;
         }
         if (user.status === "disabled" ||
             user.status === "rejected" ||
@@ -102,21 +111,24 @@ const loginAccount = async (req, res) => {
                 status: user.status,
                 user,
             });
+            return;
         }
         const comparePassword = await (0, bcrypt_util_1.isMatch)(password, user.password);
-        if (!comparePassword)
+        if (!comparePassword) {
             (0, response_1.errorResponse)(res, 401, "invalid Email or Password");
+            return;
+        }
         const token = (0, jwt_1.generateToken)(`${user.user_id}`);
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
-            user_id: new mongoose_1.Types.ObjectId(user.user_id),
-            sender: new mongoose_1.Types.ObjectId(user.user_id),
-            receiver: new mongoose_1.Types.ObjectId(user.user_id),
+            user_id: user._id,
+            sender: user._id,
+            receiver: user._id,
             action: "LOGIN",
             description: "User logged in successfully",
             metadata: {
                 email: user.email,
-                user_id: user.user_id,
+                user_id: user._id,
             },
         });
         await User_1.default.findByIdAndUpdate(user._id, {
@@ -134,6 +146,7 @@ const loginAccount = async (req, res) => {
         });
     }
     catch (error) {
+        console.log("error :", error);
         (0, response_1.errorResponse)(res, 500, "An error occurred during login", error);
     }
 };

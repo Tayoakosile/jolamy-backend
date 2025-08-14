@@ -2,7 +2,7 @@
 
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { OfficeWorker } from "../models/Admin/OfficeWorker";
+import OfficeWorker from "../models/Admin/OfficeWorker";
 import User from "../models/User";
 import { IUser } from "../types/type";
 import { errorResponse } from "../utils/response";
@@ -33,6 +33,7 @@ export const appAuth = async (
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+
     if (!decoded || !decoded.id) {
       errorResponse(res, 401, "Invalid token", { message: "Invalid token" });
       return next();
@@ -41,25 +42,28 @@ export const appAuth = async (
     const worker = (await OfficeWorker.findOne({
       user_id: decoded.id,
     })) as IUser;
+    console.log("user :", user, worker);
+    // console.log("decoded :", decoded);
 
-    if (!user && !worker) {
-      errorResponse(res, 401, "User not found", { message: "User not found" });
-      return next();
-    }
     if (worker) {
       (req as any).user = worker;
-      next();
-      return;
+      return next()
     }
-    if (
-      user?.rejected_by ||
-      user?.status === "disabled" ||
-      user?.status === "rejected"
-    ) {
-      errorResponse(res, 403, "User account is inactive", {
-        message: "User account is inactive. Please contact support.",
-        status: user.status,
-      });
+    if (user) {
+      if (
+        user?.rejected_by ||
+        user?.status === "disabled" ||
+        user?.status === "rejected"
+      ) {
+        errorResponse(res, 403, "User account is inactive", {
+          message: "User account is inactive. Please contact support.",
+          status: user.status,
+        });
+        return;
+      }
+    }
+    if (!user && !worker) {
+      errorResponse(res, 401, "User not found", { message: "User not found" });
       return;
     }
 
@@ -69,7 +73,7 @@ export const appAuth = async (
     errorResponse(res, 401, "Invalid or expired token", {
       message: "Invalid or expired token",
     });
-    return next();
+    return;
   }
 };
 

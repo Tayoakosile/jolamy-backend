@@ -1,15 +1,13 @@
-import { Request, Response } from "express";
-import CashFlow, { IFinance } from "../models/CashFlow";
-import { checkIfDocumentExistsById, customReqResHandler } from "../utils/util";
-import Offices from "../models/Admin/Office";
+import { Response } from "express";
 import { logActivity } from "../utils/activityLog";
-import { OfficeWorker } from "../models/Admin/OfficeWorker";
+import { checkIfDocumentExistsById, customReqResHandler } from "../utils/util";
+
 import { Types } from "mongoose";
-import { errorResponse } from "../utils/response";
-import { Product } from "../models/Product";
-import { AuthRequest } from "../types/type";
-import User from "../models/User";
 import { Cart, ICart } from "../models/Cart";
+import { Product } from "../models/Product";
+import User from "../models/User";
+import { AuthRequest } from "../types/type";
+import { errorResponse } from "../utils/response";
 
 export const getSingleProductForNotAdmin = async (
   _req: AuthRequest,

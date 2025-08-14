@@ -7,11 +7,11 @@ exports.cancelOrder = exports.updateOrder = exports.createNewOrder = exports.get
 const mongoose_1 = require("mongoose");
 const Order_1 = __importDefault(require("../models/Order"));
 const Product_1 = require("../models/Product");
+const Transaction_1 = __importDefault(require("../models/Transaction"));
 const User_1 = __importDefault(require("../models/User"));
 const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
-const Transaction_1 = __importDefault(require("../models/Transaction"));
 const getAllOrders = (_req, res) => {
     const id = _req.user?._id;
     const request = async () => {
@@ -24,7 +24,23 @@ const getAllOrders = (_req, res) => {
     });
 };
 exports.getAllOrders = getAllOrders;
-const getSingleOrder = (_req, res) => { };
+const getSingleOrder = async (_req, res) => {
+    const user_role = _req.user?.user_role;
+    const order = _req?.order;
+    // if (user_role === "admin") {
+    const orderDetails = await Order_1.default.findById(order && order._id)
+        .populate("logs")
+        .populate("transaction_id")
+        .populate("products")
+        .populate({
+        path: "user_id",
+        select: "first_name last_name email phone_number user_role",
+    });
+    (0, response_1.successResponse)(res, 200, "Order retrieved successfully", {
+        order: orderDetails,
+    });
+    // }
+};
 exports.getSingleOrder = getSingleOrder;
 const createNewOrder = (_req, res) => {
     const user = _req.user;
@@ -33,48 +49,27 @@ const createNewOrder = (_req, res) => {
     const product_items = body.products;
     const request = async () => {
         const getProductPricing = async (productFromPostAPi) => {
-            const productResFromDb = await Product_1.Product.findOne({
-                _id: productFromPostAPi.id,
-                "variants._id": {
-                    $in: productFromPostAPi?.variants?.map((variant) => variant.id),
-                },
-            }).select("name category reference_id  available_weight is_active is_archived  variants");
+            console.log("productFromPostAPi?.variants :", productFromPostAPi?.variants);
+            const productResFromDb = productFromPostAPi?.variants
+                ? await Product_1.Product.findOne({
+                    _id: new mongoose_1.Types.ObjectId(productFromPostAPi.id),
+                    "variants._id": {
+                        $in: productFromPostAPi?.variants?.map((variant) => variant.id),
+                    },
+                }).select("name category reference_id  available_weight is_active is_archived  variants")
+                : await Product_1.Product.findOne({
+                    _id: new mongoose_1.Types.ObjectId(productFromPostAPi.id),
+                }).select("name category reference_id  available_weight is_active is_archived  variants");
             // if a product is is_active is false or is_archived is true, return error
-            if (!productResFromDb?.is_active || productResFromDb?.is_archived) {
+            if (!productResFromDb ||
+                !productResFromDb?.is_active ||
+                productResFromDb?.is_archived) {
                 (0, response_1.errorResponse)(res, 404, "Product not found", {
                     message: `Product ${productResFromDb?.name} is not available for order.`,
                     product: productResFromDb,
                 });
                 return;
             }
-            /**
-             * Maps over the variants provided by the POST API, matches each variant with its corresponding
-             * variant from the database, and constructs a new variant object containing:
-             * - All properties from the matched database variant (converted to a plain object)
-             * - The quantity specified in the POST API variant (defaulting to 0 if not provided)
-             * - The total price, calculated as the matched variant's distributor price per box multiplied by the quantity
-             *
-             * @param productFromPostAPi - The product object received from the POST API, expected to have a `variants` array.
-             * @param productResFromDb - The product object retrieved from the database, expected to have a `variants` array.
-             * @returns An array of variant objects with updated quantity and total price, or `undefined` for unmatched variants.
-             */
-            /**
-             * Maps over the variants provided in the product data from the POST API, matches each with the corresponding variant from the database,
-             * and performs the following:
-             * - Checks if the user is placing their first order and if the requested quantity meets the minimum order quantity for first-time orders.
-             *   If not, returns an error response.
-             * - For matched variants, returns an object containing the variant's details, the requested quantity, and the total price for that quantity.
-             * - If no matching variant is found, returns `undefined` for that entry.
-             *
-             * @param productFromPostAPi - The product object received from the POST API, containing an array of variants with requested quantities.
-             * @param productResFromDb - The product object retrieved from the database, containing an array of variants with pricing and minimum order information.
-             * @param user - The user object, used to determine if this is the user's first order.
-             * @param res - The Express response object, used to send error responses if minimum order quantity is not met.
-             * @returns An array where each entry corresponds to a variant from the POST API:
-             *   - If the minimum order quantity is not met, an error response is sent and the entry is `undefined`.
-             *   - If a matching variant is found, returns an object with variant details, requested quantity, and total price.
-             *   - If no matching variant is found, returns `undefined`.
-             */
             const theVariant = (productFromPostAPi?.variants || [])?.map((variantFromPostAPi) => {
                 const matchedVariant = productResFromDb?.variants.find((v) => v.id === variantFromPostAPi.id);
                 if (!user?.last_order_date &&
@@ -119,16 +114,26 @@ const createNewOrder = (_req, res) => {
                 name: productInfo?.name || "Unknown Product",
                 variants: theVariant,
                 total: theVariant.reduce((sum, item) => sum + item.total_amount, 0),
+                total_quantity: theVariant.reduce((sum, item) => sum + item.quantity, 0),
             };
         };
         const Products = await Promise.all(product_items.map(async (product) => getProductPricing(product)));
+        console.log("Products :", Products);
+        if (Products.length === 0 || Products.some((p) => !p)) {
+            (0, response_1.errorResponse)(res, 400, "No valid products found in order", {
+                message: "Please check the products you are trying to order.",
+            });
+            return;
+        }
+        // return;
         const order = await Order_1.default.create({
             products: Products,
             internal_notes: body.internal_notes || "",
             role: user?.user_role,
             tracking_number: `JOL-${(0, util_1.generateRandom)(12)}`,
-            total_amount: Products.reduce((sum, item) => sum + item.total, 0),
+            total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
             user_id: id,
+            total_quantity: Products.reduce((sum, item) => sum + item.total_quantity, 0),
         });
         const transaction = await Transaction_1.default.create({
             user_id: new mongoose_1.Types.ObjectId(id),

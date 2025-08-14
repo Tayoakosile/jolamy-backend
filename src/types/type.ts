@@ -54,6 +54,7 @@ export interface IUser extends Document {
   teams: any;
   stats: any;
   outstanding_boxes: number;
+  total_boxes_in_stock: number;
   orders: Types.ObjectId[]; // refs to Order model
   products: { type: Types.ObjectId[]; ref: "Products" }; // refs to Product model
   bonus: { type: Types.ObjectId[]; ref: "Bonus" }; // refs to Bonus model

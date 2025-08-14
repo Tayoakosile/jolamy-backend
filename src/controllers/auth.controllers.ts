@@ -53,12 +53,13 @@ export const createAccount = async (req: Request, res: Response) => {
 
 export const loginAccount = async (req: Request, res: Response) => {
   try {
-    if (!req.body || !req.body.username || !req.body.password) {
+    const email = req.body?.username || req.body?.email;
+    const password = req.body?.password;
+
+    if (!req.body || !email || !req.body.password) {
       errorResponse(res, 400, "Email and password are required");
       return;
     }
-    const email = req.body?.username;
-    const password = req.body?.password;
 
     // search username or email fields
 
@@ -76,14 +77,14 @@ export const loginAccount = async (req: Request, res: Response) => {
       const token = generateToken(`${officeWorker?.worker_id}`);
       const activityLog = await logActivity({
         req,
-        user_id: officeWorker.worker_id,
-        sender: officeWorker.worker_id,
-        receiver: officeWorker.worker_id,
+        user_id: officeWorker.id,
+        sender: officeWorker.id,
+        receiver: officeWorker.id,
         action: "LOGIN",
         description: "Worker logged in successfully",
         metadata: {
           email: officeWorker.email,
-          user_id: officeWorker.worker_id,
+          user_id: officeWorker.id,
         },
       });
 
@@ -146,14 +147,14 @@ export const loginAccount = async (req: Request, res: Response) => {
 
     const activityLog = await logActivity({
       req,
-      user_id: user.user_id,
-      sender: user.user_id,
-      receiver: user.user_id,
+      user_id: user._id,
+      sender: user._id,
+      receiver: user._id,
       action: "LOGIN",
       description: "User logged in successfully",
       metadata: {
         email: user.email,
-        user_id: user.user_id,
+        user_id: user._id,
       },
     });
 

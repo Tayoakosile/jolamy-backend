@@ -96,7 +96,8 @@ officeWorkerSchema.pre(
   }
 );
 
-export const OfficeWorker = model<IOfficeWorker>(
+const OfficeWorker = model<IOfficeWorker>(
   "OfficeWorker",
   officeWorkerSchema
 );
+export default OfficeWorker

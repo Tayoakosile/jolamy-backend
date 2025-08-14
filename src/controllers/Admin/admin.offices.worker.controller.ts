@@ -51,7 +51,7 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
 
     const log = (await logActivity({
       req: _req,
-      user_id: _req.user?.user_id,
+      user_id: new Types.ObjectId(_req.user?._id),
       action: "ADD_OFFICE_WORKER",
       sender: _req.user?.user_id,
       receiver: worker.id,
@@ -114,9 +114,9 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
   const request = async () => {
     const log = await logActivity({
       req: _req,
-      user_id: _req.user?.user_id,
+      user_id: new Types.ObjectId(_req.user?._id),
       action: "GET_OFFICE",
-      sender: _req.user?.user_id,
+      sender: new Types.ObjectId(_req.user?.user_id),
       receiver: new Types.ObjectId(id),
       description: `Office fetched: ${(office as any).name}`,
       metadata: {

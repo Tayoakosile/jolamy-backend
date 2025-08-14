@@ -19,11 +19,11 @@ export const initiatePayment = async (_req: AuthRequest, res: Response) => {
 
     const log = await logActivity({
       req: _req,
-      user_id: user?.user_id,
+      user_id: user?._id,
       action: "initiate_payment",
       description: "User initiated payment for an order",
-      receiver: user.user_id,
-      sender: user.user_id,
+      receiver: user._id,
+      sender: new Types.ObjectId(`${user._id}`),
       metadata: {
         order_id,
         total_amount: order.total_amount,
@@ -32,10 +32,13 @@ export const initiatePayment = async (_req: AuthRequest, res: Response) => {
       },
     });
 
-    await Order.findByIdAndUpdate(order_id, {
-      payment_status: "initiated",
-      $push: { logs: log.id },
-    });
+    await Order.findOneAndUpdate(
+      { order_number: order_id },
+      {
+        payment_status: "initiated",
+        $push: { logs: log.id },
+      }
+    );
     await User.findByIdAndUpdate(user._id, {
       $push: { logs: log.id },
     });
@@ -51,6 +54,7 @@ export const initiatePayment = async (_req: AuthRequest, res: Response) => {
         delivery_status: order.delivery_status,
       },
     });
+    return;
   } catch (error) {
     console.error("Error initiating payment:", error);
     res.status(500).json({
@@ -93,8 +97,6 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       });
     }
 
-    // return;
-
     const response = await axios.get(
       `https://api.paystack.co/transaction/verify/${reference}`,
       {
@@ -111,11 +113,11 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
     // return;
     const log = await logActivity({
       req: _req,
-      user_id: user?.user_id,
+      user_id: user?.id,
       action: "VERIFY_PAYMENT",
       description: "User verified payment for an order",
-      receiver: user.user_id,
-      sender: user.user_id,
+      receiver: user._id,
+      sender: new Types.ObjectId(`${user._id}`),
       metadata: {
         order_id,
         total_amount: order.total_amount,
@@ -123,47 +125,60 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
         payment_reference: response.data?.data?.reference,
       },
     });
+    console.log("status :", status);
+
     if (
-      statusMap[status] === "paid" &&
-      responseFromPaystack?.metadata?.cart_id == order_id?.toString()
+      statusMap[status] === "paid"
+      // &&responseFromPaystack?.metadata?.cart_id == order_id?.toString()
     ) {
-      await Order.findByIdAndUpdate(order_id, {
-        payment_status: "paid",
-        delivery_status: "processing",
-        status: "processing",
-        payment_reference: response.data?.data?.reference,
-        $push: { logs: new Types.ObjectId(log.id) },
-      });
+      const order = await Order.findOneAndUpdate(
+        { order_number: order_id },
+        {
+          payment_status: "paid",
+          delivery_status: "processing",
+          status: "processing",
+          payment_method:"Paystack",
+          payment_reference: response.data?.data?.reference,
+          $push: { logs: new Types.ObjectId(log.id) },
+        }
+      );
 
       await User.findByIdAndUpdate(user._id, {
         $push: { logs: new Types.ObjectId(log.id) },
+
+        $inc: {
+          total_boxes_in_stock: Number(order?.total_quantity || 0),
+        },
       });
-      await Transaction.findOneAndUpdate(new Types.ObjectId(order_id), {
+      await Transaction.findByIdAndUpdate(order?._id, {
         status: "completed",
-        payment_method: "Paystack - ",
+        payment_method: "Paystack -",
       });
       //   find the cart and delete it items array, if the id is in items then delete the collection
-      await Cart.updateOne(
-        { user_id: user?.user_id, order_id },
+      await Cart.findOneAndUpdate(
+        { user_id: user?.id, order_id },
         { $pull: { items: { order_id } } }
       );
       await Cart.findByIdAndDelete(user.id, {
         $or: [{ user_id: user._id }, { order_id }],
       });
+
+      console.log(" :hello");
       sendEmail(
         user.email,
         "Payment Successful",
         `Your payment for order ${order_id} has been successfully verified. Thank you for your purchase!`
       );
+
       successResponse(res, 200, "Payment verified successfully", {
         order_id,
         user_id: user?.user_id,
         user_name: user.username,
         user_email: user.email,
         order_details: {
-          total_amount: order.total_amount,
-          payment_status: order.payment_status,
-          delivery_status: order.delivery_status,
+          total_amount: order && order.total_amount,
+          payment_status: order && order.payment_status,
+          delivery_status: order && order.delivery_status,
         },
       });
       return;
@@ -220,10 +235,22 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       });
       return;
     }
+    errorResponse(res, 400, "Payment Not Confirmed", {
+      order_id,
+      user_id: user?.user_id,
+      user_name: user.username,
+      user_email: user.email,
+      order_details: {
+        total_amount: order.total_amount,
+        payment_status: order.payment_status,
+        delivery_status: order.delivery_status,
+      },
+    });
+    return;
   } catch (error: any) {
     console.error("Error initiating payment:", error?.response?.data || error);
     res.status(500).json({
-      message: "An error occurred while initiating payment",
+      message: "An error occurred while Verifying payment",
       error: error || "Internal Server Error",
     });
   }

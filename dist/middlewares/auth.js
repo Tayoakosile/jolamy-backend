@@ -6,7 +6,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isWorker = exports.isAdmin = exports.appAuth = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const OfficeWorker_1 = require("../models/Admin/OfficeWorker");
+const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
 const User_1 = __importDefault(require("../models/User"));
 const response_1 = require("../utils/response");
 const appAuth = async (req, res, next) => {
@@ -28,25 +28,28 @@ const appAuth = async (req, res, next) => {
             return next();
         }
         const user = (await User_1.default.findOne({ user_id: decoded.id }));
-        const worker = (await OfficeWorker_1.OfficeWorker.findOne({
+        const worker = (await OfficeWorker_1.default.findOne({
             user_id: decoded.id,
         }));
-        if (!user && !worker) {
-            (0, response_1.errorResponse)(res, 401, "User not found", { message: "User not found" });
-            return next();
-        }
+        console.log("user :", user, worker);
+        // console.log("decoded :", decoded);
         if (worker) {
             req.user = worker;
-            next();
-            return;
+            return next();
         }
-        if (user?.rejected_by ||
-            user?.status === "disabled" ||
-            user?.status === "rejected") {
-            (0, response_1.errorResponse)(res, 403, "User account is inactive", {
-                message: "User account is inactive. Please contact support.",
-                status: user.status,
-            });
+        if (user) {
+            if (user?.rejected_by ||
+                user?.status === "disabled" ||
+                user?.status === "rejected") {
+                (0, response_1.errorResponse)(res, 403, "User account is inactive", {
+                    message: "User account is inactive. Please contact support.",
+                    status: user.status,
+                });
+                return;
+            }
+        }
+        if (!user && !worker) {
+            (0, response_1.errorResponse)(res, 401, "User not found", { message: "User not found" });
             return;
         }
         req.user = worker ? worker : user;
@@ -56,7 +59,7 @@ const appAuth = async (req, res, next) => {
         (0, response_1.errorResponse)(res, 401, "Invalid or expired token", {
             message: "Invalid or expired token",
         });
-        return next();
+        return;
     }
 };
 exports.appAuth = appAuth;

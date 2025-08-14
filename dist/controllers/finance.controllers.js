@@ -8,7 +8,7 @@ const CashFlow_1 = __importDefault(require("../models/CashFlow"));
 const util_1 = require("../utils/util");
 const Office_1 = __importDefault(require("../models/Admin/Office"));
 const activityLog_1 = require("../utils/activityLog");
-const OfficeWorker_1 = require("../models/Admin/OfficeWorker");
+const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
 const mongoose_1 = require("mongoose");
 const response_1 = require("../utils/response");
 const getAllFinance = (req, res) => {
@@ -93,7 +93,7 @@ const createNewFinance = (req, res) => {
                 },
             });
         }
-        await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(user.id, {
+        await OfficeWorker_1.default.findByIdAndUpdate(user.id, {
             $push: { cash_flow: cashFlow._id, logs: log._id },
         });
     };
@@ -131,7 +131,7 @@ const updateFinance = (req, res) => {
         await Office_1.default.findByIdAndUpdate(user.office, {
             $push: { logs: log._id },
         });
-        await OfficeWorker_1.OfficeWorker.findByIdAndUpdate(user.id, {
+        await OfficeWorker_1.default.findByIdAndUpdate(user.id, {
             $push: { logs: log._id },
         });
         return updatedFinance;

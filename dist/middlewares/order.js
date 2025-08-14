@@ -7,24 +7,26 @@ exports.validateOrder = void 0;
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
 const Order_1 = __importDefault(require("../models/Order"));
+const mongoose_1 = require("mongoose");
 const validateOrder = async (_req, res, next) => {
     const user = _req.user;
     const orderID = _req.params?.id;
-    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, "order_id", res, Order_1.default);
-    const checkIfOrderBelongsToUser = user?.orders.find((order) => order._id.toString() === orderID);
+    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, mongoose_1.Types.ObjectId.isValid(orderID) ? "_id" : "order_number", res, Order_1.default);
+    // Ensure both IDs are strings for comparison
+    const checkIfOrderBelongsToUser = user?.orders.some((singleOrder) => String(singleOrder._id) === String(order?._id));
     // If payment made already or it is delivered, do not allow update
-    if (order?.payment_status === "paid" ||
-        order?.delivery_status === "delivered") {
+    if ((_req.method !== "GET" && order?.payment_status === "paid") ||
+        (_req.method !== "GET" && order?.delivery_status === "delivered")) {
         (0, response_1.errorResponse)(res, 400, "Order cannot be updated", {
             message: "Order has already been paid or delivered",
         });
-        return next();
+        return;
     }
-    if (!checkIfOrderBelongsToUser) {
+    if (user?.user_role !== "admin" && !checkIfOrderBelongsToUser) {
         (0, response_1.errorResponse)(res, 404, "Order not found", {
             message: "Order not found or does not belong to the user",
         });
-        return next();
+        return;
     }
     _req.order = order;
     next();

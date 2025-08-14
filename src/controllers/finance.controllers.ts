@@ -3,7 +3,7 @@ import CashFlow, { IFinance } from "../models/CashFlow";
 import { checkIfDocumentExistsById, customReqResHandler } from "../utils/util";
 import Offices from "../models/Admin/Office";
 import { logActivity } from "../utils/activityLog";
-import { OfficeWorker } from "../models/Admin/OfficeWorker";
+import OfficeWorker  from "../models/Admin/OfficeWorker";
 import { Types } from "mongoose";
 import { errorResponse } from "../utils/response";
 

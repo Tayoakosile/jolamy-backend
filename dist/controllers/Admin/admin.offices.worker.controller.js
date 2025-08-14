@@ -41,7 +41,7 @@ const addOfficeWorker = (_req, res) => {
         }));
         const log = (await (0, activityLog_1.logActivity)({
             req: _req,
-            user_id: _req.user?.user_id,
+            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
             action: "ADD_OFFICE_WORKER",
             sender: _req.user?.user_id,
             receiver: worker.id,
@@ -87,9 +87,9 @@ const getSingleOffice = async (_req, res) => {
     const request = async () => {
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
-            user_id: _req.user?.user_id,
+            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
             action: "GET_OFFICE",
-            sender: _req.user?.user_id,
+            sender: new mongoose_1.Types.ObjectId(_req.user?.user_id),
             receiver: new mongoose_1.Types.ObjectId(id),
             description: `Office fetched: ${office.name}`,
             metadata: {

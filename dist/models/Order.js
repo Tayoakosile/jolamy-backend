@@ -20,8 +20,15 @@ const ShippingLocationSchema = new mongoose_1.Schema({
     estimatedDate: { type: Date, required: true },
 }, { _id: false });
 const OrderSchema = new mongoose_1.Schema({
+    assigned_to: {
+        office: { type: mongoose_1.Types.ObjectId, ref: "Office", required: false },
+        office_worker: {
+            type: mongoose_1.Types.ObjectId,
+            ref: "OfficeWorker",
+            required: false,
+        },
+    },
     user_id: { type: mongoose_1.Types.ObjectId, ref: "User", required: true },
-    assigned_to: { type: mongoose_1.Types.ObjectId, ref: "OfficeWorker" },
     order_number: { type: String },
     date: { type: Date, default: Date.now },
     delivery_fee: { type: Number },
@@ -67,7 +74,8 @@ const OrderSchema = new mongoose_1.Schema({
     },
     internal_notes: { type: String },
     internal_sequence: { type: Number, default: 0 },
-    total_amount: { type: Number },
+    total_amount: { type: Number, default: 0 },
+    total_quantity: { type: Number, default: 0 },
     estimated_delivery_date: { type: Date },
     actual_delivery_date: { type: Date },
     discount_amount: { type: Number, default: 0 },
@@ -92,9 +100,9 @@ const OrderSchema = new mongoose_1.Schema({
         default: null,
     },
     payment_reference: { type: String },
-    logs: { type: [mongoose_1.Schema.Types.Mixed], default: [] },
+    logs: { type: mongoose_1.Types.ObjectId, ref: "Log" },
 }, {
-    timestamps: true,
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
 });
 OrderSchema.pre("save", async function (next) {
     if (this.isNew) {

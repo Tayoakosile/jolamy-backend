@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OfficeWorker = void 0;
 const mongoose_1 = require("mongoose");
 const util_1 = require("../../utils/util");
 const bcrypt_util_1 = require("../../utils/bcrypt.util");
@@ -57,4 +56,5 @@ officeWorkerSchema.pre("save", async function (next) {
     }
     next();
 });
-exports.OfficeWorker = (0, mongoose_1.model)("OfficeWorker", officeWorkerSchema);
+const OfficeWorker = (0, mongoose_1.model)("OfficeWorker", officeWorkerSchema);
+exports.default = OfficeWorker;

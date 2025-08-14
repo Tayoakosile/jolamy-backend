@@ -50,6 +50,7 @@ const userSchema = new Schema<IUser>(
     teams: Schema.Types.Mixed,
     stats: Schema.Types.Mixed,
     outstanding_boxes: { type: Number, default: 0 },
+    total_boxes_in_stock: { type: Number, default: 0 },
     orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: Schema.Types.ObjectId, ref: "Product" }],
     bonus: [{ type: Schema.Types.ObjectId, ref: "Bonus" }],

@@ -4,13 +4,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addToCart = exports.getSingleProductForNotAdmin = void 0;
-const util_1 = require("../utils/util");
 const activityLog_1 = require("../utils/activityLog");
+const util_1 = require("../utils/util");
 const mongoose_1 = require("mongoose");
-const response_1 = require("../utils/response");
+const Cart_1 = require("../models/Cart");
 const Product_1 = require("../models/Product");
 const User_1 = __importDefault(require("../models/User"));
-const Cart_1 = require("../models/Cart");
+const response_1 = require("../utils/response");
 const getSingleProductForNotAdmin = async (_req, res) => {
     const id = _req.params.id;
     await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);

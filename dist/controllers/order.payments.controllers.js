@@ -21,11 +21,11 @@ const initiatePayment = async (_req, res) => {
         const order_id = _req.params.id;
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
-            user_id: user?.user_id,
+            user_id: user?._id,
             action: "initiate_payment",
             description: "User initiated payment for an order",
-            receiver: user.user_id,
-            sender: user.user_id,
+            receiver: user._id,
+            sender: new mongoose_1.Types.ObjectId(`${user._id}`),
             metadata: {
                 order_id,
                 total_amount: order.total_amount,
@@ -33,7 +33,7 @@ const initiatePayment = async (_req, res) => {
                 delivery_status: order.delivery_status,
             },
         });
-        await Order_1.default.findByIdAndUpdate(order_id, {
+        await Order_1.default.findOneAndUpdate({ order_number: order_id }, {
             payment_status: "initiated",
             $push: { logs: log.id },
         });
@@ -51,6 +51,7 @@ const initiatePayment = async (_req, res) => {
                 delivery_status: order.delivery_status,
             },
         });
+        return;
     }
     catch (error) {
         console.error("Error initiating payment:", error);
@@ -88,7 +89,6 @@ const verifyPayment = async (_req, res) => {
                 message: "Payment reference is required",
             });
         }
-        // return;
         const response = await axios_1.default.get(`https://api.paystack.co/transaction/verify/${reference}`, {
             headers: {
                 Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
@@ -101,11 +101,11 @@ const verifyPayment = async (_req, res) => {
         // return;
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
-            user_id: user?.user_id,
+            user_id: user?.id,
             action: "VERIFY_PAYMENT",
             description: "User verified payment for an order",
-            receiver: user.user_id,
-            sender: user.user_id,
+            receiver: user._id,
+            sender: new mongoose_1.Types.ObjectId(`${user._id}`),
             metadata: {
                 order_id,
                 total_amount: order.total_amount,
@@ -113,27 +113,34 @@ const verifyPayment = async (_req, res) => {
                 payment_reference: response.data?.data?.reference,
             },
         });
-        if (util_1.statusMap[status] === "paid" &&
-            responseFromPaystack?.metadata?.cart_id == order_id?.toString()) {
-            await Order_1.default.findByIdAndUpdate(order_id, {
+        console.log("status :", status);
+        if (util_1.statusMap[status] === "paid"
+        // &&responseFromPaystack?.metadata?.cart_id == order_id?.toString()
+        ) {
+            const order = await Order_1.default.findOneAndUpdate({ order_number: order_id }, {
                 payment_status: "paid",
                 delivery_status: "processing",
                 status: "processing",
+                payment_method: "Paystack",
                 payment_reference: response.data?.data?.reference,
                 $push: { logs: new mongoose_1.Types.ObjectId(log.id) },
             });
             await User_1.default.findByIdAndUpdate(user._id, {
                 $push: { logs: new mongoose_1.Types.ObjectId(log.id) },
+                $inc: {
+                    total_boxes_in_stock: Number(order?.total_quantity || 0),
+                },
             });
-            await Transaction_1.default.findOneAndUpdate(new mongoose_1.Types.ObjectId(order_id), {
+            await Transaction_1.default.findByIdAndUpdate(order?._id, {
                 status: "completed",
-                payment_method: "Paystack - ",
+                payment_method: "Paystack -",
             });
             //   find the cart and delete it items array, if the id is in items then delete the collection
-            await Cart_1.Cart.updateOne({ user_id: user?.user_id, order_id }, { $pull: { items: { order_id } } });
+            await Cart_1.Cart.findOneAndUpdate({ user_id: user?.id, order_id }, { $pull: { items: { order_id } } });
             await Cart_1.Cart.findByIdAndDelete(user.id, {
                 $or: [{ user_id: user._id }, { order_id }],
             });
+            console.log(" :hello");
             (0, mail_service_1.sendEmail)(user.email, "Payment Successful", `Your payment for order ${order_id} has been successfully verified. Thank you for your purchase!`);
             (0, response_1.successResponse)(res, 200, "Payment verified successfully", {
                 order_id,
@@ -141,9 +148,9 @@ const verifyPayment = async (_req, res) => {
                 user_name: user.username,
                 user_email: user.email,
                 order_details: {
-                    total_amount: order.total_amount,
-                    payment_status: order.payment_status,
-                    delivery_status: order.delivery_status,
+                    total_amount: order && order.total_amount,
+                    payment_status: order && order.payment_status,
+                    delivery_status: order && order.delivery_status,
                 },
             });
             return;
@@ -191,11 +198,23 @@ const verifyPayment = async (_req, res) => {
             });
             return;
         }
+        (0, response_1.errorResponse)(res, 400, "Payment Not Confirmed", {
+            order_id,
+            user_id: user?.user_id,
+            user_name: user.username,
+            user_email: user.email,
+            order_details: {
+                total_amount: order.total_amount,
+                payment_status: order.payment_status,
+                delivery_status: order.delivery_status,
+            },
+        });
+        return;
     }
     catch (error) {
         console.error("Error initiating payment:", error?.response?.data || error);
         res.status(500).json({
-            message: "An error occurred while initiating payment",
+            message: "An error occurred while Verifying payment",
             error: error || "Internal Server Error",
         });
     }

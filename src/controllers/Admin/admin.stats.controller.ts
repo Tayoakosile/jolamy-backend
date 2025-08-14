@@ -2,13 +2,10 @@ import { Response } from "express";
 import Offices from "../../models/Admin/Office";
 import CashFlow from "../../models/CashFlow";
 import Order from "../../models/Order";
-import { Product } from "../../models/Product";
-import Transaction from "../../models/Transaction";
 import User from "../../models/User";
 import { AuthRequest } from "../../types/type";
 import { errorResponse, successResponse } from "../../utils/response";
 import { getTrend } from "../../utils/trend.util";
-import { transactions } from "../../utils/util";
 
 export const getStats = async (_req: AuthRequest, res: Response) => {
   // get total users, total products, total orders, total cash flow in an object from mongoose db

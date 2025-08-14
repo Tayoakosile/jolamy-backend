@@ -1,6 +1,5 @@
-import dotenv from "dotenv";
 import cors from "cors";
-import expressListEndpoints from "express-list-endpoints";
+import dotenv from "dotenv";
 import express from "express";
 import connectDB from "./config/db";
 import { apiLimiter } from "./middlewares/rate-limiter";

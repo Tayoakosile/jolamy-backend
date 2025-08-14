@@ -8,7 +8,6 @@ const admin_offices_controller_1 = require("../../controllers/Admin/admin.office
 const admin_offices_worker_controller_1 = require("../../controllers/Admin/admin.offices.worker.controller");
 const admin_products_controller_1 = require("../../controllers/Admin/admin.products.controller");
 const admin_stats_controller_1 = require("../../controllers/Admin/admin.stats.controller");
-const admin_users_controller_1 = require("../../controllers/Admin/admin.users.controller");
 const auth_1 = require("../../middlewares/auth");
 const router = (0, express_1.Router)();
 // users
@@ -43,6 +42,6 @@ router.patch("/products/:id/archive", auth_1.appAuth, auth_1.isAdmin, admin_prod
 // stats
 router.get("/stats", auth_1.appAuth, auth_1.isAdmin, admin_stats_controller_1.getStats);
 // users
-router.get("/pending-users", auth_1.appAuth, auth_1.isAdmin, admin_users_controller_1.getPendingUsers);
+router.get("/pending-users", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.getPendingUsers);
 // users
 exports.default = router;

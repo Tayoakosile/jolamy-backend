@@ -49,6 +49,7 @@ const userSchema = new mongoose_1.Schema({
     teams: mongoose_1.Schema.Types.Mixed,
     stats: mongoose_1.Schema.Types.Mixed,
     outstanding_boxes: { type: Number, default: 0 },
+    total_boxes_in_stock: { type: Number, default: 0 },
     orders: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Product" }],
     bonus: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Bonus" }],

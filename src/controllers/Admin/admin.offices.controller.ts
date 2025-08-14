@@ -111,7 +111,7 @@ export const createNewOffices = (req: AuthRequest, res: Response) => {
 
 export const updateOffice = async (req: AuthRequest, res: Response) => {
   const id = req.params.id;
-  await checkIfDocumentExistsById<IOffice>(id, res, Offices);
+  await checkIfDocumentExistsById<IOffice>(id,'_id', res, Offices);
 
   const request = async () => {
     const updatedOffice = (await Offices.findByIdAndUpdate(
