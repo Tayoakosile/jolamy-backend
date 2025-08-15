@@ -41,6 +41,9 @@ const initiatePayment = async (_req, res) => {
         await User_1.default.findByIdAndUpdate(user._id, {
             $push: { logs: log.id },
         });
+        await Transaction_1.default.findByIdAndUpdate(user?._id, {
+            $push: { logs: log.id },
+        });
         (0, response_1.successResponse)(res, 200, "Payment initiated successfully", {
             order_id,
             user_id: user?.user_id,
@@ -100,7 +103,6 @@ const verifyPayment = async (_req, res) => {
                 Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
             },
         });
-        // console.log("response :", response.data?.data);
         const responseFromPaystack = response.data?.data;
         const status = (responseFromPaystack?.status ||
             "unknown");
@@ -115,7 +117,7 @@ const verifyPayment = async (_req, res) => {
                 { $sort: { orderCount: 1 } }, // smallest first
                 { $limit: 1 },
             ]);
-            const transaction = await Transaction_1.default.findByIdAndUpdate(order?._id, {
+            const transaction = await Transaction_1.default.findOneAndUpdate({ order_id: order?._id }, {
                 status: "completed",
                 payment_method: "Paystack",
             });

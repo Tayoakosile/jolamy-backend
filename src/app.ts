@@ -7,6 +7,7 @@ import adminRoutes from "./routes/Admin/admin.routes";
 import authRoutes from "./routes/auth.routes";
 import financesRoutes from "./routes/finance.routes";
 import orderRoutes from "./routes/order.routes";
+import transactionRoutes from "./routes/transactions.routes";
 import productRoutes from "./routes/products.route";
 import uploadRoutes from "./routes/upload.routes";
 import userRoutes from "./routes/user.routes";
@@ -25,6 +26,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/finances", financesRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
 
 // const endpoints = expressListEndpoints(app)

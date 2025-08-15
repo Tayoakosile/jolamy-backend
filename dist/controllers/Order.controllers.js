@@ -12,14 +12,57 @@ const User_1 = __importDefault(require("../models/User"));
 const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
+const trend_util_1 = require("../utils/trend.util");
 const getAllOrders = (_req, res) => {
     const user = _req.user;
     const user_role = _req.user?.user_role;
     const request = async () => {
-        const allOrders = user_role === "admin"
-            ? await Order_1.default.find({})
-            : await Order_1.default.find({ user_id: user?._id });
-        return allOrders;
+        if (user?.user_role === "admin") {
+            const allOrders = await Order_1.default.find({});
+            const allOrdersStat = await (0, trend_util_1.getTrend)(Order_1.default, {
+                period: "week",
+            });
+            const completedOrders = await (0, trend_util_1.getTrend)(Order_1.default, {
+                period: "week",
+                filter: {
+                    status: "completed",
+                },
+            });
+            const pendingOrders = await (0, trend_util_1.getTrend)(Order_1.default, {
+                period: "week",
+                filter: {
+                    status: "pending",
+                },
+            });
+            const processingOrders = await (0, trend_util_1.getTrend)(Order_1.default, {
+                period: "week",
+                filter: {
+                    status: "processing",
+                },
+            });
+            return {
+                stats: [
+                    {
+                        title: "All Orders",
+                        ...allOrdersStat,
+                    },
+                    {
+                        title: "Pending Orders",
+                        ...pendingOrders,
+                    },
+                    {
+                        title: "Processing Orders",
+                        ...processingOrders,
+                    },
+                    {
+                        title: "Completed Orders",
+                        ...completedOrders,
+                    },
+                ],
+                orders: allOrders,
+            };
+        }
+        return await Order_1.default.find({ user_id: user?._id });
     };
     (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Orders retrieved successfully",
@@ -42,7 +85,7 @@ const getSingleOrder = async (_req, res) => {
         .populate("products")
         .populate({
         path: "user_id",
-        select: "first_name last_name email phone_number user_role",
+        select: "first_name user_id last_name email phone_number user_role",
     });
     console.log("order?.logs :", orderDetails);
     (0, response_1.successResponse)(res, 200, "Order retrieved successfully", {
@@ -176,6 +219,9 @@ const createNewOrder = (_req, res) => {
             $push: { logs: log._id },
             transaction_id: transaction._id,
         });
+        await transaction.updateOne({
+            $push: { logs: log._id },
+        });
         await User_1.default.findByIdAndUpdate(new mongoose_1.Types.ObjectId(user?.id), {
             $push: {
                 orders: order._id,
@@ -201,7 +247,7 @@ const updateOrder = async (_req, res) => {
     const body = _req.body;
     const user = _req.user;
     const orderID = _req.params?.id;
-    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, "order_id", res, Order_1.default);
+    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, "order_number", res, Order_1.default);
     const request = async () => {
         // Log that user filled in extra details of the order.. if it contains address
         const log = await (0, activityLog_1.logActivity)({
@@ -214,15 +260,23 @@ const updateOrder = async (_req, res) => {
                 ? `Order updated with shipping location`
                 : body?.payment_reference
                     ? "Order updated with payment information"
-                    : "Order updated",
+                    : body?.admin_notes_to_customer || body?.admin_notes_to_office
+                        ? ` Admin ${user?.first_name} ${order?.admin_notes_to_customer || order?.admin_notes_to_customer
+                            ? `updated  ${body?.admin_notes_to_customer ? "office" : "customer"} order notes`
+                            : `added  ${body?.admin_notes_to_customer ? "office" : "customer"} notes to order`} `
+                        : "Order updated with no additional information",
             metadata: {
+                previous_notes: body?.admin_notes_to_customer || body?.admin_notes_to_office,
+                new_notes: body?.admin_notes_to_customer
+                    ? order?.admin_notes_to_customer
+                    : order?.admin_notes_to_office,
                 order_id: order?._id,
                 user_id: user?._id,
                 shipping_location: body.shipping_location,
                 payment_reference: body.payment_reference,
             },
         });
-        const updatedOrder = await Order_1.default.findByIdAndUpdate(orderID, {
+        const updatedOrder = await Order_1.default.findOneAndUpdate({ order_number: orderID }, {
             ...body,
             $push: { logs: log._id },
         });

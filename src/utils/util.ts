@@ -2,7 +2,7 @@ import { NextFunction } from "express";
 // utils/checkIfExists.ts
 
 import { Request, Response } from "express";
-import mongoose, { Document, Types } from "mongoose";
+import mongoose, { Document } from "mongoose";
 import randomatic from "randomatic";
 import { Counter } from "../models/counter";
 import { sendEmail } from "../services/mail.service";
@@ -22,33 +22,33 @@ export const checkIfDocumentExistsById = async <T extends Document>(
   Model: mongoose.Model<T>,
   populateFields?: string | string[]
 ) => {
-  // if (!mongoose.Types.ObjectId.isValid(id)) {
-  //   errorResponse(res, 400, "Invalid ID format", {
-  //     message: "Invalid ID format",
-  //   });
-  //   return;
-  // }
 
-  let populatedDocument;
-  if (Types.ObjectId.isValid(id)) {
-    const query = Model.findById({ id } as any);
-    populatedDocument = populateFields
-      ? await query.populate(populateFields)
-      : await query;
-  } else {
-    const query = Model.findOne({ [itemKey]: id } as any);
-    populatedDocument = populateFields
-      ? await query.populate(populateFields)
-      : await query;
+
+  if (populateFields) {
+    const populatedDocument = await Model.findOne({
+      [itemKey]: id,
+    } as any).populate(populateFields);
+    console.log('populatedDocument :', populatedDocument);
+
+    if (!populatedDocument) {
+      errorResponse(res, 404, "Document not found", {
+        message: "Document not found",
+      });
+      return;
+    }
+
+    return populatedDocument;
   }
-
-  if (!populatedDocument) {
+  const document = await Model.findOne({
+    [itemKey]: id,
+  } as any);
+  if (!document) {
     errorResponse(res, 404, "Document not found", {
       message: "Document not found",
     });
-    return
+    return;
   }
-  return populatedDocument;
+  return document;
 };
 
 export const generateRandom = (howMuch?: number, pattern?: string) => {

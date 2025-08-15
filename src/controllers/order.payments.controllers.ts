@@ -43,6 +43,9 @@ export const initiatePayment = async (_req: AuthRequest, res: Response) => {
     await User.findByIdAndUpdate(user._id, {
       $push: { logs: log.id },
     });
+    await Transaction.findByIdAndUpdate(user?._id, {
+      $push: { logs: log.id },
+    });
 
     successResponse(res, 200, "Payment initiated successfully", {
       order_id,
@@ -110,7 +113,7 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
         },
       }
     );
-    // console.log("response :", response.data?.data);
+
     const responseFromPaystack = response.data?.data;
     const status = (responseFromPaystack?.status ||
       "unknown") as keyof typeof statusMap;
@@ -129,10 +132,13 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
         { $sort: { orderCount: 1 } }, // smallest first
         { $limit: 1 },
       ]);
-      const transaction = await Transaction.findByIdAndUpdate(order?._id, {
-        status: "completed",
-        payment_method: "Paystack",
-      });
+      const transaction = await Transaction.findOneAndUpdate(
+        { order_id: order?._id },
+        {
+          status: "completed",
+          payment_method: "Paystack",
+        }
+      );
       const log = await logActivity({
         req: _req,
         user_id: user?.id,

@@ -46,7 +46,7 @@ const createAccount = async (req, res) => {
 exports.createAccount = createAccount;
 const loginAccount = async (req, res) => {
     try {
-        const email = req.body?.username || req.body?.email;
+        const email = req.body?.username?.toLowerCase() || req.body?.email?.toLowerCase();
         const password = req.body?.password;
         if (!req.body || !email || !req.body.password) {
             (0, response_1.errorResponse)(res, 400, "Email and password are required");
@@ -63,7 +63,7 @@ const loginAccount = async (req, res) => {
                 return;
             }
             const token = (0, jwt_1.generateToken)(`${officeWorker?.worker_id}`);
-            console.log('token :', token);
+            console.log("token :", token);
             const activityLog = await (0, activityLog_1.logActivity)({
                 req,
                 user_id: officeWorker.id,
@@ -120,7 +120,7 @@ const loginAccount = async (req, res) => {
             return;
         }
         const token = (0, jwt_1.generateToken)(user.user_id);
-        console.log('token :', token);
+        console.log("token :", token);
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
             user_id: user._id,

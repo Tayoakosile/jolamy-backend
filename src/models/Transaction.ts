@@ -1,12 +1,15 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 import { Counter } from "./counter";
 import { generateRandom } from "../utils/util";
+import { timeStamp } from "console";
 
 export interface ITransaction extends Document {
   transaction_id: string;
+  delivery_address: string;
   internal_sequence: number;
   date: Date;
-
+  due_date: Date;
+  logs: Types.ObjectId[]; // Array of log IDs
   description: string;
   payment_method: string; // e.g., "bank_transfer", "mobile_money", "cash"
   status: "pending" | "completed" | "failed" | "reversed";
@@ -37,12 +40,15 @@ const TransactionSchema = new Schema<ITransaction>(
   {
     transaction_id: { type: String, immutable: true },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    logs: [{ type: Schema.Types.ObjectId, ref: "Log" }],
     user_role: {
       type: String,
       enum: ["admin", "distributor", "sales_agent"],
       required: true,
     },
     date: { type: Date, default: Date.now },
+    due_date: { type: Date },
+    delivery_address: { type: String },
     internal_sequence: { type: Number, default: 0 },
     office_id: { type: Schema.Types.ObjectId, ref: "Office" },
     order_id: { type: Schema.Types.ObjectId, ref: "Order" },
@@ -71,37 +77,10 @@ const TransactionSchema = new Schema<ITransaction>(
       default: "pending",
     },
   },
-  { timestamps: true }
+  { timestamps: { ...timeStamp } }
 );
 
-TransactionSchema.pre(
-  "save",
-  async function (this: import("mongoose").Document & ITransaction, next) {
-    if (this.isNew) {
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
-      // Increment sequence for today
-      const counter = await Counter.findOneAndUpdate(
-        { name: "transaction", date: today },
-        { $inc: { sequence: 1 } },
-        { new: true, upsert: true }
-      );
-
-      const seq = counter.sequence;
-      this.internal_sequence = seq;
-
-      // Random 5-character alphanumeric
-      const randomPart = generateRandom(8, "0A").toUpperCase();
-
-      const datePart = today.replace(/-/g, "");
-      const transaction_id = `TRX-${datePart}-${randomPart}-${String(
-        seq
-      ).padStart(4, "0")}`;
-      this.transaction_id = transaction_id;
-    }
-    next();
-  }
-);
 TransactionSchema.pre(
   "save",
   async function (this: import("mongoose").Document & ITransaction, next) {
@@ -121,7 +100,7 @@ TransactionSchema.pre(
       // Random 5-character alphanumeric
       const randomPart = generateRandom(8, "00").toUpperCase();
       const datePart = today.replace(/-/g, "");
-      const transaction_id = `ORD-${datePart}-${randomPart}-${String(
+      const transaction_id = `TRX-${datePart}-${randomPart}-${String(
         seq
       ).padStart(4, "0")}`;
       this.transaction_id = transaction_id;

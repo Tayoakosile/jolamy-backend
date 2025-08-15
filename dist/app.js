@@ -12,6 +12,7 @@ const admin_routes_1 = __importDefault(require("./routes/Admin/admin.routes"));
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const finance_routes_1 = __importDefault(require("./routes/finance.routes"));
 const order_routes_1 = __importDefault(require("./routes/order.routes"));
+const transactions_routes_1 = __importDefault(require("./routes/transactions.routes"));
 const products_route_1 = __importDefault(require("./routes/products.route"));
 const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
@@ -27,6 +28,7 @@ app.use("/api/upload", upload_routes_1.default);
 app.use("/api/admin", admin_routes_1.default);
 app.use("/api/finances", finance_routes_1.default);
 app.use("/api/orders", order_routes_1.default);
+app.use("/api/transactions", transactions_routes_1.default);
 app.use("/api/products", products_route_1.default);
 // const endpoints = expressListEndpoints(app)
 // console.log('endpoints :', endpoints);

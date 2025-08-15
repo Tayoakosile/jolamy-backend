@@ -12,17 +12,60 @@ import {
   customReqResHandler,
   generateRandom,
 } from "../utils/util";
+import { getTrend } from "../utils/trend.util";
 
 export const getAllOrders = (_req: AuthRequest, res: Response) => {
   const user = _req.user;
   const user_role = _req.user?.user_role;
 
   const request = async () => {
-    const allOrders =
-      user_role === "admin"
-        ? await Order.find({ })
-        : await Order.find({ user_id: user?._id });
-    return allOrders;
+    if (user?.user_role === "admin") {
+      const allOrders = await Order.find({});
+
+      const allOrdersStat = await getTrend(Order, {
+        period: "week",
+      });
+      const completedOrders = await getTrend(Order, {
+        period: "week",
+        filter: {
+          status: "completed",
+        },
+      });
+      const pendingOrders = await getTrend(Order, {
+        period: "week",
+        filter: {
+          status: "pending",
+        },
+      });
+      const processingOrders = await getTrend(Order, {
+        period: "week",
+        filter: {
+          status: "processing",
+        },
+      });
+      return {
+        stats: [
+          {
+            title: "All Orders",
+            ...allOrdersStat,
+          },
+          {
+            title: "Pending Orders",
+            ...pendingOrders,
+          },
+          {
+            title: "Processing Orders",
+            ...processingOrders,
+          },
+          {
+            title: "Completed Orders",
+            ...completedOrders,
+          },
+        ],
+        orders: allOrders,
+      };
+    }
+    return await Order.find({ user_id: user?._id });
   };
 
   customReqResHandler(res, request, undefined, {
@@ -46,7 +89,7 @@ export const getSingleOrder = async (_req: AuthRequest, res: Response) => {
     .populate("products")
     .populate({
       path: "user_id",
-      select: "first_name last_name email phone_number user_role",
+      select: "first_name user_id last_name email phone_number user_role",
     });
   console.log("order?.logs :", orderDetails);
   successResponse(res, 200, "Order retrieved successfully", {
@@ -223,6 +266,9 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       $push: { logs: log._id },
       transaction_id: transaction._id,
     });
+    await transaction.updateOne({
+      $push: { logs: log._id },
+    });
 
     await User.findByIdAndUpdate(new Types.ObjectId(user?.id), {
       $push: {
@@ -260,7 +306,7 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
   const orderID = _req.params?.id;
   const order = await checkIfDocumentExistsById<IOrder>(
     orderID,
-    "order_id",
+    "order_number",
     res,
     Order
   );
@@ -277,8 +323,23 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
         ? `Order updated with shipping location`
         : body?.payment_reference
         ? "Order updated with payment information"
-        : "Order updated",
+        : body?.admin_notes_to_customer || body?.admin_notes_to_office
+        ? ` Admin ${user?.first_name} ${
+            order?.admin_notes_to_customer || order?.admin_notes_to_customer
+              ? `updated  ${
+                  body?.admin_notes_to_customer ? "office" : "customer"
+                } order notes`
+              : `added  ${
+                  body?.admin_notes_to_customer ? "office" : "customer"
+                } notes to order`
+          } `
+        : "Order updated with no additional information",
       metadata: {
+        previous_notes:
+          body?.admin_notes_to_customer || body?.admin_notes_to_office,
+        new_notes: body?.admin_notes_to_customer
+          ? order?.admin_notes_to_customer
+          : order?.admin_notes_to_office,
         order_id: order?._id as Types.ObjectId,
         user_id: user?._id,
         shipping_location: body.shipping_location,
@@ -286,10 +347,13 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
       },
     });
 
-    const updatedOrder = await Order.findByIdAndUpdate(orderID, {
-      ...body,
-      $push: { logs: log._id },
-    });
+    const updatedOrder = await Order.findOneAndUpdate(
+      { order_number: orderID },
+      {
+        ...body,
+        $push: { logs: log._id },
+      }
+    );
     await User?.findByIdAndUpdate(user?.id, {
       $push: { logs: log._id },
       last_order_date: new Date(),

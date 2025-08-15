@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const counter_1 = require("./counter");
 const util_1 = require("../utils/util");
+const console_1 = require("console");
 // const PricingSchema = new Schema<Pricing>(
 //   {
 //     distributor_price_per_box: { type: Number, required: true },
@@ -50,12 +51,15 @@ const util_1 = require("../utils/util");
 const TransactionSchema = new mongoose_1.Schema({
     transaction_id: { type: String, immutable: true },
     user_id: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
+    logs: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Log" }],
     user_role: {
         type: String,
         enum: ["admin", "distributor", "sales_agent"],
         required: true,
     },
     date: { type: Date, default: Date.now },
+    due_date: { type: Date },
+    delivery_address: { type: String },
     internal_sequence: { type: Number, default: 0 },
     office_id: { type: mongoose_1.Schema.Types.ObjectId, ref: "Office" },
     order_id: { type: mongoose_1.Schema.Types.ObjectId, ref: "Order" },
@@ -81,22 +85,7 @@ const TransactionSchema = new mongoose_1.Schema({
         enum: ["pending", "completed", "failed", "cancelled"],
         default: "pending",
     },
-}, { timestamps: true });
-TransactionSchema.pre("save", async function (next) {
-    if (this.isNew) {
-        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-        // Increment sequence for today
-        const counter = await counter_1.Counter.findOneAndUpdate({ name: "transaction", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
-        const seq = counter.sequence;
-        this.internal_sequence = seq;
-        // Random 5-character alphanumeric
-        const randomPart = (0, util_1.generateRandom)(8, "0A").toUpperCase();
-        const datePart = today.replace(/-/g, "");
-        const transaction_id = `TRX-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
-        this.transaction_id = transaction_id;
-    }
-    next();
-});
+}, { timestamps: { ...console_1.timeStamp } });
 TransactionSchema.pre("save", async function (next) {
     if (this.isNew) {
         const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
@@ -107,7 +96,7 @@ TransactionSchema.pre("save", async function (next) {
         // Random 5-character alphanumeric
         const randomPart = (0, util_1.generateRandom)(8, "00").toUpperCase();
         const datePart = today.replace(/-/g, "");
-        const transaction_id = `ORD-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
+        const transaction_id = `TRX-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
         this.transaction_id = transaction_id;
     }
     next();

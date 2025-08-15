@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import User from "../models/User";
 
-
 import OfficeWorker, { IOfficeWorker } from "../models/Admin/OfficeWorker";
 import { signupService } from "../services/auth.service";
 import { sendEmail } from "../services/mail.service";
@@ -52,7 +51,8 @@ export const createAccount = async (req: Request, res: Response) => {
 
 export const loginAccount = async (req: Request, res: Response) => {
   try {
-    const email = req.body?.username || req.body?.email;
+    const email =
+      req.body?.username?.toLowerCase() || req.body?.email?.toLowerCase();
     const password = req.body?.password;
 
     if (!req.body || !email || !req.body.password) {
@@ -74,7 +74,7 @@ export const loginAccount = async (req: Request, res: Response) => {
         return;
       }
       const token = generateToken(`${officeWorker?.worker_id}`);
-      console.log('token :', token);
+      console.log("token :", token);
 
       const activityLog = await logActivity({
         req,
@@ -117,6 +117,7 @@ export const loginAccount = async (req: Request, res: Response) => {
     const user = (await User.findOne({
       $or: [{ email }, { username: email }],
     })) as IUser;
+
     if (!user) {
       errorResponse(res, 404, "User not found with this email", {
         message: "User not found with this email",
@@ -145,7 +146,7 @@ export const loginAccount = async (req: Request, res: Response) => {
 
     const token = generateToken(user.user_id);
 
-    console.log('token :', token);
+    console.log("token :", token);
     const activityLog = await logActivity({
       req,
       user_id: user._id,

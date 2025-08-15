@@ -85,7 +85,8 @@ export interface IOrder extends Document {
   tax_amount?: number;
   tracking_number?: string;
   courier_service?: string;
-  admin_notes: String;
+  admin_notes_to_office: String;
+  admin_notes_to_customer: String;
   cancelled_at?: Date;
   refund_status?: RefundStatus;
   fulfillment_type?: string;
@@ -150,11 +151,12 @@ const OrderSchema = new Schema<IOrder>(
     },
     delivery_status: {
       type: String,
-      enum: ["not_assigned", "in_transit", "delivered", "pending"],
+      enum: ["not_assigned", "pending", "in_transit", "delivered"],
       default: "not_assigned",
     },
     internal_notes: { type: String },
-    admin_notes: { type: String },
+    admin_notes_to_office: { type: String },
+    admin_notes_to_customer: { type: String },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number, default: 0 },
     total_quantity: { type: Number, default: 0 },

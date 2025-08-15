@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.transactions = exports.statusMap = exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
 exports.generateEntityNumber = generateEntityNumber;
 exports.customIDGenerator = customIDGenerator;
-const mongoose_1 = require("mongoose");
 const randomatic_1 = __importDefault(require("randomatic"));
 const counter_1 = require("../models/counter");
 const mail_service_1 = require("../services/mail.service");
@@ -19,32 +18,29 @@ const response_1 = require("./response");
  * @throws Error if the ID is invalid or the DB fails.
  */
 const checkIfDocumentExistsById = async (id, itemKey, res, Model, populateFields) => {
-    // if (!mongoose.Types.ObjectId.isValid(id)) {
-    //   errorResponse(res, 400, "Invalid ID format", {
-    //     message: "Invalid ID format",
-    //   });
-    //   return;
-    // }
-    let populatedDocument;
-    if (mongoose_1.Types.ObjectId.isValid(id)) {
-        const query = Model.findById({ id });
-        populatedDocument = populateFields
-            ? await query.populate(populateFields)
-            : await query;
+    if (populateFields) {
+        const populatedDocument = await Model.findOne({
+            [itemKey]: id,
+        }).populate(populateFields);
+        console.log('populatedDocument :', populatedDocument);
+        if (!populatedDocument) {
+            (0, response_1.errorResponse)(res, 404, "Document not found", {
+                message: "Document not found",
+            });
+            return;
+        }
+        return populatedDocument;
     }
-    else {
-        const query = Model.findOne({ [itemKey]: id });
-        populatedDocument = populateFields
-            ? await query.populate(populateFields)
-            : await query;
-    }
-    if (!populatedDocument) {
+    const document = await Model.findOne({
+        [itemKey]: id,
+    });
+    if (!document) {
         (0, response_1.errorResponse)(res, 404, "Document not found", {
             message: "Document not found",
         });
         return;
     }
-    return populatedDocument;
+    return document;
 };
 exports.checkIfDocumentExistsById = checkIfDocumentExistsById;
 const generateRandom = (howMuch, pattern) => {
