@@ -24,14 +24,17 @@ const getAllUsers = async (_req, res) => {
     const user = _req.user;
     try {
         if (user?.is_admin) {
-            const users = await User_1.default.find({ user_role: { $ne: "admin" } }).select("-_id -password -internal_sequence  -updatedAt -__v -logs -transaction_history");
+            const users = await User_1.default.find({
+                user_role: { $ne: "admin" },
+                status: "approved",
+            }).select("-_id -password -internal_sequence  -updatedAt -__v -logs -transaction_history");
             const allDistributors = await (0, trend_util_1.getTrend)(User_1.default, {
                 period,
-                filter: { user_role: "distributor" },
+                filter: { user_role: "distributor", status: "approved" },
             });
             const allSalesAgents = await (0, trend_util_1.getTrend)(User_1.default, {
                 period,
-                filter: { user_role: "sales_agent" },
+                filter: { user_role: "sales_agent", status: "approved" },
             });
             (0, response_1.successResponse)(res, 200, "Users fetched successfully", {
                 users,

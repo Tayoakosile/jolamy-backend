@@ -6,6 +6,7 @@ import OfficeWorker from "../models/Admin/OfficeWorker";
 import User from "../models/User";
 import { IUser } from "../types/type";
 import { errorResponse } from "../utils/response";
+import { decodeToken } from "../utils/jwt";
 
 interface JwtPayload {
   id: string;
@@ -19,9 +20,11 @@ export const appAuth = async (
   let token;
 
   const authHeader = req.headers.authorization;
+  // const authHeader = req.headers.authorization;
+
 
   if (authHeader && authHeader.startsWith("Bearer ")) {
-    token = authHeader.split(" ")[1];
+    token = authHeader.split(" ")[1]?.replace(/"/g, "");
   }
 
   if (!token) {
@@ -42,12 +45,11 @@ export const appAuth = async (
     const worker = (await OfficeWorker.findOne({
       user_id: decoded.id,
     })) as IUser;
-    console.log("user :", user, worker);
-    // console.log("decoded :", decoded);
+
 
     if (worker) {
       (req as any).user = worker;
-      return next()
+      return next();
     }
     if (user) {
       if (
@@ -70,6 +72,8 @@ export const appAuth = async (
     (req as any).user = worker ? worker : user;
     next();
   } catch (err) {
+    console.log("err :", err);
+
     errorResponse(res, 401, "Invalid or expired token", {
       message: "Invalid or expired token",
     });
@@ -80,6 +84,7 @@ export const appAuth = async (
 // middleware/auth.ts
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   const user = (req as any).user as IUser;
+  console.log(" :", user);
 
   if (user?.is_admin || user.user_role == "admin") return next();
   errorResponse(res, 403, "Access denied, admin only");

@@ -25,10 +25,10 @@ const getAllOrders = (_req, res) => {
 };
 exports.getAllOrders = getAllOrders;
 const getSingleOrder = async (_req, res) => {
-    const user_role = _req.user?.user_role;
     const order = _req?.order;
     // if (user_role === "admin") {
     const orderDetails = await Order_1.default.findById(order && order._id)
+        .populate("products")
         .populate("logs")
         .populate("transaction_id")
         .populate("products")
@@ -36,6 +36,7 @@ const getSingleOrder = async (_req, res) => {
         path: "user_id",
         select: "first_name last_name email phone_number user_role",
     });
+    console.log("order?.logs :", orderDetails);
     (0, response_1.successResponse)(res, 200, "Order retrieved successfully", {
         order: orderDetails,
     });
@@ -49,16 +50,16 @@ const createNewOrder = (_req, res) => {
     const product_items = body.products;
     const request = async () => {
         const getProductPricing = async (productFromPostAPi) => {
-            console.log("productFromPostAPi?.variants :", productFromPostAPi?.variants);
+            console.log("productFromPostAPi.id :", productFromPostAPi.id);
             const productResFromDb = productFromPostAPi?.variants
                 ? await Product_1.Product.findOne({
-                    _id: new mongoose_1.Types.ObjectId(productFromPostAPi.id),
+                    _id: productFromPostAPi.id,
                     "variants._id": {
                         $in: productFromPostAPi?.variants?.map((variant) => variant.id),
                     },
                 }).select("name category reference_id  available_weight is_active is_archived  variants")
                 : await Product_1.Product.findOne({
-                    _id: new mongoose_1.Types.ObjectId(productFromPostAPi.id),
+                    _id: productFromPostAPi.id,
                 }).select("name category reference_id  available_weight is_active is_archived  variants");
             // if a product is is_active is false or is_archived is true, return error
             if (!productResFromDb ||
@@ -84,6 +85,7 @@ const createNewOrder = (_req, res) => {
                     });
                     return;
                 }
+                console.log("matchedVariant :", variantFromPostAPi, matchedVariant);
                 if (matchedVariant) {
                     // total_boxes_in_stock is null means unlimited stock,
                     // so we don't check for it  but if it is less than the requested quantity, return error
@@ -118,14 +120,13 @@ const createNewOrder = (_req, res) => {
             };
         };
         const Products = await Promise.all(product_items.map(async (product) => getProductPricing(product)));
-        console.log("Products :", Products);
+        console.log("Products :", Products[0].variants);
         if (Products.length === 0 || Products.some((p) => !p)) {
             (0, response_1.errorResponse)(res, 400, "No valid products found in order", {
                 message: "Please check the products you are trying to order.",
             });
             return;
         }
-        // return;
         const order = await Order_1.default.create({
             products: Products,
             internal_notes: body.internal_notes || "",
@@ -155,10 +156,12 @@ const createNewOrder = (_req, res) => {
             action: "CREATE_ORDER",
             sender: new mongoose_1.Types.ObjectId(id),
             receiver: order._id,
-            description: `Order created with ID ${order._id}`,
+            description: `${user?.first_name} ${user?.last_name} created Order created with ID ${order.order_number} and total amount of ${order.total_amount}`,
             metadata: {
                 order_id: order._id,
                 user_id: id,
+                sender: user?.first_name + " " + user?.last_name,
+                receiver: user?.first_name + " " + user?.last_name,
             },
         });
         await order.updateOne({

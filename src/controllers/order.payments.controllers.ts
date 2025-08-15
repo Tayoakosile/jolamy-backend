@@ -10,6 +10,7 @@ import { Cart } from "../models/Cart";
 import { statusMap } from "../utils/util";
 import { sendEmail } from "../services/mail.service";
 import Transaction from "../models/Transaction";
+import Offices from "../models/Admin/Office";
 
 export const initiatePayment = async (_req: AuthRequest, res: Response) => {
   try {
@@ -20,8 +21,8 @@ export const initiatePayment = async (_req: AuthRequest, res: Response) => {
     const log = await logActivity({
       req: _req,
       user_id: user?._id,
-      action: "initiate_payment",
-      description: "User initiated payment for an order",
+      action: "INITIATE_PAYMENT",
+      description: `${user?.full_name} initiated payment for order ${order_id}`,
       receiver: user._id,
       sender: new Types.ObjectId(`${user._id}`),
       metadata: {
@@ -85,8 +86,6 @@ export const initiatePaymentWithPaystack = async (order_id: string) => {
 
 export const verifyPayment = async (_req: AuthRequest, res: Response) => {
   try {
-    // run this  10x
-
     const user = _req.user as IUser;
     const order = _req.order as IOrder;
     const order_id = _req.params.id;
@@ -111,33 +110,35 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       "unknown") as keyof typeof statusMap;
 
     // return;
-    const log = await logActivity({
-      req: _req,
-      user_id: user?.id,
-      action: "VERIFY_PAYMENT",
-      description: "User verified payment for an order",
-      receiver: user._id,
-      sender: new Types.ObjectId(`${user._id}`),
-      metadata: {
-        order_id,
-        total_amount: order.total_amount,
-        payment_status: "paid",
-        payment_reference: response.data?.data?.reference,
-      },
-    });
-    console.log("status :", status);
+
+    // automatically assign order to an office and then log
 
     if (
       statusMap[status] === "paid"
       // &&responseFromPaystack?.metadata?.cart_id == order_id?.toString()
     ) {
-      const order = await Order.findOneAndUpdate(
+      const log = await logActivity({
+        req: _req,
+        user_id: user?.id,
+        action: "COMPLETED_PAYMENT",
+        description: `User completed payment for this order, id: ${order}`,
+        receiver: user._id,
+        sender: new Types.ObjectId(`${user._id}`),
+        metadata: {
+          order_id,
+          total_amount: order.total_amount,
+          payment_status: "paid",
+          payment_reference: response.data?.data?.reference,
+        },
+      });
+
+      await Order.findOneAndUpdate(
         { order_number: order_id },
         {
           payment_status: "paid",
           delivery_status: "processing",
           status: "processing",
-          payment_method:"Paystack",
+          payment_method: "Paystack",
           payment_reference: response.data?.data?.reference,
           $push: { logs: new Types.ObjectId(log.id) },
         }

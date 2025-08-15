@@ -23,6 +23,7 @@ export interface IUser extends Document {
   user_id: string;
   internal_sequence: number;
   first_name: string;
+  full_name: string;
   last_name: string;
   approved_by: Types.ObjectId;
   approved_at: Date;

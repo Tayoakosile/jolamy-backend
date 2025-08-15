@@ -11,7 +11,7 @@ const generateToken = (user_id, secret) => {
     });
 };
 exports.generateToken = generateToken;
-const decodeToken = (user_id, secret) => {
-    return jsonwebtoken_1.default.verify(user_id, secret || process.env.JWT_SECRET);
+const decodeToken = (token, secret) => {
+    return jsonwebtoken_1.default.verify(token, secret || process.env.JWT_SECRET);
 };
 exports.decodeToken = decodeToken;

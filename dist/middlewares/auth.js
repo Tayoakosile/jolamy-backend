@@ -12,8 +12,9 @@ const response_1 = require("../utils/response");
 const appAuth = async (req, res, next) => {
     let token;
     const authHeader = req.headers.authorization;
+    // const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
-        token = authHeader.split(" ")[1];
+        token = authHeader.split(" ")[1]?.replace(/"/g, "");
     }
     if (!token) {
         (0, response_1.errorResponse)(res, 401, "Not authorized, token missing", {
@@ -31,8 +32,6 @@ const appAuth = async (req, res, next) => {
         const worker = (await OfficeWorker_1.default.findOne({
             user_id: decoded.id,
         }));
-        console.log("user :", user, worker);
-        // console.log("decoded :", decoded);
         if (worker) {
             req.user = worker;
             return next();
@@ -56,6 +55,7 @@ const appAuth = async (req, res, next) => {
         next();
     }
     catch (err) {
+        console.log("err :", err);
         (0, response_1.errorResponse)(res, 401, "Invalid or expired token", {
             message: "Invalid or expired token",
         });
@@ -66,6 +66,7 @@ exports.appAuth = appAuth;
 // middleware/auth.ts
 const isAdmin = (req, res, next) => {
     const user = req.user;
+    console.log(" :", user);
     if (user?.is_admin || user.user_role == "admin")
         return next();
     (0, response_1.errorResponse)(res, 403, "Access denied, admin only");

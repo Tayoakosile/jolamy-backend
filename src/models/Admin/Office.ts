@@ -12,6 +12,7 @@ export interface IOffice extends Document {
   created_by: Types.ObjectId; // Admin who created
   transactions: Types.ObjectId;
   workers: Types.ObjectId[];
+  orders: Types.ObjectId[];
   logs: Types.ObjectId[];
   is_active: boolean;
   wallet?: {
@@ -29,12 +30,12 @@ const officeSchema = new Schema<IOffice>(
     internal_sequence: { type: Number, default: 0 },
     office_id: { type: String, unique: true },
     created_by: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     is_active: { type: Boolean, default: true },
     transactions: [
       {
         type: Schema.Types.ObjectId,
         ref: "Finance",
-        required: true,
       },
     ],
     workers: [{ type: Schema.Types.ObjectId, ref: "OfficeWorker" }],

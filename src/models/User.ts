@@ -76,7 +76,7 @@ const userSchema = new Schema<IUser>(
     },
   }
 );
-userSchema.virtual("fullName").get(function () {
+userSchema.virtual("full_name").get(function () {
   return `${this.first_name} ${this.last_name}`;
 });
 userSchema.virtual("is_admin").get(function () {

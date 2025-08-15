@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import User from "../models/User";
 
-import { Types } from "mongoose";
 
+import OfficeWorker, { IOfficeWorker } from "../models/Admin/OfficeWorker";
 import { signupService } from "../services/auth.service";
 import { sendEmail } from "../services/mail.service";
 import { AuthRequest, IUser } from "../types/type";
@@ -11,7 +11,6 @@ import { isMatch } from "../utils/bcrypt.util";
 import { generateToken } from "../utils/jwt";
 import { errorResponse, successResponse } from "../utils/response";
 import { generateRandom } from "../utils/util";
-import OfficeWorker, { IOfficeWorker } from "../models/Admin/OfficeWorker";
 
 export const createAccount = async (req: Request, res: Response) => {
   // return;
@@ -75,6 +74,8 @@ export const loginAccount = async (req: Request, res: Response) => {
         return;
       }
       const token = generateToken(`${officeWorker?.worker_id}`);
+      console.log('token :', token);
+
       const activityLog = await logActivity({
         req,
         user_id: officeWorker.id,
@@ -104,7 +105,6 @@ export const loginAccount = async (req: Request, res: Response) => {
         //   ? "You have successfully logged in to your account for the first time. Welcome aboard!"
         //   : "You have successfully logged in to your account."
       );
-
       successResponse(res, 200, "Login successful", {
         token,
         user: {
@@ -143,8 +143,9 @@ export const loginAccount = async (req: Request, res: Response) => {
       return;
     }
 
-    const token = generateToken(`${user.user_id}`);
+    const token = generateToken(user.user_id);
 
+    console.log('token :', token);
     const activityLog = await logActivity({
       req,
       user_id: user._id,
@@ -230,6 +231,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     });
 
     if (!user) {
+      console.log("err :", user);
       errorResponse(res, 400, "Invalid or expired reset token");
       return;
     }

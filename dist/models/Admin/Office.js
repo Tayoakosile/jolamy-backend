@@ -9,12 +9,12 @@ const officeSchema = new mongoose_1.Schema({
     internal_sequence: { type: Number, default: 0 },
     office_id: { type: String, unique: true },
     created_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
+    orders: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Order" }],
     is_active: { type: Boolean, default: true },
     transactions: [
         {
             type: mongoose_1.Schema.Types.ObjectId,
             ref: "Finance",
-            required: true,
         },
     ],
     workers: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "OfficeWorker" }],

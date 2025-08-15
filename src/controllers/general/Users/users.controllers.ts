@@ -20,16 +20,19 @@ export const getAllUsers = async (_req: AuthRequest, res: Response) => {
   const user = _req.user;
   try {
     if (user?.is_admin) {
-      const users = await User.find({ user_role: { $ne: "admin" } }).select(
+      const users = await User.find({
+        user_role: { $ne: "admin" },
+        status: "approved",
+      }).select(
         "-_id -password -internal_sequence  -updatedAt -__v -logs -transaction_history"
       );
       const allDistributors = await getTrend(User, {
         period,
-        filter: { user_role: "distributor" },
+        filter: { user_role: "distributor", status: "approved" },
       });
       const allSalesAgents = await getTrend(User, {
         period,
-        filter: { user_role: "sales_agent" },
+        filter: { user_role: "sales_agent", status: "approved" },
       });
       successResponse(res, 200, "Users fetched successfully", {
         users,

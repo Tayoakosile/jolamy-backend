@@ -11,8 +11,8 @@ export const generateToken = (user_id: string, secret?: string): string => {
 };
 
 export const decodeToken = (
-  user_id: string,
-  secret: string
+  token: string,
+  secret?: string
 ): string | JwtPayload => {
-  return jwt.verify(user_id, secret || (process.env.JWT_SECRET as string));
+  return jwt.verify(token, secret || (process.env.JWT_SECRET as string));
 };

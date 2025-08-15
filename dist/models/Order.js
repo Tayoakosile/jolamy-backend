@@ -8,6 +8,10 @@ const ProductItemSchema = new mongoose_1.Schema({
         {
             id: { type: mongoose_1.Types.ObjectId },
             quantity: { type: Number, required: true },
+            name: { type: String, required: true },
+            total_boxes_in_stock: { type: Number, default: 0 },
+            amount_per_box: { type: Number, required: false },
+            total_amount: { type: Number, required: true },
         },
     ],
 }, { _id: false });
@@ -100,7 +104,7 @@ const OrderSchema = new mongoose_1.Schema({
         default: null,
     },
     payment_reference: { type: String },
-    logs: { type: mongoose_1.Types.ObjectId, ref: "Log" },
+    logs: [{ type: mongoose_1.Types.ObjectId, ref: "Log" }],
 }, {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
 });

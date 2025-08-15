@@ -22,8 +22,8 @@ const initiatePayment = async (_req, res) => {
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: user?._id,
-            action: "initiate_payment",
-            description: "User initiated payment for an order",
+            action: "INITIATE_PAYMENT",
+            description: `${user?.full_name} initiated payment for order ${order_id}`,
             receiver: user._id,
             sender: new mongoose_1.Types.ObjectId(`${user._id}`),
             metadata: {
@@ -79,7 +79,6 @@ const initiatePaymentWithPaystack = async (order_id) => {
 exports.initiatePaymentWithPaystack = initiatePaymentWithPaystack;
 const verifyPayment = async (_req, res) => {
     try {
-        // run this  10x
         const user = _req.user;
         const order = _req.order;
         const order_id = _req.params.id;
@@ -99,25 +98,25 @@ const verifyPayment = async (_req, res) => {
         const status = (responseFromPaystack?.status ||
             "unknown");
         // return;
-        const log = await (0, activityLog_1.logActivity)({
-            req: _req,
-            user_id: user?.id,
-            action: "VERIFY_PAYMENT",
-            description: "User verified payment for an order",
-            receiver: user._id,
-            sender: new mongoose_1.Types.ObjectId(`${user._id}`),
-            metadata: {
-                order_id,
-                total_amount: order.total_amount,
-                payment_status: "paid",
-                payment_reference: response.data?.data?.reference,
-            },
-        });
-        console.log("status :", status);
+        // automatically assign order to an office and then log
         if (util_1.statusMap[status] === "paid"
         // &&responseFromPaystack?.metadata?.cart_id == order_id?.toString()
         ) {
-            const order = await Order_1.default.findOneAndUpdate({ order_number: order_id }, {
+            const log = await (0, activityLog_1.logActivity)({
+                req: _req,
+                user_id: user?.id,
+                action: "COMPLETED_PAYMENT",
+                description: `User completed payment for this order, id: ${order}`,
+                receiver: user._id,
+                sender: new mongoose_1.Types.ObjectId(`${user._id}`),
+                metadata: {
+                    order_id,
+                    total_amount: order.total_amount,
+                    payment_status: "paid",
+                    payment_reference: response.data?.data?.reference,
+                },
+            });
+            await Order_1.default.findOneAndUpdate({ order_number: order_id }, {
                 payment_status: "paid",
                 delivery_status: "processing",
                 status: "processing",

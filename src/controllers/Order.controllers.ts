@@ -12,7 +12,6 @@ import {
   customReqResHandler,
   generateRandom,
 } from "../utils/util";
-import { ActivityLog } from "../models/ActivityLog";
 
 export const getAllOrders = (_req: AuthRequest, res: Response) => {
   const id = _req.user?._id;
@@ -28,12 +27,12 @@ export const getAllOrders = (_req: AuthRequest, res: Response) => {
   });
 };
 export const getSingleOrder = async (_req: AuthRequest, res: Response) => {
-  const user_role = _req.user?.user_role;
   const order = _req?.order;
 
   // if (user_role === "admin") {
 
   const orderDetails = await Order.findById(order && order._id)
+    .populate("products")
     .populate("logs")
     .populate("transaction_id")
     .populate("products")
@@ -41,7 +40,7 @@ export const getSingleOrder = async (_req: AuthRequest, res: Response) => {
       path: "user_id",
       select: "first_name last_name email phone_number user_role",
     });
-
+  console.log("order?.logs :", orderDetails);
   successResponse(res, 200, "Order retrieved successfully", {
     order: orderDetails,
   });
@@ -57,14 +56,11 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
 
   const request = async () => {
     const getProductPricing = async (productFromPostAPi: IProduct) => {
-      console.log(
-        "productFromPostAPi?.variants :",
-        productFromPostAPi?.variants
-      );
+      console.log("productFromPostAPi.id :", productFromPostAPi.id);
 
       const productResFromDb = productFromPostAPi?.variants
         ? await Product.findOne({
-            _id: new Types.ObjectId(productFromPostAPi.id),
+            _id: productFromPostAPi.id,
             "variants._id": {
               $in: productFromPostAPi?.variants?.map(
                 (variant: any) => variant.id
@@ -74,7 +70,7 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
             "name category reference_id  available_weight is_active is_archived  variants"
           )
         : await Product.findOne({
-            _id: new Types.ObjectId(productFromPostAPi.id),
+            _id: productFromPostAPi.id,
           }).select(
             "name category reference_id  available_weight is_active is_archived  variants"
           );
@@ -113,6 +109,8 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
             });
             return;
           }
+
+          console.log("matchedVariant :", variantFromPostAPi, matchedVariant);
 
           if (matchedVariant) {
             // total_boxes_in_stock is null means unlimited stock,
@@ -161,7 +159,7 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
     const Products = await Promise.all(
       product_items.map(async (product: IProduct) => getProductPricing(product))
     );
-    console.log("Products :", Products);
+    console.log("Products :", Products[0].variants);
 
     if (Products.length === 0 || Products.some((p) => !p)) {
       errorResponse(res, 400, "No valid products found in order", {
@@ -170,7 +168,6 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       return;
     }
 
-    // return;
     const order = await Order.create({
       products: Products,
       internal_notes: body.internal_notes || "",
@@ -205,10 +202,12 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       action: "CREATE_ORDER",
       sender: new Types.ObjectId(id),
       receiver: order._id as Types.ObjectId,
-      description: `Order created with ID ${order._id}`,
+      description: `${user?.first_name} ${user?.last_name} created Order created with ID ${order.order_number} and total amount of ${order.total_amount}`,
       metadata: {
         order_id: order._id,
         user_id: id,
+        sender: user?.first_name + " " + user?.last_name,
+        receiver: user?.first_name + " " + user?.last_name,
       },
     });
 

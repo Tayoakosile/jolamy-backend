@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserProfile = exports.resetPassword = exports.forgotPassword = exports.loginAccount = exports.createAccount = void 0;
 const User_1 = __importDefault(require("../models/User"));
+const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
 const auth_service_1 = require("../services/auth.service");
 const mail_service_1 = require("../services/mail.service");
 const activityLog_1 = require("../utils/activityLog");
@@ -12,7 +13,6 @@ const bcrypt_util_1 = require("../utils/bcrypt.util");
 const jwt_1 = require("../utils/jwt");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
-const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
 const createAccount = async (req, res) => {
     // return;
     if (!req.body) {
@@ -63,6 +63,7 @@ const loginAccount = async (req, res) => {
                 return;
             }
             const token = (0, jwt_1.generateToken)(`${officeWorker?.worker_id}`);
+            console.log('token :', token);
             const activityLog = await (0, activityLog_1.logActivity)({
                 req,
                 user_id: officeWorker.id,
@@ -118,7 +119,8 @@ const loginAccount = async (req, res) => {
             (0, response_1.errorResponse)(res, 401, "invalid Email or Password");
             return;
         }
-        const token = (0, jwt_1.generateToken)(`${user.user_id}`);
+        const token = (0, jwt_1.generateToken)(user.user_id);
+        console.log('token :', token);
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
             user_id: user._id,
@@ -185,6 +187,7 @@ const resetPassword = async (req, res) => {
             forgot_password_expires: { $gt: new Date() },
         });
         if (!user) {
+            console.log("err :", user);
             (0, response_1.errorResponse)(res, 400, "Invalid or expired reset token");
             return;
         }
