@@ -49,7 +49,7 @@ interface ShippingLocation {
 }
 
 type OrderRole = "distributor" | "sales_agent";
-type PaymentStatus = "pending" | "paid" | "cancelled";
+type PaymentStatus = "pending" | "paid" | "cancelled" | "initiated";
 type DeliveryStatus = "not_assigned" | "in_transit" | "delivered" | "pending";
 type RefundStatus = "none" | "pending" | "processed";
 type PaymentMethod =
@@ -85,6 +85,7 @@ export interface IOrder extends Document {
   tax_amount?: number;
   tracking_number?: string;
   courier_service?: string;
+  admin_notes: String;
   cancelled_at?: Date;
   refund_status?: RefundStatus;
   fulfillment_type?: string;
@@ -153,6 +154,7 @@ const OrderSchema = new Schema<IOrder>(
       default: "not_assigned",
     },
     internal_notes: { type: String },
+    admin_notes: { type: String },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number, default: 0 },
     total_quantity: { type: Number, default: 0 },

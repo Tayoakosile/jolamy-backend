@@ -2,7 +2,7 @@ import { NextFunction } from "express";
 // utils/checkIfExists.ts
 
 import { Request, Response } from "express";
-import mongoose, { Document } from "mongoose";
+import mongoose, { Document, Types } from "mongoose";
 import randomatic from "randomatic";
 import { Counter } from "../models/counter";
 import { sendEmail } from "../services/mail.service";
@@ -28,29 +28,27 @@ export const checkIfDocumentExistsById = async <T extends Document>(
   //   });
   //   return;
   // }
-  if (populateFields) {
-    const populatedDocument = await Model.findOne({
-      [itemKey]: id,
-    } as any).populate(populateFields);
-    if (!populatedDocument) {
-      errorResponse(res, 404, "Document not found", {
-        message: "Document not found",
-      });
-      return;
-    }
 
-    return populatedDocument;
+  let populatedDocument;
+  if (Types.ObjectId.isValid(id)) {
+    const query = Model.findById({ id } as any);
+    populatedDocument = populateFields
+      ? await query.populate(populateFields)
+      : await query;
+  } else {
+    const query = Model.findOne({ [itemKey]: id } as any);
+    populatedDocument = populateFields
+      ? await query.populate(populateFields)
+      : await query;
   }
-  const document = await Model.findOne({
-    [itemKey]: id,
-  } as any);
-  if (!document) {
+
+  if (!populatedDocument) {
     errorResponse(res, 404, "Document not found", {
       message: "Document not found",
     });
-    return;
+    return
   }
-  return document;
+  return populatedDocument;
 };
 
 export const generateRandom = (howMuch?: number, pattern?: string) => {

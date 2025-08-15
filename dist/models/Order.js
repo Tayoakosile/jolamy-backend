@@ -77,6 +77,7 @@ const OrderSchema = new mongoose_1.Schema({
         default: "not_assigned",
     },
     internal_notes: { type: String },
+    admin_notes: { type: String },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number, default: 0 },
     total_quantity: { type: Number, default: 0 },

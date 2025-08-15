@@ -6,6 +6,7 @@ export interface ITransaction extends Document {
   transaction_id: string;
   internal_sequence: number;
   date: Date;
+
   description: string;
   payment_method: string; // e.g., "bank_transfer", "mobile_money", "cash"
   status: "pending" | "completed" | "failed" | "reversed";
@@ -101,8 +102,36 @@ TransactionSchema.pre(
     next();
   }
 );
+TransactionSchema.pre(
+  "save",
+  async function (this: import("mongoose").Document & ITransaction, next) {
+    if (this.isNew) {
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+      // Increment sequence for today
+      const counter = await Counter.findOneAndUpdate(
+        { name: "order", date: today },
+        { $inc: { sequence: 1 } },
+        { new: true, upsert: true }
+      );
+
+      const seq = counter.sequence;
+      this.internal_sequence = seq;
+
+      // Random 5-character alphanumeric
+      const randomPart = generateRandom(8, "00").toUpperCase();
+      const datePart = today.replace(/-/g, "");
+      const transaction_id = `ORD-${datePart}-${randomPart}-${String(
+        seq
+      ).padStart(4, "0")}`;
+      this.transaction_id = transaction_id;
+    }
+    next();
+  }
+);
 const Transaction = mongoose.model<ITransaction>(
   "Transaction",
   TransactionSchema
 );
+
 export default Transaction;

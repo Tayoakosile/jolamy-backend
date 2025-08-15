@@ -13,9 +13,13 @@ const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
 const getAllOrders = (_req, res) => {
-    const id = _req.user?._id;
+    const user = _req.user;
+    const user_role = _req.user?.user_role;
     const request = async () => {
-        return await Order_1.default.find({ user_id: id });
+        const allOrders = user_role === "admin"
+            ? await Order_1.default.find({})
+            : await Order_1.default.find({ user_id: user?._id });
+        return allOrders;
     };
     (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Orders retrieved successfully",
@@ -26,10 +30,14 @@ const getAllOrders = (_req, res) => {
 exports.getAllOrders = getAllOrders;
 const getSingleOrder = async (_req, res) => {
     const order = _req?.order;
-    // if (user_role === "admin") {
     const orderDetails = await Order_1.default.findById(order && order._id)
         .populate("products")
         .populate("logs")
+        .populate({
+        path: "assigned_to.office",
+        model: "Office",
+        select: "name address workers",
+    })
         .populate("transaction_id")
         .populate("products")
         .populate({

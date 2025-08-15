@@ -15,13 +15,19 @@ const validateOrder = async (_req, res, next) => {
     // Ensure both IDs are strings for comparison
     const checkIfOrderBelongsToUser = user?.orders.some((singleOrder) => String(singleOrder._id) === String(order?._id));
     // If payment made already or it is delivered, do not allow update
-    if ((_req.method !== "GET" && order?.payment_status === "paid") ||
-        (_req.method !== "GET" && order?.delivery_status === "delivered")) {
-        (0, response_1.errorResponse)(res, 400, "Order cannot be updated", {
-            message: "Order has already been paid or delivered",
-        });
-        return;
-    }
+    // if (
+    //   (_req.method !== "GET" &&
+    //     order?.payment_status === "paid" &&
+    //     user?.user_role !== "admin") ||
+    //   (_req.method !== "GET" &&
+    //     order?.delivery_status === "delivered" &&
+    //     user?.user_role !== "admin")
+    // ) {
+    //   errorResponse(res, 400, "Order cannot be updated", {
+    //     message: "Order has already been paid or delivered",
+    //   });
+    //   return;
+    // }
     if (user?.user_role !== "admin" && !checkIfOrderBelongsToUser) {
         (0, response_1.errorResponse)(res, 404, "Order not found", {
             message: "Order not found or does not belong to the user",

@@ -88,6 +88,12 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
   try {
     const user = _req.user as IUser;
     const order = _req.order as IOrder;
+    if (order.payment_status !== "initiated") {
+      res.status(400).json({
+        message: "Payment has not been initiated for this order",
+      });
+      return;
+    }
     const order_id = _req.params.id;
     const reference = _req.body?.reference as string;
     if (!reference) {
@@ -117,11 +123,21 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       statusMap[status] === "paid"
       // &&responseFromPaystack?.metadata?.cart_id == order_id?.toString()
     ) {
+      const office_to_be_in_charge = await Offices.aggregate([
+        { $match: { is_active: true } },
+        { $addFields: { orderCount: { $size: "$orders" } } },
+        { $sort: { orderCount: 1 } }, // smallest first
+        { $limit: 1 },
+      ]);
+      const transaction = await Transaction.findByIdAndUpdate(order?._id, {
+        status: "completed",
+        payment_method: "Paystack",
+      });
       const log = await logActivity({
         req: _req,
         user_id: user?.id,
         action: "COMPLETED_PAYMENT",
-        description: `User completed payment for this order, id: ${order}`,
+        description: `User completed payment for this order, id: ${order?.order_number} and the payment was successful`,
         receiver: user._id,
         sender: new Types.ObjectId(`${user._id}`),
         metadata: {
@@ -129,9 +145,37 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
           total_amount: order.total_amount,
           payment_status: "paid",
           payment_reference: response.data?.data?.reference,
+          transaction_id: transaction?.transaction_id,
+        },
+      });
+      // Log that order was asssinged to this office
+      const officeLog = await logActivity({
+        req: _req,
+        user_id: user?._id,
+        action: "ASSIGNED_ORDER_TO_OFFICE",
+        description: `Order ${order_id} has been assigned to office ${office_to_be_in_charge[0]?.name}`,
+        receiver: office_to_be_in_charge[0]?._id || user._id,
+        sender: new Types.ObjectId(`${user._id}`),
+        metadata: {
+          order_id,
+          office_id: office_to_be_in_charge[0]?._id,
+          office_name: office_to_be_in_charge[0]?.name,
         },
       });
 
+      await Offices.findByIdAndUpdate(office_to_be_in_charge[0]?._id, {
+        $push: {
+          orders: new Types.ObjectId(order?.id),
+          logs: {
+            $each: [
+              new Types.ObjectId(log.id),
+              new Types.ObjectId(officeLog.id),
+            ],
+          },
+        },
+      });
+
+      // return;
       await Order.findOneAndUpdate(
         { order_number: order_id },
         {
@@ -140,21 +184,32 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
           status: "processing",
           payment_method: "Paystack",
           payment_reference: response.data?.data?.reference,
-          $push: { logs: new Types.ObjectId(log.id) },
+          $push: {
+            logs: {
+              $each: [log._id, officeLog.id],
+            },
+          },
+          assigned_to: {
+            office: office_to_be_in_charge[0]?._id || null,
+            office_worker: null,
+          },
         }
       );
 
       await User.findByIdAndUpdate(user._id, {
-        $push: { logs: new Types.ObjectId(log.id) },
-
+        $push: {
+          logs: {
+            $each: [
+              new Types.ObjectId(log.id),
+              new Types.ObjectId(officeLog.id),
+            ],
+          },
+        },
         $inc: {
           total_boxes_in_stock: Number(order?.total_quantity || 0),
         },
       });
-      await Transaction.findByIdAndUpdate(order?._id, {
-        status: "completed",
-        payment_method: "Paystack -",
-      });
+
       //   find the cart and delete it items array, if the id is in items then delete the collection
       await Cart.findOneAndUpdate(
         { user_id: user?.id, order_id },
@@ -164,7 +219,6 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
         $or: [{ user_id: user._id }, { order_id }],
       });
 
-      console.log(" :hello");
       sendEmail(
         user.email,
         "Payment Successful",
@@ -185,6 +239,20 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       return;
     }
     if (statusMap[status] === "pending") {
+      const log = await logActivity({
+        req: _req,
+        user_id: user?._id,
+        action: "VERIFIED_PAYMENT",
+        description: `User verified payment for this order, id: ${order?.user_id} but the payment is still pending`,
+        receiver: user._id,
+        sender: new Types.ObjectId(`${user._id}`),
+        metadata: {
+          order_id,
+          total_amount: order.total_amount,
+          payment_status: "pending",
+          payment_reference: response.data?.data?.reference,
+        },
+      });
       await Order.findByIdAndUpdate(order_id, {
         $push: { logs: new Types.ObjectId(log.id) },
       });
@@ -208,6 +276,20 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
     }
 
     if (["failed", "reversed", "abandoned"].includes(status)) {
+      const log = await logActivity({
+        req: _req,
+        user_id: user?._id,
+        action: "FAILED_PAYMENT",
+        description: `User payment for this order, id: ${order?.order_number} has failed or been reversed`,
+        receiver: user._id,
+        sender: new Types.ObjectId(`${user._id}`),
+        metadata: {
+          order_id,
+          total_amount: order.total_amount,
+          payment_status: "failed",
+          payment_reference: response.data?.data?.reference,
+        },
+      });
       await Order.findByIdAndUpdate(order_id, {
         payment_status: statusMap[status],
         $push: { logs: new Types.ObjectId(log.id) },

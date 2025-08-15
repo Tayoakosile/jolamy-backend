@@ -27,15 +27,19 @@ export const validateOrder = async (
 
   // If payment made already or it is delivered, do not allow update
 
-  if (
-    (_req.method !== "GET" && order?.payment_status === "paid") ||
-    (_req.method !== "GET" && order?.delivery_status === "delivered")
-  ) {
-    errorResponse(res, 400, "Order cannot be updated", {
-      message: "Order has already been paid or delivered",
-    });
-    return;
-  }
+  // if (
+  //   (_req.method !== "GET" &&
+  //     order?.payment_status === "paid" &&
+  //     user?.user_role !== "admin") ||
+  //   (_req.method !== "GET" &&
+  //     order?.delivery_status === "delivered" &&
+  //     user?.user_role !== "admin")
+  // ) {
+  //   errorResponse(res, 400, "Order cannot be updated", {
+  //     message: "Order has already been paid or delivered",
+  //   });
+  //   return;
+  // }
   if (user?.user_role !== "admin" && !checkIfOrderBelongsToUser) {
     errorResponse(res, 404, "Order not found", {
       message: "Order not found or does not belong to the user",
