@@ -21,7 +21,7 @@ const officeSchema = new mongoose_1.Schema({
     logs: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Log" }],
     wallet: {
         balance: { type: Number, default: 0 },
-        lastFundedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
+        last_funded_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
         lastFundedAmount: { type: Number },
         logs: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Log" }],
     },
@@ -40,7 +40,7 @@ officeSchema.pre("save", async function (next) {
         // Random 5-character alphanumeric
         const randomPart = (0, util_1.generateRandom)(8, "00").toUpperCase();
         const datePart = today.replace(/-/g, "");
-        const office_id = `ORD-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
+        const office_id = `OFC-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
         this.office_id = office_id;
     }
     next();

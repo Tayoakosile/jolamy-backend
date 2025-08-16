@@ -26,13 +26,13 @@ const financeSchema = new Schema<IFinance>(
   {
     type: {
       type: String,
-      enum: ["inflow", "outflow"],
+      enum: ["inflow", "outflow", "transaction-in", "transaction-out"],
       required: true,
     },
     amount: { type: Number, required: true },
     internal_sequence: { type: Number, default: 0 },
     cashflow_id: { type: String, unique: true },
-    office_id: { type: Schema.Types.ObjectId, required: true },
+    office_id: { type: Schema.Types.ObjectId, ref:"Office", required: true },
     payment_method: { type: String, trim: true },
     attachments: { type: [] },
     category: { type: String, required: true, trim: true },
@@ -66,7 +66,7 @@ financeSchema.pre(
       // Random 5-character alphanumeric
       const randomPart = generateRandom(8, "00").toUpperCase();
       const datePart = today.replace(/-/g, "");
-      const cashflow_id = `ORD-${datePart}-${randomPart}-${String(seq).padStart(
+      const cashflow_id = `CSF-${datePart}-${randomPart}-${String(seq).padStart(
         4,
         "0"
       )}`;

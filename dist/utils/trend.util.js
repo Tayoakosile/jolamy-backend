@@ -30,17 +30,35 @@ async function getTrend(model, options) {
         previousEnd = new Date(currentStart);
         previousStart = new Date(previousEnd.getTime() - diff);
     }
+    // 🔹 Helper to detect array paths
+    const extractArrayFields = (obj) => {
+        return Object.keys(obj).filter(key => key.includes("."));
+    };
     const pipeline = (start, end) => {
-        const matchStage = {
+        const stages = [];
+        // 1. Handle array unwinding if sumField or filter uses dot notation
+        const unwindFields = new Set();
+        if (sumField?.includes(".")) {
+            unwindFields.add(sumField.split(".")[0]);
+        }
+        extractArrayFields(filter).forEach(f => {
+            unwindFields.add(f.split(".")[0]);
+        });
+        for (const field of unwindFields) {
+            stages.push({ $unwind: `$${field}` });
+        }
+        // 2. Match stage
+        stages.push({
             $match: {
                 ...filter,
                 [dateField]: { $gte: start, $lt: end }
             }
-        };
-        const sumOrCountStage = sumField
+        });
+        // 3. Group stage
+        stages.push(sumField
             ? { $group: { _id: null, total: { $sum: `$${sumField}` } } }
-            : { $group: { _id: null, total: { $sum: 1 } } };
-        return [matchStage, sumOrCountStage];
+            : { $group: { _id: null, total: { $sum: 1 } } });
+        return stages;
     };
     const [currentData] = await model.aggregate(pipeline(currentStart, currentEnd));
     const [previousData] = await model.aggregate(pipeline(previousStart, previousEnd));
@@ -50,8 +68,12 @@ async function getTrend(model, options) {
     let trend = "no-change";
     if (previousTotal > 0) {
         percentageChange = ((currentTotal - previousTotal) / previousTotal) * 100;
-        trend = currentTotal > previousTotal ? "increase" :
-            currentTotal < previousTotal ? "decrease" : "no-change";
+        trend =
+            currentTotal > previousTotal
+                ? "increase"
+                : currentTotal < previousTotal
+                    ? "decrease"
+                    : "no-change";
     }
     else if (currentTotal > 0) {
         percentageChange = 100;

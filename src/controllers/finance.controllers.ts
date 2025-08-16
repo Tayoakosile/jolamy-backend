@@ -1,11 +1,10 @@
 import { Request, Response } from "express";
+import Offices, { IOffice } from "../models/Admin/Office";
+import OfficeWorker from "../models/Admin/OfficeWorker";
 import CashFlow, { IFinance } from "../models/CashFlow";
-import { checkIfDocumentExistsById, customReqResHandler } from "../utils/util";
-import Offices from "../models/Admin/Office";
 import { logActivity } from "../utils/activityLog";
-import OfficeWorker  from "../models/Admin/OfficeWorker";
-import { Types } from "mongoose";
 import { errorResponse } from "../utils/response";
+import { checkIfDocumentExistsById, customReqResHandler } from "../utils/util";
 
 export const getAllFinance = (req: Request, res: Response) => {
   const request = async () => {
@@ -20,10 +19,13 @@ export const getAllFinance = (req: Request, res: Response) => {
 };
 
 export const createNewFinance = (req: Request, res: Response) => {
-  const user = (req as any).user;
+  const user = (req as any).worker;
+  const amount = Number(req.body.amount);
 
   const request = async () => {
-    const singleOffice = await Offices.findById(user.office);
+    const singleOffice = (await Offices.findById(user.office)) as IOffice;
+    // console.log("singleOffice :", singleOffice);
+
     const checkIfCashFlowExists = await CashFlow.findOne({
       reference: req.body.reference,
     });
@@ -40,28 +42,29 @@ export const createNewFinance = (req: Request, res: Response) => {
     const cashFlow = await CashFlow.create({
       ...req.body,
       created_by: user.id,
-      office_id: new Types.ObjectId(user?.office_id),
+      office_id: user?.office,
     });
 
     const log = await logActivity({
       req,
       user_id: user?.user_id,
       action: "CREATE_FINANCE_RECORD",
-      description: "Created a new finance record",
-      sender: user?.user_id,
-      receiver: user?.user_id,
+      description: "  Created a new finance record",
+      sender: user?._id,
+      receiver: user?._id,
       metadata: {
         cashFlowId: cashFlow.cashflow_id,
         officeId: user.office_id,
       },
     });
+
     const log2 = await logActivity({
       req,
       user_id: user?.user_id,
       action: "UPDATE_OFFICE_WALLET",
       description: `Updated office wallet after ${req.body.type} transaction`,
-      sender: user?.user_id,
-      receiver: user?.user_id,
+      sender: user?._id,
+      receiver: user?._id,
       metadata: {
         officeId: user.office_id,
         ...req.body,
@@ -69,40 +72,46 @@ export const createNewFinance = (req: Request, res: Response) => {
         type: req.body.type,
       },
     });
+    console.log(
+      "singleOffice?.wallet?.balance  :",
+      singleOffice?.wallet?.balance
+    );
+    // console.log('singleOffice._id :', singleOffice._id);
 
-    if (req.body.type === "inflow") {
-      await Offices.findByIdAndUpdate(user.office, {
-        $push: {
-          transactions: cashFlow._id,
-          logs: [log._id, log2._id],
-          "wallet.logs": log2._id,
-        },
-        $set: {
-          "wallet.balance":
-            (singleOffice?.wallet?.balance as number) + Number(req.body.amount),
-          "wallet.lastFundedBy": user?.user_id,
-          "wallet.lastFundedAmount": singleOffice?.wallet?.balance as number,
-        },
-      });
-    }
     if (req.body.type === "outflow") {
-      await Offices.findByIdAndUpdate(user.office, {
+      console.log("lf :");
+
+      await Offices.findByIdAndUpdate(singleOffice._id, {
+        $expr: {
+          $gte: [
+            "$wallet.balance",
+            singleOffice?.wallet && Number(singleOffice?.wallet?.balance) <= 0
+              ? 0
+              : amount,
+          ],
+        },
         $push: {
           transactions: cashFlow._id,
-          logs: [log._id, log2._id],
-        },
-        $set: {
+          logs: { $each: [log._id, log2._id] },
           "wallet.logs": log2._id,
-          "wallet.balance":
-            (singleOffice?.wallet?.balance as number) <= 0
-              ? 0
-              : (singleOffice?.wallet?.balance as number) -
-                Number(req.body.amount),
         },
+        $inc: {
+          "wallet.balance":
+            Number(singleOffice?.wallet?.balance) <= 0 ? 0 : -amount,
+        },
+      });
+    } else if (req.body.type === "inflow") {
+      await Offices.findByIdAndUpdate(singleOffice._id, {
+        $push: {
+          transactions: cashFlow._id,
+          logs: { $each: [log._id, log2._id] },
+          "wallet.logs": log2._id,
+        },
+        $inc: { "wallet.balance": amount },
       });
     }
 
-    await OfficeWorker.findByIdAndUpdate(user.id, {
+    await OfficeWorker.findByIdAndUpdate(user._id, {
       $push: { cash_flow: cashFlow._id, logs: log._id },
     });
   };
@@ -114,7 +123,7 @@ export const createNewFinance = (req: Request, res: Response) => {
 };
 
 export const updateFinance = (req: Request, res: Response) => {
-  const user = (req as any).user as any;
+  const user = (req as any).worker as any;
   if (!req.body) {
     errorResponse(res, 400, "Request body is required");
     return;
@@ -140,8 +149,8 @@ export const updateFinance = (req: Request, res: Response) => {
       user_id: user?.user_id,
       action: "UPDATE_FINANCE_RECORD",
       description: `Updated finance record with ID ${financeId}`,
-      sender: user?.user_id,
-      receiver: user?.user_id,
+      sender: user?._id,
+      receiver: user?._id,
       metadata: {
         financeId,
         changes: req.body,

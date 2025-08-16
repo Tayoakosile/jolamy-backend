@@ -27,15 +27,21 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
     )) as IOffice;
 
     const existingUser = await User.findOne({
-      email: body.email.trim().toLowerCase(),
+      $or: [
+        { email: body.email.trim().toLowerCase() },
+        { username: body.username.trim().toLowerCase() },
+      ],
     });
     const existingWorker = await OfficeWorker.findOne({
-      email: body.email.trim().toLowerCase(),
+      $or: [
+        { email: body.email.trim().toLowerCase() },
+        { username: body.username.trim().toLowerCase() },
+      ],
     });
 
     if (existingWorker || existingUser) {
-      errorResponse(res, 400, "Worker with this email already exists", {
-        message: "Worker with this email already exists",
+      errorResponse(res, 400, "Worker with this email or username already exists", {
+        message: `Worker with the email ${body?.email}  or username ${body?.username} already exists`,
       });
       return;
     }
@@ -53,7 +59,7 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
       req: _req,
       user_id: new Types.ObjectId(_req.user?._id),
       action: "ADD_OFFICE_WORKER",
-      sender: _req.user?.user_id,
+      sender: _req.user?._id,
       receiver: worker.id,
       description: `New office worker added to office ${office.name}`,
       metadata: {

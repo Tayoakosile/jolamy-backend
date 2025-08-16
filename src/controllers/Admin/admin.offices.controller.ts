@@ -1,29 +1,96 @@
-import { Request, Response } from "express";
+import { Response } from "express";
+import _ from "lodash";
+import { Types } from "mongoose";
 import Offices, { IOffice } from "../../models/Admin/Office";
-import { errorResponse, successResponse } from "../../utils/response";
+import User from "../../models/User";
+import { AuthRequest } from "../../types/type";
+import { logActivity } from "../../utils/activityLog";
+import { errorResponse } from "../../utils/response";
+import { getTrend } from "../../utils/trend.util";
 import {
   checkIfDocumentExistsById,
   customReqResHandler,
 } from "../../utils/util";
-import { logActivity } from "../../utils/activityLog";
-import User from "../../models/User";
-import { Types } from "mongoose";
-import { AuthRequest } from "../../types/type";
 
 export const getOffices = (_req: AuthRequest, res: Response) => {
+  const user = _req.user;
   const request = async () => {
-    return await Offices.find();
+    if (user?.user_role === "admin") {
+      const allOrders = await Offices.find({});
+
+      const allOfficeStats = await getTrend(Offices, {
+        period: "week",
+      });
+
+      const activeOffices = await getTrend(Offices, {
+        period: "week",
+        filter: {
+          is_active: true,
+        },
+      });
+
+      return {
+        stats: [
+          {
+            title: "All Offices",
+            ...allOfficeStats,
+          },
+          {
+            title: "Active Offices",
+            ...activeOffices,
+          },
+        ],
+        offices: allOrders,
+      };
+    }
+
+    const allOffices = await Offices.find({})
+      .populate("logs")
+      .populate("created_by");
+
+    return allOffices;
   };
+
   customReqResHandler(res, request);
 };
 export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
   const id = _req.params.id;
-  const office = await checkIfDocumentExistsById<IOffice>(id,'office_id', res, Offices, [
-    "created_by",
-    "logs",
-  ]);
-
   const request = async () => {
+    await checkIfDocumentExistsById<IOffice>(id, "office_id", res, Offices, [
+      "created_by",
+      "logs",
+    ]);
+    const office = (await Offices.findOne({ office_id: id })
+      .populate({
+        path: "created_by",
+        select: "first_name last_name email user_role username email",
+      })
+      .populate("logs")
+      .populate("transactions")
+      .populate("wallet.logs")
+      .populate({
+        path: "workers",
+        populate: [
+          {
+            path: "added_by", // the nested field inside workers
+            model: "User",
+            select: "first_name last_name email user_role username",
+          },
+          {
+            path: "logs", // the nested field inside workers
+            model: "Log",
+            // select:"first_name last_name email user_role username",
+          },
+        ],
+      })) as IOffice;
+
+    const totalInflow = _.sumBy(
+      _.filter(office.transactions, { type: "inflow" }),
+      "amount"
+    );
+
+    // console.log("totalAmount :", totalAmount);
+
     const log = await logActivity({
       req: _req,
       user_id: new Types.ObjectId(_req.user?._id),
@@ -111,7 +178,7 @@ export const createNewOffices = (req: AuthRequest, res: Response) => {
 
 export const updateOffice = async (req: AuthRequest, res: Response) => {
   const id = req.params.id;
-  await checkIfDocumentExistsById<IOffice>(id,'_id', res, Offices);
+  await checkIfDocumentExistsById<IOffice>(id, "_id", res, Offices);
 
   const request = async () => {
     const updatedOffice = (await Offices.findByIdAndUpdate(

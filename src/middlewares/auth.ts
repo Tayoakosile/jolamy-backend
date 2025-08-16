@@ -22,7 +22,6 @@ export const appAuth = async (
   const authHeader = req.headers.authorization;
   // const authHeader = req.headers.authorization;
 
-
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1]?.replace(/"/g, "");
   }
@@ -37,19 +36,22 @@ export const appAuth = async (
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
 
+    console.log("decoded :", decoded);
+
     if (!decoded || !decoded.id) {
       errorResponse(res, 401, "Invalid token", { message: "Invalid token" });
       return next();
     }
     const user = (await User.findOne({ user_id: decoded.id })) as IUser;
     const worker = (await OfficeWorker.findOne({
-      user_id: decoded.id,
+      worker_id: decoded.id,
     })) as IUser;
 
-
     if (worker) {
-      (req as any).user = worker;
-      return next();
+      (req as any).worker = worker;
+
+      next();
+      return
     }
     if (user) {
       if (
@@ -72,8 +74,6 @@ export const appAuth = async (
     (req as any).user = worker ? worker : user;
     next();
   } catch (err) {
-    console.log("err :", err);
-
     errorResponse(res, 401, "Invalid or expired token", {
       message: "Invalid or expired token",
     });
@@ -84,15 +84,13 @@ export const appAuth = async (
 // middleware/auth.ts
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   const user = (req as any).user as IUser;
-  console.log(" :", user);
 
   if (user?.is_admin || user.user_role == "admin") return next();
   errorResponse(res, 403, "Access denied, admin only");
   return;
 };
 export const isWorker = (req: Request, res: Response, next: NextFunction) => {
-  const user = (req as any).user;
-
+  const user = (req as any).worker;
   if (user?.worker || user?.factory_worker || user) return next();
   errorResponse(res, 403, "Access denied, Workers only");
   return;

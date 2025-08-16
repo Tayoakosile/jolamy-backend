@@ -113,4 +113,13 @@ userSchema.pre("save", async function (next) {
     }
     next();
 });
+userSchema.pre("save", function (next) {
+    if (this.email) {
+        this.email = this.email.trim().toLowerCase();
+    }
+    if (this.username) {
+        this.username = this.username.trim().toLowerCase();
+    }
+    next();
+});
 exports.default = (0, mongoose_1.model)("User", userSchema);

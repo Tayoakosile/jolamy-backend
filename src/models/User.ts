@@ -39,7 +39,7 @@ const userSchema = new Schema<IUser>(
       default: "pending_for_documents",
     },
     password: { type: String, required: true },
-    internal_sequence: { type: Number,default: 0 },
+    internal_sequence: { type: Number, default: 0 },
     forgot_password_expires: { type: String },
     forgot_password_token: { type: String },
     last_order_date: Date,
@@ -130,13 +130,24 @@ userSchema.pre(
       const randomPart = generateRandom(8, "0A").toUpperCase();
 
       const datePart = today.replace(/-/g, "");
-      const user_id = `USR-${datePart}-${randomPart}-${String(
-        seq
-      ).padStart(4, "0")}`;
+      const user_id = `USR-${datePart}-${randomPart}-${String(seq).padStart(
+        4,
+        "0"
+      )}`;
       this.user_id = user_id;
     }
     next();
   }
 );
+
+userSchema.pre("save", function (next) {
+  if (this.email) {
+    this.email = this.email.trim().toLowerCase();
+  }
+  if (this.username) {
+    this.username = this.username.trim().toLowerCase();
+  }
+  next();
+});
 
 export default model<IUser>("User", userSchema);

@@ -24,17 +24,19 @@ const appAuth = async (req, res, next) => {
     }
     try {
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+        console.log("decoded :", decoded);
         if (!decoded || !decoded.id) {
             (0, response_1.errorResponse)(res, 401, "Invalid token", { message: "Invalid token" });
             return next();
         }
         const user = (await User_1.default.findOne({ user_id: decoded.id }));
         const worker = (await OfficeWorker_1.default.findOne({
-            user_id: decoded.id,
+            worker_id: decoded.id,
         }));
         if (worker) {
-            req.user = worker;
-            return next();
+            req.worker = worker;
+            next();
+            return;
         }
         if (user) {
             if (user?.rejected_by ||
@@ -55,7 +57,6 @@ const appAuth = async (req, res, next) => {
         next();
     }
     catch (err) {
-        console.log("err :", err);
         (0, response_1.errorResponse)(res, 401, "Invalid or expired token", {
             message: "Invalid or expired token",
         });
@@ -66,7 +67,6 @@ exports.appAuth = appAuth;
 // middleware/auth.ts
 const isAdmin = (req, res, next) => {
     const user = req.user;
-    console.log(" :", user);
     if (user?.is_admin || user.user_role == "admin")
         return next();
     (0, response_1.errorResponse)(res, 403, "Access denied, admin only");
@@ -74,7 +74,7 @@ const isAdmin = (req, res, next) => {
 };
 exports.isAdmin = isAdmin;
 const isWorker = (req, res, next) => {
-    const user = req.user;
+    const user = req.worker;
     if (user?.worker || user?.factory_worker || user)
         return next();
     (0, response_1.errorResponse)(res, 403, "Access denied, Workers only");

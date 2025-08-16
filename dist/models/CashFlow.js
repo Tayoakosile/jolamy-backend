@@ -7,13 +7,13 @@ const counter_1 = require("./counter");
 const financeSchema = new mongoose_1.Schema({
     type: {
         type: String,
-        enum: ["inflow", "outflow"],
+        enum: ["inflow", "outflow", "transaction-in", "transaction-out"],
         required: true,
     },
     amount: { type: Number, required: true },
     internal_sequence: { type: Number, default: 0 },
     cashflow_id: { type: String, unique: true },
-    office_id: { type: mongoose_1.Schema.Types.ObjectId, required: true },
+    office_id: { type: mongoose_1.Schema.Types.ObjectId, ref: "Office", required: true },
     payment_method: { type: String, trim: true },
     attachments: { type: [] },
     category: { type: String, required: true, trim: true },
@@ -35,7 +35,7 @@ financeSchema.pre("save", async function (next) {
         // Random 5-character alphanumeric
         const randomPart = (0, util_1.generateRandom)(8, "00").toUpperCase();
         const datePart = today.replace(/-/g, "");
-        const cashflow_id = `ORD-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
+        const cashflow_id = `CSF-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
         this.cashflow_id = cashflow_id;
     }
     next();

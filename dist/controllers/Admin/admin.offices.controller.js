@@ -4,26 +4,82 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateOffice = exports.createNewOffices = exports.getSingleOffice = exports.getOffices = void 0;
-const Office_1 = __importDefault(require("../../models/Admin/Office"));
-const response_1 = require("../../utils/response");
-const util_1 = require("../../utils/util");
-const activityLog_1 = require("../../utils/activityLog");
-const User_1 = __importDefault(require("../../models/User"));
+const lodash_1 = __importDefault(require("lodash"));
 const mongoose_1 = require("mongoose");
+const Office_1 = __importDefault(require("../../models/Admin/Office"));
+const User_1 = __importDefault(require("../../models/User"));
+const activityLog_1 = require("../../utils/activityLog");
+const response_1 = require("../../utils/response");
+const trend_util_1 = require("../../utils/trend.util");
+const util_1 = require("../../utils/util");
 const getOffices = (_req, res) => {
+    const user = _req.user;
     const request = async () => {
-        return await Office_1.default.find();
+        if (user?.user_role === "admin") {
+            const allOrders = await Office_1.default.find({});
+            const allOfficeStats = await (0, trend_util_1.getTrend)(Office_1.default, {
+                period: "week",
+            });
+            const activeOffices = await (0, trend_util_1.getTrend)(Office_1.default, {
+                period: "week",
+                filter: {
+                    is_active: true,
+                },
+            });
+            return {
+                stats: [
+                    {
+                        title: "All Offices",
+                        ...allOfficeStats,
+                    },
+                    {
+                        title: "Active Offices",
+                        ...activeOffices,
+                    },
+                ],
+                offices: allOrders,
+            };
+        }
+        const allOffices = await Office_1.default.find({})
+            .populate("logs")
+            .populate("created_by");
+        return allOffices;
     };
     (0, util_1.customReqResHandler)(res, request);
 };
 exports.getOffices = getOffices;
 const getSingleOffice = async (_req, res) => {
     const id = _req.params.id;
-    const office = await (0, util_1.checkIfDocumentExistsById)(id, 'office_id', res, Office_1.default, [
-        "created_by",
-        "logs",
-    ]);
     const request = async () => {
+        await (0, util_1.checkIfDocumentExistsById)(id, "office_id", res, Office_1.default, [
+            "created_by",
+            "logs",
+        ]);
+        const office = (await Office_1.default.findOne({ office_id: id })
+            .populate({
+            path: "created_by",
+            select: "first_name last_name email user_role username email",
+        })
+            .populate("logs")
+            .populate("transactions")
+            .populate("wallet.logs")
+            .populate({
+            path: "workers",
+            populate: [
+                {
+                    path: "added_by", // the nested field inside workers
+                    model: "User",
+                    select: "first_name last_name email user_role username",
+                },
+                {
+                    path: "logs", // the nested field inside workers
+                    model: "Log",
+                    // select:"first_name last_name email user_role username",
+                },
+            ],
+        }));
+        const totalInflow = lodash_1.default.sumBy(lodash_1.default.filter(office.transactions, { type: "inflow" }), "amount");
+        // console.log("totalAmount :", totalAmount);
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
@@ -103,7 +159,7 @@ const createNewOffices = (req, res) => {
 exports.createNewOffices = createNewOffices;
 const updateOffice = async (req, res) => {
     const id = req.params.id;
-    await (0, util_1.checkIfDocumentExistsById)(id, '_id', res, Office_1.default);
+    await (0, util_1.checkIfDocumentExistsById)(id, "_id", res, Office_1.default);
     const request = async () => {
         const updatedOffice = (await Office_1.default.findByIdAndUpdate(id, { ...req.body }, { new: true }));
         const log = await (0, activityLog_1.logActivity)({

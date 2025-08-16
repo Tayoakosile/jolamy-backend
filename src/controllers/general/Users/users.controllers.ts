@@ -126,7 +126,7 @@ export const getSingleUser = async (_req: AuthRequest, res: Response) => {
     });
     return;
   } catch (error) {
-    console.log("error :", error);
+
 
     return res.status(500).json({ error: "Error fetching user" });
   }

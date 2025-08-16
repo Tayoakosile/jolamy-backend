@@ -13,7 +13,7 @@ export async function getTrend(
   model: Model<any>,
   options: {
     period: Period;
-    dateField?: string;       // defaults to createdAt
+    dateField?: string;       // defaults to created_at
     sumField?: string;        // if provided, sums this field instead of counting
     filter?: FilterQuery<any>; // extra Mongo filter
     timezoneOffset?: number;  // in hours
@@ -59,19 +59,45 @@ export async function getTrend(
     previousStart = new Date(previousEnd.getTime() - diff);
   }
 
+  // 🔹 Helper to detect array paths
+  const extractArrayFields = (obj: Record<string, any>): string[] => {
+    return Object.keys(obj).filter(key => key.includes("."));
+  };
+
   const pipeline = (start: Date, end: Date) => {
-    const matchStage = {
+    const stages: any[] = [];
+
+    // 1. Handle array unwinding if sumField or filter uses dot notation
+    const unwindFields = new Set<string>();
+
+    if (sumField?.includes(".")) {
+      unwindFields.add(sumField.split(".")[0]);
+    }
+
+    extractArrayFields(filter).forEach(f => {
+      unwindFields.add(f.split(".")[0]);
+    });
+
+    for (const field of unwindFields) {
+      stages.push({ $unwind: `$${field}` });
+    }
+
+    // 2. Match stage
+    stages.push({
       $match: {
         ...filter,
         [dateField]: { $gte: start, $lt: end }
       }
-    };
+    });
 
-    const sumOrCountStage = sumField
-      ? { $group: { _id: null, total: { $sum: `$${sumField}` } } }
-      : { $group: { _id: null, total: { $sum: 1 } } };
+    // 3. Group stage
+    stages.push(
+      sumField
+        ? { $group: { _id: null, total: { $sum: `$${sumField}` } } }
+        : { $group: { _id: null, total: { $sum: 1 } } }
+    );
 
-    return [matchStage, sumOrCountStage];
+    return stages;
   };
 
   const [currentData] = await model.aggregate(pipeline(currentStart, currentEnd));
@@ -85,8 +111,12 @@ export async function getTrend(
 
   if (previousTotal > 0) {
     percentageChange = ((currentTotal - previousTotal) / previousTotal) * 100;
-    trend = currentTotal > previousTotal ? "increase" :
-            currentTotal < previousTotal ? "decrease" : "no-change";
+    trend =
+      currentTotal > previousTotal
+        ? "increase"
+        : currentTotal < previousTotal
+        ? "decrease"
+        : "no-change";
   } else if (currentTotal > 0) {
     percentageChange = 100;
     trend = "increase";

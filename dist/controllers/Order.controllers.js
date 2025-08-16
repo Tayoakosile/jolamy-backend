@@ -87,7 +87,6 @@ const getSingleOrder = async (_req, res) => {
         path: "user_id",
         select: "first_name user_id last_name email phone_number user_role",
     });
-    console.log("order?.logs :", orderDetails);
     (0, response_1.successResponse)(res, 200, "Order retrieved successfully", {
         order: orderDetails,
     });
@@ -136,7 +135,6 @@ const createNewOrder = (_req, res) => {
                     });
                     return;
                 }
-                console.log("matchedVariant :", variantFromPostAPi, matchedVariant);
                 if (matchedVariant) {
                     // total_boxes_in_stock is null means unlimited stock,
                     // so we don't check for it  but if it is less than the requested quantity, return error
@@ -201,6 +199,7 @@ const createNewOrder = (_req, res) => {
                 user_id: id,
             },
         });
+        // if()
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(id),
@@ -249,7 +248,7 @@ const updateOrder = async (_req, res) => {
     const orderID = _req.params?.id;
     const order = await (0, util_1.checkIfDocumentExistsById)(orderID, "order_number", res, Order_1.default);
     const request = async () => {
-        // Log that user filled in extra details of the order.. if it contains address
+        // Log that user filled in extra details of the order.... if it contains address
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(user?._id),

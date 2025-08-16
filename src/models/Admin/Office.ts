@@ -17,7 +17,7 @@ export interface IOffice extends Document {
   is_active: boolean;
   wallet?: {
     balance: number;
-    lastFundedBy?: Types.ObjectId; // User who last funded the wallet
+    last_funded_by?: Types.ObjectId; // User who last funded the wallet
     lastFundedAmount?: number; // Last funded amount
     logs?: Types.ObjectId[]; // Logs related to wallet transactions
   };
@@ -42,7 +42,7 @@ const officeSchema = new Schema<IOffice>(
     logs: [{ type: Schema.Types.ObjectId, ref: "Log" }],
     wallet: {
       balance: { type: Number, default: 0 },
-      lastFundedBy: { type: Schema.Types.ObjectId, ref: "User" },
+      last_funded_by: { type: Schema.Types.ObjectId, ref: "User" },
       lastFundedAmount: { type: Number },
       logs: [{ type: Schema.Types.ObjectId, ref: "Log" }],
     },
@@ -72,7 +72,7 @@ officeSchema.pre(
       // Random 5-character alphanumeric
       const randomPart = generateRandom(8, "00").toUpperCase();
       const datePart = today.replace(/-/g, "");
-      const office_id = `ORD-${datePart}-${randomPart}-${String(seq).padStart(
+      const office_id = `OFC-${datePart}-${randomPart}-${String(seq).padStart(
         4,
         "0"
       )}`;

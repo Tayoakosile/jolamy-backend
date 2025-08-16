@@ -11,7 +11,6 @@ dotenv_1.default.config();
 if (!process.env.R2_ACCESS_KEY_ID ||
     !process.env.R2_SECRET_ACCESS_KEY ||
     !process.env.CLOUDFLARE_ACCOUNT_ID) {
-    console.log(" :", process.env.R2_ACCESS_KEY_ID, process.env.R2_SECRET_ACCESS_KEY, process.env.CLOUDFLARE_ACCOUNT_ID);
     throw new Error("Missing R2 credentials in .env");
 }
 exports.r2 = new client_s3_1.S3Client({

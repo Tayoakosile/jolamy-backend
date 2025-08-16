@@ -220,13 +220,14 @@ const resetPassword = async (req, res) => {
 exports.resetPassword = resetPassword;
 const getUserProfile = async (req, res) => {
     try {
-        const userId = req.user?.user_id;
+        const userId = req.user?.user_id || req.worker?.worker_id;
         const user = await User_1.default.findOne({ user_id: userId }).select("-password -__v -_id");
-        if (!user) {
-            (0, response_1.errorResponse)(res, 404, "User not found");
+        const worker = await OfficeWorker_1.default.findOne({ worker_id: userId }).select("-password -__v -_id");
+        if (!user && !worker) {
+            (0, response_1.errorResponse)(res, 404, "User not found ");
             return;
         }
-        (0, response_1.successResponse)(res, 200, "User profile retrieved successfully", user);
+        (0, response_1.successResponse)(res, 200, `${user ? "User's" : "Worker's"} profile retrieved successfully`, user || worker);
         return;
     }
     catch (error) {

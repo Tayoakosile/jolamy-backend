@@ -91,7 +91,7 @@ export const getSingleOrder = async (_req: AuthRequest, res: Response) => {
       path: "user_id",
       select: "first_name user_id last_name email phone_number user_role",
     });
-  console.log("order?.logs :", orderDetails);
+
   successResponse(res, 200, "Order retrieved successfully", {
     order: orderDetails,
   });
@@ -161,7 +161,7 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
             return;
           }
 
-          console.log("matchedVariant :", variantFromPostAPi, matchedVariant);
+
 
           if (matchedVariant) {
             // total_boxes_in_stock is null means unlimited stock,
@@ -246,6 +246,7 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
         user_id: id,
       },
     });
+    // if()
 
     const log = await logActivity({
       req: _req,
@@ -311,7 +312,9 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
     Order
   );
   const request = async () => {
-    // Log that user filled in extra details of the order.. if it contains address
+
+    // Log that user filled in extra details of the order.... if it contains address
+
 
     const log = await logActivity({
       req: _req,

@@ -79,8 +79,8 @@ const updateTransaction = (req, res) => {
             user_id: user?.user_id,
             action: "UPDATE_FINANCE_RECORD",
             description: `Updated finance record with ID ${financeId}`,
-            sender: user?.user_id,
-            receiver: user?.user_id,
+            sender: user?._id,
+            receiver: user?._id,
             metadata: {
                 financeId,
                 changes: req.body,

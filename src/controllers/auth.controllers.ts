@@ -279,15 +279,24 @@ export const resetPassword = async (req: Request, res: Response) => {
 
 export const getUserProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.user_id;
+    const userId = req.user?.user_id || req.worker?.worker_id;
     const user = await User.findOne({ user_id: userId }).select(
       "-password -__v -_id"
     );
-    if (!user) {
-      errorResponse(res, 404, "User not found");
+    const worker = await OfficeWorker.findOne({ worker_id: userId }).select(
+      "-password -__v -_id"
+    );
+
+    if (!user && !worker) {
+      errorResponse(res, 404, "User not found ");
       return;
     }
-    successResponse(res, 200, "User profile retrieved successfully", user);
+    successResponse(
+      res,
+      200,
+      `${user ? "User's" : "Worker's"} profile retrieved successfully`,
+      user || worker
+    );
     return;
   } catch (error) {
     errorResponse(

@@ -19,14 +19,20 @@ const addOfficeWorker = (_req, res) => {
     const request = async () => {
         const office = (await (0, util_1.checkIfDocumentExistsById)(officeId, "office_id", res, Office_1.default));
         const existingUser = await User_1.default.findOne({
-            email: body.email.trim().toLowerCase(),
+            $or: [
+                { email: body.email.trim().toLowerCase() },
+                { username: body.username.trim().toLowerCase() },
+            ],
         });
         const existingWorker = await OfficeWorker_1.default.findOne({
-            email: body.email.trim().toLowerCase(),
+            $or: [
+                { email: body.email.trim().toLowerCase() },
+                { username: body.username.trim().toLowerCase() },
+            ],
         });
         if (existingWorker || existingUser) {
-            (0, response_1.errorResponse)(res, 400, "Worker with this email already exists", {
-                message: "Worker with this email already exists",
+            (0, response_1.errorResponse)(res, 400, "Worker with this email or username already exists", {
+                message: `Worker with the email ${body?.email}  or username ${body?.username} already exists`,
             });
             return;
         }
@@ -43,7 +49,7 @@ const addOfficeWorker = (_req, res) => {
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
             action: "ADD_OFFICE_WORKER",
-            sender: _req.user?.user_id,
+            sender: _req.user?._id,
             receiver: worker.id,
             description: `New office worker added to office ${office.name}`,
             metadata: {

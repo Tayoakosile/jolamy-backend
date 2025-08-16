@@ -22,7 +22,6 @@ const checkIfDocumentExistsById = async (id, itemKey, res, Model, populateFields
         const populatedDocument = await Model.findOne({
             [itemKey]: id,
         }).populate(populateFields);
-        console.log('populatedDocument :', populatedDocument);
         if (!populatedDocument) {
             (0, response_1.errorResponse)(res, 404, "Document not found", {
                 message: "Document not found",
@@ -63,7 +62,7 @@ const customReqResHandler = async (res, reqFunction, errorFunction, responseData
         return;
     }
     catch (error) {
-        console.log("error :", error);
+        console.log('error :', error);
         errorFunction
             ? errorFunction(error)
             : (0, response_1.errorResponse)(res, responseData.errorStatusCode || 500, responseData.errorMessage, responseData.error || error);

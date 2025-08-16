@@ -16,7 +16,11 @@ const walletSchema = new mongoose_1.Schema({
 exports.OfficeWallet = (0, mongoose_1.model)("OfficeWallet", walletSchema);
 const financeLogSchema = new mongoose_1.Schema({
     office: { type: mongoose_1.Schema.Types.ObjectId, ref: "Office", required: true },
-    type: { type: String, enum: ["inflow", "outflow"], required: true },
+    type: {
+        type: String,
+        enum: ["inflow", "outflow", "transaction-in", "transaction-out"],
+        required: true,
+    },
     amount: { type: Number, required: true },
     category: { type: String, required: true },
     description: { type: String },

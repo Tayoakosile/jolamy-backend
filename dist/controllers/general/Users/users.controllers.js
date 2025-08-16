@@ -120,7 +120,6 @@ const getSingleUser = async (_req, res) => {
         return;
     }
     catch (error) {
-        console.log("error :", error);
         return res.status(500).json({ error: "Error fetching user" });
     }
 };
