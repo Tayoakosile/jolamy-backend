@@ -21,6 +21,8 @@ export interface ITransaction extends Document {
   order_id: Types.ObjectId; // Order ID associated with the transaction
   office_id?: Types.ObjectId;
   transaction_type: "credit" | "debit";
+  type: "credit" | "debit";
+  created_at:Date,
   category: "wallet_funding" | "order_payment" | "bonus_settlement" | "other";
 }
 

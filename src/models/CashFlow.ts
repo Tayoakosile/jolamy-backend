@@ -16,7 +16,7 @@ export interface IFinance extends Document {
   status: string; // e.g., "pending", "completed", "cancelled"
   internal_reference?: string;
   created_by: { type: Schema.Types.ObjectId; ref: "User"; required: true }; // Ref to User
-  created_at?: Date;
+  created_at: Date;
   attachments?: string[]; // URL or path to payment proof document
   reference?: string; // optional external ID or notes
 }

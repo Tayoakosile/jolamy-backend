@@ -1,7 +1,9 @@
 import { Response } from "express";
+import dayjs from "dayjs";
 import _ from "lodash";
 import { Types } from "mongoose";
 import Offices, { IOffice } from "../../models/Admin/Office";
+import { IFinance } from "../../models/CashFlow";
 import User from "../../models/User";
 import { AuthRequest } from "../../types/type";
 import { logActivity } from "../../utils/activityLog";
@@ -11,6 +13,40 @@ import {
   checkIfDocumentExistsById,
   customReqResHandler,
 } from "../../utils/util";
+
+const getTotalCashflow = (
+  data: IOffice["transactions"],
+  period: "month" | "week" | "all",
+  type: "outflow" | "inflow" | "",
+  name: string
+) => {
+  if (period === "all") {
+    return {
+      name,
+      value: Array.isArray(data) ? _.sumBy(data, "amount") : 0,
+    };
+  }
+  return {
+    name,
+    value: _.sumBy(
+      _.filter(data, (transaction: IFinance) => {
+        const transactionDate = dayjs(transaction.created_at);
+        const today = dayjs(new Date());
+
+        const filteredData =
+          period === "week"
+            ? dayjs(today).subtract(7, "day")
+            : dayjs(today).subtract(1, "month");
+        return (
+          transaction.type === type &&
+          dayjs(transactionDate).isAfter(filteredData) &&
+          dayjs(transactionDate).isSame(today)
+        );
+      }),
+      "amount"
+    ),
+  };
+};
 
 export const getOffices = (_req: AuthRequest, res: Response) => {
   const user = _req.user;
@@ -84,18 +120,53 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
         ],
       })) as IOffice;
 
-    const totalInflow = _.sumBy(
+    const totalTransactions = _.sumBy(
       _.filter(office.transactions, { type: "inflow" }),
       "amount"
     );
-
-    // console.log("totalAmount :", totalAmount);
+    const totalInflow = getTotalCashflow(
+      office.transactions,
+      "all",
+      "outflow",
+      "Total Inflow"
+    );
+    const stats: {
+      name: string;
+      value: number;
+    }[] = [
+      totalInflow,
+      getTotalCashflow(office.transactions, "all", "", "Total"),
+      getTotalCashflow(
+        office.transactions,
+        "week",
+        "inflow",
+        "Total Inflow This Week"
+      ),
+      getTotalCashflow(
+        office.transactions,
+        "week",
+        "outflow",
+        "Total Outflow This Week"
+      ),
+      getTotalCashflow(
+        office.transactions,
+        "month",
+        "inflow",
+        "Total Inflow This Month"
+      ),
+      getTotalCashflow(
+        office.transactions,
+        "month",
+        "outflow",
+        "Total Outflow This Month"
+      ),
+    ];
 
     const log = await logActivity({
       req: _req,
       user_id: new Types.ObjectId(_req.user?._id),
       action: "GET_SINGLE_OFFICE",
-      description: "Retrieved office details",
+      description: `${_req.user?.first_name} retrieved office details for ${office.name}`,
       metadata: {
         ...office,
         user_id: `${_req.user?._id}`,
@@ -105,7 +176,7 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
     await User.findByIdAndUpdate(_req.user?._id, {
       $push: { logs: log._id },
     });
-    return office;
+    return { stats, office };
   };
 
   await customReqResHandler(res, request, undefined, {

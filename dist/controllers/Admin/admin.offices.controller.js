@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateOffice = exports.createNewOffices = exports.getSingleOffice = exports.getOffices = void 0;
+const dayjs_1 = __importDefault(require("dayjs"));
 const lodash_1 = __importDefault(require("lodash"));
 const mongoose_1 = require("mongoose");
 const Office_1 = __importDefault(require("../../models/Admin/Office"));
@@ -12,6 +13,27 @@ const activityLog_1 = require("../../utils/activityLog");
 const response_1 = require("../../utils/response");
 const trend_util_1 = require("../../utils/trend.util");
 const util_1 = require("../../utils/util");
+const getTotalCashflow = (data, period, type, name) => {
+    if (period === "all") {
+        return {
+            name,
+            value: Array.isArray(data) ? lodash_1.default.sumBy(data, "amount") : 0,
+        };
+    }
+    return {
+        name,
+        value: lodash_1.default.sumBy(lodash_1.default.filter(data, (transaction) => {
+            const transactionDate = (0, dayjs_1.default)(transaction.created_at);
+            const today = (0, dayjs_1.default)(new Date());
+            const filteredData = period === "week"
+                ? (0, dayjs_1.default)(today).subtract(7, "day")
+                : (0, dayjs_1.default)(today).subtract(1, "month");
+            return (transaction.type === type &&
+                (0, dayjs_1.default)(transactionDate).isAfter(filteredData) &&
+                (0, dayjs_1.default)(transactionDate).isSame(today));
+        }), "amount"),
+    };
+};
 const getOffices = (_req, res) => {
     const user = _req.user;
     const request = async () => {
@@ -78,13 +100,21 @@ const getSingleOffice = async (_req, res) => {
                 },
             ],
         }));
-        const totalInflow = lodash_1.default.sumBy(lodash_1.default.filter(office.transactions, { type: "inflow" }), "amount");
-        // console.log("totalAmount :", totalAmount);
+        const totalTransactions = lodash_1.default.sumBy(lodash_1.default.filter(office.transactions, { type: "inflow" }), "amount");
+        const totalInflow = getTotalCashflow(office.transactions, "all", "outflow", "Total Inflow");
+        const stats = [
+            totalInflow,
+            getTotalCashflow(office.transactions, "all", "", "Total"),
+            getTotalCashflow(office.transactions, "week", "inflow", "Total Inflow This Week"),
+            getTotalCashflow(office.transactions, "week", "outflow", "Total Outflow This Week"),
+            getTotalCashflow(office.transactions, "month", "inflow", "Total Inflow This Month"),
+            getTotalCashflow(office.transactions, "month", "outflow", "Total Outflow This Month"),
+        ];
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
             action: "GET_SINGLE_OFFICE",
-            description: "Retrieved office details",
+            description: `${_req.user?.first_name} retrieved office details for ${office.name}`,
             metadata: {
                 ...office,
                 user_id: `${_req.user?._id}`,
@@ -93,7 +123,7 @@ const getSingleOffice = async (_req, res) => {
         await User_1.default.findByIdAndUpdate(_req.user?._id, {
             $push: { logs: log._id },
         });
-        return office;
+        return { stats, office };
     };
     await (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Office retrieved successfully",
