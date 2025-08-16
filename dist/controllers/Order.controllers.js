@@ -15,7 +15,6 @@ const util_1 = require("../utils/util");
 const trend_util_1 = require("../utils/trend.util");
 const getAllOrders = (_req, res) => {
     const user = _req.user;
-    const user_role = _req.user?.user_role;
     const request = async () => {
         if (user?.user_role === "admin") {
             const allOrders = await Order_1.default.find({});

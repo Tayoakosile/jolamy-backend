@@ -134,8 +134,8 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
       name: string;
       value: number;
     }[] = [
-      totalInflow,
-      getTotalCashflow(office.transactions, "all", "", "Total"),
+      // totalInflow,
+      getTotalCashflow(office.transactions, "all", "", "Total Transactions"),
       getTotalCashflow(
         office.transactions,
         "week",

@@ -16,7 +16,7 @@ import { getTrend } from "../utils/trend.util";
 
 export const getAllOrders = (_req: AuthRequest, res: Response) => {
   const user = _req.user;
-  const user_role = _req.user?.user_role;
+
 
   const request = async () => {
     if (user?.user_role === "admin") {

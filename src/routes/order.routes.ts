@@ -16,9 +16,9 @@ import { validateOrder } from "../middlewares/order";
 
 const router = Router();
 
-router.get("/", appAuth, isWorker, getAllOrders);
-router.post("/", appAuth, isWorker, removeSensitiveFields, createNewOrder);
-router.get("/:id", appAuth, isWorker, validateOrder, getSingleOrder);
+router.get("/", appAuth, getAllOrders);
+router.post("/", appAuth,  removeSensitiveFields, createNewOrder);
+router.get("/:id", appAuth, validateOrder, getSingleOrder);
 router.put(
   "/:id",
   appAuth,
