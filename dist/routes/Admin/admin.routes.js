@@ -9,18 +9,20 @@ const admin_offices_worker_controller_1 = require("../../controllers/Admin/admin
 const admin_products_controller_1 = require("../../controllers/Admin/admin.products.controller");
 const admin_stats_controller_1 = require("../../controllers/Admin/admin.stats.controller");
 const auth_1 = require("../../middlewares/auth");
+const util_1 = require("../../utils/util");
 const router = (0, express_1.Router)();
 // users
 router.post("/approve/:user_id", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.approveUser);
 router.post("/reject/:user_id", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.rejectUser);
 // users
 // offices
-router.post("/offices", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.createNewOffices);
+router.post("/offices", auth_1.appAuth, auth_1.isAdmin, util_1.removeSensitiveFields, admin_offices_controller_1.createNewOffices);
 router.get("/offices", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.getOffices);
 router.get("/offices/:id", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.getSingleOffice);
-router.put("/offices/:id", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.updateOffice);
+router.put("/offices/:id", auth_1.appAuth, auth_1.isAdmin, util_1.removeSensitiveFields, admin_offices_controller_1.updateOffice);
 router.patch("/offices/:id", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.updateOffice);
-router.post("/offices/:id/add-worker", auth_1.appAuth, auth_1.isAdmin, admin_offices_worker_controller_1.addOfficeWorker);
+router.post("/offices/:id/add-worker", auth_1.appAuth, auth_1.isAdmin, util_1.removeSensitiveFields, admin_offices_worker_controller_1.addOfficeWorker);
+router.post("/offices/add-worker", auth_1.appAuth, auth_1.isAdmin, util_1.removeSensitiveFields, admin_offices_worker_controller_1.addOfficeWorker);
 router.put("/offices/:id/workers/:worker_id/edit-worker", auth_1.appAuth, auth_1.isAdmin, admin_offices_worker_controller_1.updateWorkerDetails);
 router.patch("/offices/:id/workers/:worker_id/edit-worker", auth_1.appAuth, auth_1.isAdmin, admin_offices_worker_controller_1.updateWorkerDetails);
 // offices

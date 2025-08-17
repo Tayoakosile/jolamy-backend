@@ -14,20 +14,27 @@ const bcrypt_util_1 = require("../../utils/bcrypt.util");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
 const addOfficeWorker = (_req, res) => {
-    const officeId = _req.params.id;
+    const officeId = _req.params.id || _req.body?.office;
+    console.log("officeId :", officeId);
     const body = _req.body;
+    if (!body?.email || !body?.username || !body?.password) {
+        (0, response_1.errorResponse)(res, 400, "Email, username and password are required", {
+            message: "Email, username and password are required",
+        });
+        return;
+    }
     const request = async () => {
         const office = (await (0, util_1.checkIfDocumentExistsById)(officeId, "office_id", res, Office_1.default));
         const existingUser = await User_1.default.findOne({
             $or: [
-                { email: body.email.trim().toLowerCase() },
-                { username: body.username.trim().toLowerCase() },
+                { email: body?.email?.trim().toLowerCase() },
+                { username: body?.username?.trim().toLowerCase() },
             ],
         });
         const existingWorker = await OfficeWorker_1.default.findOne({
             $or: [
-                { email: body.email.trim().toLowerCase() },
-                { username: body.username.trim().toLowerCase() },
+                { email: body?.email?.trim().toLowerCase() },
+                { username: body?.username?.trim().toLowerCase() },
             ],
         });
         if (existingWorker || existingUser) {
@@ -36,11 +43,12 @@ const addOfficeWorker = (_req, res) => {
             });
             return;
         }
+        delete _req.body.office;
         const worker = (await OfficeWorker_1.default.create({
             ..._req.body,
+            office: office?.id,
             added_by: _req.user?._id,
             is_active: true,
-            office: office._id,
             logs: [],
             cash_flow: [],
             orders_in_charge: [],
@@ -51,10 +59,10 @@ const addOfficeWorker = (_req, res) => {
             action: "ADD_OFFICE_WORKER",
             sender: _req.user?._id,
             receiver: worker.id,
-            description: `New office worker added to office ${office.name}`,
+            description: `New office worker added to office ${_req?.body?.office}`,
             metadata: {
                 ...worker,
-                officeId: office._id,
+                officeId: _req?.body?.office,
                 user_id: _req.user?.user_id,
             },
         }));
@@ -64,7 +72,11 @@ const addOfficeWorker = (_req, res) => {
         await OfficeWorker_1.default.findByIdAndUpdate(worker._id, {
             $push: { logs: log._id },
         });
-        return { worker, password: _req.body.password, officeId: office._id };
+        return {
+            worker,
+            password: _req.body.password,
+            officeId: _req.body?.office,
+        };
     };
     const mailOptions = {
         shouldSendMail: true,

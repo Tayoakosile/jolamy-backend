@@ -6,21 +6,24 @@ import { Counter } from "../counter";
 
 export interface IOfficeWorker extends Document {
   role: string; // e.g., "finance", "storekeeper"
+  phone: string;
   office: Types.ObjectId;
-  internal_sequence: number; // sequence number for the worker
-  worker_id: string; // unique identifier for the worker, e.g., "WRK-20231001-ABCD1234-0001"
-  first_name: string; // e.g., "finance", "storekeeper"
-  last_name: string; // e.g., "finance", "storekeeper"
-  password: string; // e.g., "finance", "storekeeper"
-  username: string; // e.g., "finance", "storekeeper"
-  email: string; // e.g., "finance", "storekeeper"
-  employee_id: string; // e.g., "finance", "storekeeper"
+  internal_sequence: number;
+  worker_id: string;
+  first_name: string;
+  last_name: string;
+  password: string;
+  username: string;
+  email: string;
+  employee_id: string;
+  admin_notes: string;
   is_active: boolean;
   is_deactivated: boolean;
   is_deleted: boolean;
   last_login: Date;
   deactivated_by: Types.ObjectId;
   logs: Types.ObjectId[]; // logs of activities
+  permissions: string[]; // logs of activities
   cash_flow: Types.ObjectId[]; // logs of activities
   orders_in_charge: Types.ObjectId[]; // logs of activities
   added_by: Types.ObjectId; // admin or office head
@@ -30,11 +33,14 @@ const officeWorkerSchema = new Schema<IOfficeWorker>(
   {
     office: { type: Schema.Types.ObjectId, ref: "Office", required: true },
     employee_id: { type: String },
+    phone: { type: String },
     role: { type: String, required: true },
     internal_sequence: { type: Number, default: 0 },
     worker_id: { type: String, unique: true },
+    permissions: { type: [], required: true }, // e.g., ["view_orders", "manage_finances"]
     is_active: { type: Boolean, default: true },
     last_login: { type: Date },
+    admin_notes: { type: String },
     is_deactivated: { type: Boolean, default: false },
     is_deleted: { type: Boolean, default: false },
     deactivated_by: { type: Schema.Types.ObjectId, ref: "User" },
@@ -96,8 +102,5 @@ officeWorkerSchema.pre(
   }
 );
 
-const OfficeWorker = model<IOfficeWorker>(
-  "OfficeWorker",
-  officeWorkerSchema
-);
-export default OfficeWorker
+const OfficeWorker = model<IOfficeWorker>("OfficeWorker", officeWorkerSchema);
+export default OfficeWorker;

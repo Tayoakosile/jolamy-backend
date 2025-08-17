@@ -100,15 +100,11 @@ const getSingleOffice = async (_req, res) => {
                 },
             ],
         }));
-        const totalTransactions = lodash_1.default.sumBy(lodash_1.default.filter(office.transactions, { type: "inflow" }), "amount");
-        const totalInflow = getTotalCashflow(office.transactions, "all", "outflow", "Total Inflow");
         const stats = [
             // totalInflow,
             getTotalCashflow(office.transactions, "all", "", "Total Transactions"),
             getTotalCashflow(office.transactions, "week", "inflow", "Total Inflow This Week"),
             getTotalCashflow(office.transactions, "week", "outflow", "Total Outflow This Week"),
-            getTotalCashflow(office.transactions, "month", "inflow", "Total Inflow This Month"),
-            getTotalCashflow(office.transactions, "month", "outflow", "Total Outflow This Month"),
         ];
         const log = await (0, activityLog_1.logActivity)({
             req: _req,

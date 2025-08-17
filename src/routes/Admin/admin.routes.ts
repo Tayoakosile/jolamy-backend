@@ -30,6 +30,7 @@ import {
 import { getStats } from "../../controllers/Admin/admin.stats.controller";
 
 import { appAuth, isAdmin } from "../../middlewares/auth";
+import { removeSensitiveFields } from "../../utils/util";
 
 const router = Router();
 
@@ -40,12 +41,37 @@ router.post("/reject/:user_id", appAuth, isAdmin, rejectUser);
 // users
 
 // offices
-router.post("/offices", appAuth, isAdmin, createNewOffices);
+router.post(
+  "/offices",
+  appAuth,
+  isAdmin,
+  removeSensitiveFields,
+  createNewOffices
+);
 router.get("/offices", appAuth, isAdmin, getOffices);
 router.get("/offices/:id", appAuth, isAdmin, getSingleOffice);
-router.put("/offices/:id", appAuth, isAdmin, updateOffice);
+router.put(
+  "/offices/:id",
+  appAuth,
+  isAdmin,
+  removeSensitiveFields,
+  updateOffice
+);
 router.patch("/offices/:id", appAuth, isAdmin, updateOffice);
-router.post("/offices/:id/add-worker", appAuth, isAdmin, addOfficeWorker);
+router.post(
+  "/offices/:id/add-worker",
+  appAuth,
+  isAdmin,
+  removeSensitiveFields,
+  addOfficeWorker
+);
+router.post(
+  "/offices/add-worker",
+  appAuth,
+  isAdmin,
+  removeSensitiveFields,
+  addOfficeWorker
+);
 router.put(
   "/offices/:id/workers/:worker_id/edit-worker",
   appAuth,
@@ -87,7 +113,6 @@ router.get("/stats", appAuth, isAdmin, getStats);
 
 // users
 router.get("/pending-users", appAuth, isAdmin, getPendingUsers);
-
 
 // users
 

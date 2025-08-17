@@ -120,16 +120,6 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
         ],
       })) as IOffice;
 
-    const totalTransactions = _.sumBy(
-      _.filter(office.transactions, { type: "inflow" }),
-      "amount"
-    );
-    const totalInflow = getTotalCashflow(
-      office.transactions,
-      "all",
-      "outflow",
-      "Total Inflow"
-    );
     const stats: {
       name: string;
       value: number;
@@ -147,18 +137,6 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
         "week",
         "outflow",
         "Total Outflow This Week"
-      ),
-      getTotalCashflow(
-        office.transactions,
-        "month",
-        "inflow",
-        "Total Inflow This Month"
-      ),
-      getTotalCashflow(
-        office.transactions,
-        "month",
-        "outflow",
-        "Total Outflow This Month"
       ),
     ];
 

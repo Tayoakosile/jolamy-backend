@@ -7,11 +7,14 @@ const counter_1 = require("../counter");
 const officeWorkerSchema = new mongoose_1.Schema({
     office: { type: mongoose_1.Schema.Types.ObjectId, ref: "Office", required: true },
     employee_id: { type: String },
+    phone: { type: String },
     role: { type: String, required: true },
     internal_sequence: { type: Number, default: 0 },
     worker_id: { type: String, unique: true },
+    permissions: { type: [], required: true }, // e.g., ["view_orders", "manage_finances"]
     is_active: { type: Boolean, default: true },
     last_login: { type: Date },
+    admin_notes: { type: String },
     is_deactivated: { type: Boolean, default: false },
     is_deleted: { type: Boolean, default: false },
     deactivated_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },

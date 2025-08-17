@@ -15,9 +15,16 @@ import {
 import { AuthRequest } from "../../types/type";
 
 export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
-  const officeId = _req.params.id;
+  const officeId = _req.params.id || _req.body?.office;
+  console.log("officeId :", officeId);
 
   const body = _req.body;
+  if (!body?.email || !body?.username || !body?.password) {
+    errorResponse(res, 400, "Email, username and password are required", {
+      message: "Email, username and password are required",
+    });
+    return;
+  }
   const request = async () => {
     const office = (await checkIfDocumentExistsById<IOffice>(
       officeId,
@@ -28,28 +35,34 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
 
     const existingUser = await User.findOne({
       $or: [
-        { email: body.email.trim().toLowerCase() },
-        { username: body.username.trim().toLowerCase() },
+        { email: body?.email?.trim().toLowerCase() },
+        { username: body?.username?.trim().toLowerCase() },
       ],
     });
     const existingWorker = await OfficeWorker.findOne({
       $or: [
-        { email: body.email.trim().toLowerCase() },
-        { username: body.username.trim().toLowerCase() },
+        { email: body?.email?.trim().toLowerCase() },
+        { username: body?.username?.trim().toLowerCase() },
       ],
     });
 
     if (existingWorker || existingUser) {
-      errorResponse(res, 400, "Worker with this email or username already exists", {
-        message: `Worker with the email ${body?.email}  or username ${body?.username} already exists`,
-      });
+      errorResponse(
+        res,
+        400,
+        "Worker with this email or username already exists",
+        {
+          message: `Worker with the email ${body?.email}  or username ${body?.username} already exists`,
+        }
+      );
       return;
     }
+    delete _req.body.office;
     const worker = (await OfficeWorker.create({
       ..._req.body,
+      office: office?.id,
       added_by: _req.user?._id,
       is_active: true,
-      office: office._id,
       logs: [],
       cash_flow: [],
       orders_in_charge: [],
@@ -61,10 +74,10 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
       action: "ADD_OFFICE_WORKER",
       sender: _req.user?._id,
       receiver: worker.id,
-      description: `New office worker added to office ${office.name}`,
+      description: `New office worker added to office ${_req?.body?.office}`,
       metadata: {
         ...worker,
-        officeId: office._id,
+        officeId: _req?.body?.office,
         user_id: _req.user?.user_id,
       },
     })) as any;
@@ -79,7 +92,11 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
       $push: { logs: log._id },
     });
 
-    return { worker, password: _req.body.password, officeId: office._id };
+    return {
+      worker,
+      password: _req.body.password,
+      officeId: _req.body?.office,
+    };
   };
   const mailOptions = {
     shouldSendMail: true,
