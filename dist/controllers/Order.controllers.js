@@ -11,8 +11,8 @@ const Transaction_1 = __importDefault(require("../models/Transaction"));
 const User_1 = __importDefault(require("../models/User"));
 const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
-const util_1 = require("../utils/util");
 const trend_util_1 = require("../utils/trend.util");
+const util_1 = require("../utils/util");
 const getAllOrders = (_req, res) => {
     const user = _req.user;
     const request = async () => {
@@ -99,7 +99,6 @@ const createNewOrder = (_req, res) => {
     const product_items = body.products;
     const request = async () => {
         const getProductPricing = async (productFromPostAPi) => {
-            console.log("productFromPostAPi.id :", productFromPostAPi.id);
             const productResFromDb = productFromPostAPi?.variants
                 ? await Product_1.Product.findOne({
                     _id: productFromPostAPi.id,
@@ -168,7 +167,6 @@ const createNewOrder = (_req, res) => {
             };
         };
         const Products = await Promise.all(product_items.map(async (product) => getProductPricing(product)));
-        console.log("Products :", Products[0].variants);
         if (Products.length === 0 || Products.some((p) => !p)) {
             (0, response_1.errorResponse)(res, 400, "No valid products found in order", {
                 message: "Please check the products you are trying to order.",

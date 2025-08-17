@@ -7,6 +7,7 @@ import { Counter } from "../counter";
 export interface IOfficeWorker extends Document {
   role: string; // e.g., "finance", "storekeeper"
   phone: string;
+  office_id: string;
   office: Types.ObjectId;
   internal_sequence: number;
   worker_id: string;
@@ -32,6 +33,7 @@ export interface IOfficeWorker extends Document {
 const officeWorkerSchema = new Schema<IOfficeWorker>(
   {
     office: { type: Schema.Types.ObjectId, ref: "Office", required: true },
+    office_id: { type: String },
     employee_id: { type: String },
     phone: { type: String },
     role: { type: String, required: true },

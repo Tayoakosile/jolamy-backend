@@ -1,17 +1,14 @@
 import { Request, Response } from "express";
-import CashFlow, { IFinance } from "../models/CashFlow";
-import { checkIfDocumentExistsById, customReqResHandler } from "../utils/util";
 import Offices from "../models/Admin/Office";
-import { logActivity } from "../utils/activityLog";
 import OfficeWorker from "../models/Admin/OfficeWorker";
-import { Types } from "mongoose";
-import { errorResponse, successResponse } from "../utils/response";
-import { AuthRequest } from "../types/type";
+import CashFlow, { IFinance } from "../models/CashFlow";
 import Transaction from "../models/Transaction";
+import { AuthRequest } from "../types/type";
+import { logActivity } from "../utils/activityLog";
+import { errorResponse, successResponse } from "../utils/response";
+import { checkIfDocumentExistsById, customReqResHandler } from "../utils/util";
 
 export const getAllTransactions = async (_req: AuthRequest, res: Response) => {
-  console.log(" dd:");
-
   const user = _req.user;
 
   if (user?.user_role !== "admin") {
@@ -52,12 +49,16 @@ export const getSingleTransaction = (req: Request, res: Response) => {
         path: "logs",
       })
       .populate({
-        path:"user_id",
-        select: "first_name last_name address phone_number distributor_location email user_role",
-      }).populate({
-        path:"order_id",
-        select: "order_number status products  delivery_address    payment_status delivery_status total_amount discount_amount",
-      }).select("-internal_sequence -__v");
+        path: "user_id",
+        select:
+          "first_name last_name address phone_number distributor_location email user_role",
+      })
+      .populate({
+        path: "order_id",
+        select:
+          "order_number status products  delivery_address    payment_status delivery_status total_amount discount_amount",
+      })
+      .select("-internal_sequence -__v");
     if (
       user?.user_role !== "admin" &&
       transaction?.user_id.toString() !== user?._id.toString()

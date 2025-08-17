@@ -16,7 +16,7 @@ const app = express();
 
 // Middleware
 
-app.use(cors())
+app.use(cors());
 app.use(express.json());
 dotenv.config();
 app.use("/api/auth", authRoutes);
@@ -28,9 +28,6 @@ app.use("/api/finances", financesRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
-
-// const endpoints = expressListEndpoints(app)
-// console.log('endpoints :', endpoints);
 
 const PORT = process.env.PORT || 5000;
 

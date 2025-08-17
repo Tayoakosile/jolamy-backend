@@ -4,15 +4,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateTransaction = exports.getSingleTransaction = exports.getAllTransactions = void 0;
-const CashFlow_1 = __importDefault(require("../models/CashFlow"));
-const util_1 = require("../utils/util");
 const Office_1 = __importDefault(require("../models/Admin/Office"));
-const activityLog_1 = require("../utils/activityLog");
 const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
-const response_1 = require("../utils/response");
+const CashFlow_1 = __importDefault(require("../models/CashFlow"));
 const Transaction_1 = __importDefault(require("../models/Transaction"));
+const activityLog_1 = require("../utils/activityLog");
+const response_1 = require("../utils/response");
+const util_1 = require("../utils/util");
 const getAllTransactions = async (_req, res) => {
-    console.log(" dd:");
     const user = _req.user;
     if (user?.user_role !== "admin") {
         const transactions = await Transaction_1.default.find({ user_id: user?._id });
@@ -45,10 +44,12 @@ const getSingleTransaction = (req, res) => {
             .populate({
             path: "user_id",
             select: "first_name last_name address phone_number distributor_location email user_role",
-        }).populate({
+        })
+            .populate({
             path: "order_id",
             select: "order_number status products  delivery_address    payment_status delivery_status total_amount discount_amount",
-        }).select("-internal_sequence -__v");
+        })
+            .select("-internal_sequence -__v");
         if (user?.user_role !== "admin" &&
             transaction?.user_id.toString() !== user?._id.toString()) {
             (0, response_1.errorResponse)(res, 403, "You do not have permission to access this transaction");

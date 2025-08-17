@@ -7,16 +7,15 @@ import User from "../models/User";
 import { AuthRequest } from "../types/type";
 import { logActivity } from "../utils/activityLog";
 import { errorResponse, successResponse } from "../utils/response";
+import { getTrend } from "../utils/trend.util";
 import {
   checkIfDocumentExistsById,
   customReqResHandler,
   generateRandom,
 } from "../utils/util";
-import { getTrend } from "../utils/trend.util";
 
 export const getAllOrders = (_req: AuthRequest, res: Response) => {
   const user = _req.user;
-
 
   const request = async () => {
     if (user?.user_role === "admin") {
@@ -107,8 +106,6 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
 
   const request = async () => {
     const getProductPricing = async (productFromPostAPi: IProduct) => {
-      console.log("productFromPostAPi.id :", productFromPostAPi.id);
-
       const productResFromDb = productFromPostAPi?.variants
         ? await Product.findOne({
             _id: productFromPostAPi.id,
@@ -161,8 +158,6 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
             return;
           }
 
-
-
           if (matchedVariant) {
             // total_boxes_in_stock is null means unlimited stock,
             // so we don't check for it  but if it is less than the requested quantity, return error
@@ -210,7 +205,6 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
     const Products = await Promise.all(
       product_items.map(async (product: IProduct) => getProductPricing(product))
     );
-    console.log("Products :", Products[0].variants);
 
     if (Products.length === 0 || Products.some((p) => !p)) {
       errorResponse(res, 400, "No valid products found in order", {
@@ -312,9 +306,7 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
     Order
   );
   const request = async () => {
-
     // Log that user filled in extra details of the order.... if it contains address
-
 
     const log = await logActivity({
       req: _req,

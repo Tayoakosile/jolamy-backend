@@ -63,7 +63,6 @@ const loginAccount = async (req, res) => {
                 return;
             }
             const token = (0, jwt_1.generateToken)(`${officeWorker?.worker_id}`);
-            console.log("token :", token);
             const activityLog = await (0, activityLog_1.logActivity)({
                 req,
                 user_id: officeWorker.id,
@@ -120,7 +119,6 @@ const loginAccount = async (req, res) => {
             return;
         }
         const token = (0, jwt_1.generateToken)(user.user_id);
-        console.log("token :", token);
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
             user_id: user._id,
@@ -187,7 +185,6 @@ const resetPassword = async (req, res) => {
             forgot_password_expires: { $gt: new Date() },
         });
         if (!user) {
-            console.log("err :", user);
             (0, response_1.errorResponse)(res, 400, "Invalid or expired reset token");
             return;
         }

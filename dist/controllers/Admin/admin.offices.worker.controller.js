@@ -15,7 +15,6 @@ const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
 const addOfficeWorker = (_req, res) => {
     const officeId = _req.params.id || _req.body?.office;
-    console.log("officeId :", officeId);
     const body = _req.body;
     if (!body?.email || !body?.username || !body?.password) {
         (0, response_1.errorResponse)(res, 400, "Email, username and password are required", {
@@ -47,6 +46,7 @@ const addOfficeWorker = (_req, res) => {
         const worker = (await OfficeWorker_1.default.create({
             ..._req.body,
             office: office?.id,
+            office_id: office?.office_id,
             added_by: _req.user?._id,
             is_active: true,
             logs: [],

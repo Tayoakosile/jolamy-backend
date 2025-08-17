@@ -11,30 +11,30 @@ export const getStats = async (_req: AuthRequest, res: Response) => {
   // get total users, total products, total orders, total cash flow in an object from mongoose db
   try {
     const totalUsers = await getTrend(User, {
-      period: "week",
+      period: "month",
       filter: { user_role: { $ne: "admin" } },
-      // Exclude admin users
+
     });
     const totalProducts = await getTrend(User, {
-      period: "week",
+      period: "month",
     });
     const totalOrders = await getTrend(Order, {
-      period: "week",
+      period: "month",
     });
     const totalOffices = await getTrend(Offices, {
-      period: "week",
+      period: "month",
     });
     //   How to add total amount from all cashflow
     const totalTransactions = await getTrend(Offices, {
-      period: "week",
+      period: "month",
         sumField: "amount",
     });
     const totalCashFlow = await getTrend(CashFlow, {
-      period: "week",
+      period: "month",
       sumField: "amount",
     });
 
-    console.log("totalUsers :", totalTransactions, totalUsers, totalProducts);
+    console.log("totalOrders :", totalOrders, totalUsers, totalProducts);
     successResponse(res, 200, "Stats fetched successfully", [
       { title: "Users", ...totalUsers },
       { title: "Products", ...totalProducts },

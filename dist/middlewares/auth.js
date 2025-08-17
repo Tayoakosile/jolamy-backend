@@ -24,7 +24,6 @@ const appAuth = async (req, res, next) => {
     }
     try {
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-        console.log("decoded :", decoded);
         if (!decoded || !decoded.id) {
             (0, response_1.errorResponse)(res, 401, "Invalid token", { message: "Invalid token" });
             return next();

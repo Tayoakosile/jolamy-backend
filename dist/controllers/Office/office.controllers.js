@@ -1,4 +1,5 @@
 "use strict";
+// import { OfficeAuthRequest } from './../../types/type';
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllOfficeOrders = void 0;
 const getAllOfficeOrders = async () => { };

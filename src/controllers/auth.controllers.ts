@@ -74,7 +74,6 @@ export const loginAccount = async (req: Request, res: Response) => {
         return;
       }
       const token = generateToken(`${officeWorker?.worker_id}`);
-      console.log("token :", token);
 
       const activityLog = await logActivity({
         req,
@@ -146,7 +145,6 @@ export const loginAccount = async (req: Request, res: Response) => {
 
     const token = generateToken(user.user_id);
 
-    console.log("token :", token);
     const activityLog = await logActivity({
       req,
       user_id: user._id,
@@ -232,7 +230,6 @@ export const resetPassword = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      console.log("err :", user);
       errorResponse(res, 400, "Invalid or expired reset token");
       return;
     }

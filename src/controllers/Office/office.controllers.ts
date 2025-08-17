@@ -1,6 +1,4 @@
 // import { OfficeAuthRequest } from './../../types/type';
-import { Response } from "express";
-import { AuthRequest } from "../../types/type";
 
 export const getAllOfficeOrders = async () => {};
 // (

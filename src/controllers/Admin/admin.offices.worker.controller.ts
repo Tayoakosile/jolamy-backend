@@ -16,7 +16,6 @@ import { AuthRequest } from "../../types/type";
 
 export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
   const officeId = _req.params.id || _req.body?.office;
-  console.log("officeId :", officeId);
 
   const body = _req.body;
   if (!body?.email || !body?.username || !body?.password) {
@@ -61,6 +60,7 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
     const worker = (await OfficeWorker.create({
       ..._req.body,
       office: office?.id,
+      office_id: office?.office_id,
       added_by: _req.user?._id,
       is_active: true,
       logs: [],

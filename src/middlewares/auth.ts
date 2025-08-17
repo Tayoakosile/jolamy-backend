@@ -36,7 +36,7 @@ export const appAuth = async (
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
 
-    console.log("decoded :", decoded);
+
 
     if (!decoded || !decoded.id) {
       errorResponse(res, 401, "Invalid token", { message: "Invalid token" });

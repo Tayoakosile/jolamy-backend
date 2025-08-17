@@ -24,7 +24,6 @@ export const createNewFinance = (req: Request, res: Response) => {
 
   const request = async () => {
     const singleOffice = (await Offices.findById(user.office)) as IOffice;
-    // console.log("singleOffice :", singleOffice);
 
     const checkIfCashFlowExists = await CashFlow.findOne({
       reference: req.body.reference,
@@ -72,15 +71,8 @@ export const createNewFinance = (req: Request, res: Response) => {
         type: req.body.type,
       },
     });
-    console.log(
-      "singleOffice?.wallet?.balance  :",
-      singleOffice?.wallet?.balance
-    );
-    // console.log('singleOffice._id :', singleOffice._id);
 
     if (req.body.type === "outflow") {
-      console.log("lf :");
-
       await Offices.findByIdAndUpdate(singleOffice._id, {
         $expr: {
           $gte: [

@@ -6,6 +6,7 @@ const bcrypt_util_1 = require("../../utils/bcrypt.util");
 const counter_1 = require("../counter");
 const officeWorkerSchema = new mongoose_1.Schema({
     office: { type: mongoose_1.Schema.Types.ObjectId, ref: "Office", required: true },
+    office_id: { type: String },
     employee_id: { type: String },
     phone: { type: String },
     role: { type: String, required: true },
