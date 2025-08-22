@@ -1,102 +1,40 @@
 import { Document, model, Schema, Types } from "mongoose";
 import { Counter } from "./counter";
 import { generateRandom, timestamp } from "../utils/util";
+import { IOrder, IShippingDetails } from "../types/order.type";
 
-const ProductItemSchema = new Schema(
-  {
-    variants: [
-      {
-        id: { type: Types.ObjectId },
-        quantity: { type: Number, required: true },
-        name: { type: String, required: true },
-        total_boxes_in_stock: { type: Number, default: 0 },
-        amount_per_box: { type: Number, required: false },
-        total_amount: { type: Number, required: true },
-      },
-    ],
-  },
-  { _id: false }
-);
+const ProductItemSchema = new Schema({
+  product_id: { type: Types.ObjectId, ref: "Product", required: true },
+  variants: [
+    {
+      id: { type: Types.ObjectId, required: true },
+      quantity: { type: Number, required: true },
+      name: { type: String, required: true },
+      total_boxes_in_stock: { type: Number, default: 0 },
+      amount_per_box: { type: Number, required: false },
+      total_amount: { type: Number, required: true },
+    },
+  ],
+});
 
-const ShippingLocationSchema = new Schema(
+const ShippingSchema = new Schema<IShippingDetails>(
   {
+    recipient_name: { type: String, required: true },
+    phone: { type: String, required: true },
     address: { type: String, required: true },
     city: { type: String, required: true },
     state: { type: String, required: true },
-    country: { type: String, required: true },
-    phoneNumber: { type: String, required: true },
-    estimatedDate: { type: Date, required: true },
+    country: { type: String, default: "Nigeria" },
+    postal_code: { type: String },
+    delivery_type: {
+      type: String,
+      enum: ["pickup", "delivery"],
+      required: true,
+    },
+    notes: { type: String },
   },
-  { _id: false }
+  { _id: false } // embedded, no extra id
 );
-
-interface ProductVariant {
-  id: Types.ObjectId;
-  quantity: number;
-}
-
-interface ProductItem {
-  variants: ProductVariant[];
-}
-
-interface ShippingLocation {
-  address: string;
-  city: string;
-  state: string;
-  country: string;
-  phoneNumber: string;
-  estimatedDate: Date;
-}
-
-type OrderRole = "distributor" | "sales_agent";
-type PaymentStatus = "pending" | "paid" | "cancelled" | "initiated";
-type DeliveryStatus = "not_assigned" | "in_transit" | "delivered" | "pending";
-type RefundStatus = "none" | "pending" | "processed";
-type PaymentMethod =
-  | "bank_transfer"
-  | "cash"
-  | "pos"
-  | "mobile_money"
-  | "paystack"
-  | null;
-
-export interface IOrder extends Document {
-  user_id: { type: Types.ObjectId; ref: "User"; required: true };
-  assigned_to?: {
-    office: Types.ObjectId;
-    office_worker: Types.ObjectId;
-  };
-  order_number?: string;
-  date?: Date;
-  delivery_fee?: number;
-  role: OrderRole;
-  products: ProductItem[];
-  shipping_location?: ShippingLocation;
-  payment_status?: PaymentStatus;
-  delivery_status?: DeliveryStatus;
-  internal_notes?: string;
-  internal_sequence?: number;
-  transaction_id?: Types.ObjectId;
-  total_amount?: number;
-  total_quantity?: number;
-  estimated_delivery_date?: Date;
-  actual_delivery_date?: Date;
-  discount_amount?: number;
-  tax_amount?: number;
-  tracking_number?: string;
-  courier_service?: string;
-  admin_notes_to_office: String;
-  admin_notes_to_customer: String;
-  cancelled_at?: Date;
-  refund_status?: RefundStatus;
-  fulfillment_type?: string;
-  status: string;
-  payment_method?: PaymentMethod;
-  payment_reference?: string;
-  logs?: any[];
-  createdAt?: Date;
-  updatedAt?: Date;
-}
 
 const OrderSchema = new Schema<IOrder>(
   {
@@ -110,7 +48,11 @@ const OrderSchema = new Schema<IOrder>(
     },
 
     user_id: { type: Types.ObjectId, ref: "User", required: true },
-
+    priority_level: {
+      type: String,
+      enum: ["normal", "urgent"],
+      default: "normal",
+    },
     order_number: { type: String },
     date: { type: Date, default: Date.now },
     delivery_fee: { type: Number },
@@ -120,9 +62,7 @@ const OrderSchema = new Schema<IOrder>(
       required: true,
     },
     products: { type: [ProductItemSchema], required: true },
-    shipping_location: {
-      type: ShippingLocationSchema,
-    },
+    shipping: { type: ShippingSchema },
     payment_status: {
       type: String,
       enum: [
@@ -142,6 +82,7 @@ const OrderSchema = new Schema<IOrder>(
       enum: [
         "pending",
         "processing",
+        "delivered",
         "completed",
         "cancelled",
         "failed",
@@ -159,6 +100,7 @@ const OrderSchema = new Schema<IOrder>(
     admin_notes_to_customer: { type: String },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number, default: 0 },
+    grand_total: { type: Number, default: 0 }, // total_amount + delivery_fee
     total_quantity: { type: Number, default: 0 },
     estimated_delivery_date: { type: Date },
     actual_delivery_date: { type: Date },
@@ -187,9 +129,7 @@ const OrderSchema = new Schema<IOrder>(
     payment_reference: { type: String },
     logs: [{ type: Types.ObjectId, ref: "Log" }],
   },
-  {
-    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
-  }
+  { timestamps: { ...timestamp } }
 );
 
 OrderSchema.pre(

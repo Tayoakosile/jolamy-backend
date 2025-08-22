@@ -9,14 +9,7 @@ import {
 } from "../../utils/util";
 import CashFlow from "../../models/CashFlow";
 import { Types } from "mongoose";
-
-interface AuthRequest extends Request {
-  user?: {
-    _id: string;
-    is_admin: boolean;
-    email: string;
-  };
-}
+import { AuthRequest } from "../../types/type";
 
 export const getAllCashFlow = (_req: AuthRequest, res: Response) => {
   const request = async () => {
@@ -156,6 +149,68 @@ export const updateOffice = async (req: AuthRequest, res: Response) => {
   await customReqResHandler(res, request, undefined, {
     successMessage: "Office updated successfully",
     errorMessage: "Error updating office",
+    statusCode: 200,
+  });
+};
+
+export const adminFundWallet = async (req: AuthRequest, res: Response) => {
+  const officeId = req.params.id;
+  const request = async () => {
+    const office = await checkIfDocumentExistsById<IOffice>(
+      officeId,
+      "office_id",
+      res,
+      Offices
+    );
+
+    if (!office) {
+      errorResponse(res, 404, "Office not found");
+      return;
+    }
+
+    // Assuming the amount to fund is passed in the request body
+    const amount = Number(req.body.amount);
+
+    if (!amount || amount <= 0) {
+      errorResponse(res, 400, "Invalid amount to fund");
+      return;
+    }
+
+    // Update the office wallet balance
+    if (!office.wallet) {
+      office.wallet = { balance: 0 };
+    }
+    office.wallet.balance += amount;
+    await office.save();
+
+    // Log the funding activity
+    const log = await logActivity({
+      req,
+      user_id: new Types.ObjectId(req.user?._id),
+      description: `Wallet funded by ${req.user?.first_name} ${req.user?.last_name} with amount ${amount}`,
+      action: "FUND_OFFICE_WALLET",
+      metadata: {
+        office_id: officeId,
+        funded_amount: amount,
+        user_id: `${req.user?._id}`,
+      },
+    });
+
+    office.logs = Array.isArray(office.logs)
+      ? [...office.logs, log._id]
+      : [log._id];
+
+    await office.save();
+    await User.findByIdAndUpdate(req.user?._id, {
+      $push: { logs: log._id },
+    });
+
+    return { message: "Wallet funded successfully", office };
+  };
+
+  customReqResHandler(res, request, undefined, {
+    successMessage: "Wallet funded successfully",
+    errorMessage: "Error funding wallet",
     statusCode: 200,
   });
 };

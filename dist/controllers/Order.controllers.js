@@ -113,7 +113,7 @@ const createNewOrder = (_req, res) => {
             if (!productResFromDb ||
                 !productResFromDb?.is_active ||
                 productResFromDb?.is_archived) {
-                (0, response_1.errorResponse)(res, 404, "Product not found", {
+                (0, response_1.errorResponse)(res, 400, "Product not found", {
                     message: `Product ${productResFromDb?.name} is not available for order.`,
                     product: productResFromDb,
                 });
@@ -148,6 +148,7 @@ const createNewOrder = (_req, res) => {
                     }
                     // Returns the variant with all properties from the matched database variant, and the quantity and total amount.
                     return {
+                        id: matchedVariant._id,
                         name: matchedVariant.name,
                         total_boxes_in_stock: matchedVariant.total_boxes_in_stock,
                         amount_per_box: matchedVariant.distributor_pricing.price_per_box,
@@ -160,6 +161,7 @@ const createNewOrder = (_req, res) => {
             });
             const productInfo = productResFromDb ? productResFromDb.toObject() : null;
             return {
+                product_id: productInfo?._id,
                 name: productInfo?.name || "Unknown Product",
                 variants: theVariant,
                 total: theVariant.reduce((sum, item) => sum + item.total_amount, 0),

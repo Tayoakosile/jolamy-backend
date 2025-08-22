@@ -73,17 +73,42 @@ exports.getOffices = getOffices;
 const getSingleOffice = async (_req, res) => {
     const id = _req.params.id;
     const request = async () => {
-        await (0, util_1.checkIfDocumentExistsById)(id, "office_id", res, Office_1.default, [
-            "created_by",
-            "logs",
-        ]);
+        const single_office = await (0, util_1.checkIfDocumentExistsById)(id, "office_id", res, Office_1.default, ["created_by", "logs"]);
+        const log = await (0, activityLog_1.logActivity)({
+            req: _req,
+            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
+            action: "GET_SINGLE_OFFICE",
+            description: `${_req.user?.first_name} retrieved office details for ${single_office?.name}`,
+            metadata: {
+                ...single_office,
+                user_id: `${_req.user?._id}`,
+            },
+        });
         const office = (await Office_1.default.findOne({ office_id: id })
             .populate({
             path: "created_by",
             select: "first_name last_name email user_role username email",
         })
-            .populate("logs")
-            .populate("transactions")
+            .populate({
+            path: "logs",
+            populate: [
+                {
+                    path: "sender",
+                    select: "first_name last_name email user_role username",
+                },
+                {
+                    path: "receiver",
+                    select: "first_name last_name email user_role username",
+                },
+            ],
+        })
+            .populate({
+            path: "transactions",
+            populate: {
+                path: "created_by",
+                model: "OfficeWorker",
+            },
+        })
             .populate("wallet.logs")
             .populate({
             path: "workers",
@@ -101,25 +126,17 @@ const getSingleOffice = async (_req, res) => {
             ],
         }));
         const stats = [
-            // totalInflow,
             getTotalCashflow(office.transactions, "all", "", "Total Transactions"),
             getTotalCashflow(office.transactions, "week", "inflow", "Total Inflow This Week"),
             getTotalCashflow(office.transactions, "week", "outflow", "Total Outflow This Week"),
         ];
-        const log = await (0, activityLog_1.logActivity)({
-            req: _req,
-            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
-            action: "GET_SINGLE_OFFICE",
-            description: `${_req.user?.first_name} retrieved office details for ${office.name}`,
-            metadata: {
-                ...office,
-                user_id: `${_req.user?._id}`,
-            },
-        });
         await User_1.default.findByIdAndUpdate(_req.user?._id, {
             $push: { logs: log._id },
         });
-        return { stats, office };
+        return {
+            stats,
+            office,
+        };
     };
     await (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Office retrieved successfully",

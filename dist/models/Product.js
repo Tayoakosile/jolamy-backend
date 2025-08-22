@@ -96,7 +96,7 @@ const ProductSchema = new mongoose_1.Schema({
     ],
     orders: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Order" }],
     created_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
-}, { timestamps: true });
+}, { timestamps: { ...util_1.timestamp } });
 ProductSchema.pre("save", async function (next) {
     if (this.isNew) {
         const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD

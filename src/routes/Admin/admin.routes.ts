@@ -7,6 +7,7 @@ import {
   rejectUser,
 } from "../../controllers/Admin/admin.controller";
 import {
+  adminFundWallet,
   getAllCashFlow,
   getSingleCashFlow,
 } from "../../controllers/Admin/admin.finance.controller";
@@ -58,6 +59,13 @@ router.put(
   updateOffice
 );
 router.patch("/offices/:id", appAuth, isAdmin, updateOffice);
+router.put(
+  "/offices/:id/fund-wallet",
+  appAuth,
+  isAdmin,
+  removeSensitiveFields,
+  adminFundWallet
+);
 router.post(
   "/offices/:id/add-worker",
   appAuth,

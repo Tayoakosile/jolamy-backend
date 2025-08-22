@@ -13,7 +13,6 @@ export const getStats = async (_req: AuthRequest, res: Response) => {
     const totalUsers = await getTrend(User, {
       period: "month",
       filter: { user_role: { $ne: "admin" } },
-
     });
     const totalProducts = await getTrend(User, {
       period: "month",
@@ -27,14 +26,13 @@ export const getStats = async (_req: AuthRequest, res: Response) => {
     //   How to add total amount from all cashflow
     const totalTransactions = await getTrend(Offices, {
       period: "month",
-        sumField: "amount",
+      sumField: "amount",
     });
     const totalCashFlow = await getTrend(CashFlow, {
       period: "month",
       sumField: "amount",
     });
 
-    console.log("totalOrders :", totalOrders, totalUsers, totalProducts);
     successResponse(res, 200, "Stats fetched successfully", [
       { title: "Users", ...totalUsers },
       { title: "Products", ...totalProducts },

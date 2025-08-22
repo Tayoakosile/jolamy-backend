@@ -20,6 +20,21 @@ const initiatePayment = async (_req, res) => {
         const user = _req.user;
         const order = _req.order;
         const order_id = _req.params.id;
+        console.log("order :", order.payment_status);
+        if (order.payment_status === "initiated") {
+            (0, response_1.successResponse)(res, 200, "Payment initiated successfully", {
+                order_id,
+                user_id: user?.user_id,
+                user_name: user.username,
+                user_email: user.email,
+                order_details: {
+                    total_amount: order.total_amount,
+                    payment_status: order.payment_status,
+                    delivery_status: order.delivery_status,
+                },
+            });
+            return;
+        }
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: user?._id,
@@ -120,6 +135,9 @@ const verifyPayment = async (_req, res) => {
             const transaction = await Transaction_1.default.findOneAndUpdate({ order_id: order?._id }, {
                 status: "completed",
                 payment_method: "Paystack",
+            });
+            await Cart_1.Cart.findOneAndUpdate({ user_id: user?.id, order_id }, {
+                items: [],
             });
             const log = await (0, activityLog_1.logActivity)({
                 req: _req,

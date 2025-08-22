@@ -20,18 +20,16 @@ export const checkIfDocumentExistsById = async <T extends Document>(
   itemKey: string,
   res: Response,
   Model: mongoose.Model<T>,
-  populateFields?: string | string[]
+  populateFields?: string | string[],
+  errorCode?: number
 ) => {
-
-
   if (populateFields) {
     const populatedDocument = await Model.findOne({
       [itemKey]: id,
     } as any).populate(populateFields);
 
-
     if (!populatedDocument) {
-      errorResponse(res, 404, "Document not found", {
+      errorResponse(res, errorCode || 404, "Document not found", {
         message: "Document not found",
       });
       return;
@@ -43,7 +41,7 @@ export const checkIfDocumentExistsById = async <T extends Document>(
     [itemKey]: id,
   } as any);
   if (!document) {
-    errorResponse(res, 404, "Document not found", {
+    errorResponse(res, errorCode || 404, "Document not found", {
       message: "Document not found",
     });
     return;
@@ -99,9 +97,7 @@ export const customReqResHandler = async (
     );
     return;
   } catch (error) {
-    console.log('error :', error);
-
-
+    console.log("error :", error);
 
     errorFunction
       ? errorFunction(error)

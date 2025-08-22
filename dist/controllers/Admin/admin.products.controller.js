@@ -6,10 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.archiveProduct = exports.updateProduct = exports.getSingleProducts = exports.getProducts = exports.addNewProducts = void 0;
 const mongoose_1 = require("mongoose");
 const Product_1 = require("../../models/Product");
+const User_1 = __importDefault(require("../../models/User"));
 const activityLog_1 = require("../../utils/activityLog");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
-const User_1 = __importDefault(require("../../models/User"));
 const addNewProducts = (_req, res) => {
     const user = _req.user;
     // if (!_req.files || _req.files.length === 0)  {
@@ -64,7 +64,10 @@ const addNewProducts = (_req, res) => {
 exports.addNewProducts = addNewProducts;
 const getProducts = (_req, res) => {
     const request = async () => {
-        return await Product_1.Product.find();
+        const isUserAdmin = _req.user?.is_admin;
+        return isUserAdmin
+            ? await Product_1.Product.find({ is_active: true })
+            : await Product_1.Product.find({ is_active: true }).select("-logs -orders -inventory -created_by -is_archived -archived_at -archived_by");
     };
     (0, util_1.customReqResHandler)(res, request);
 };
@@ -133,7 +136,7 @@ const updateProduct = async (req, res) => {
 exports.updateProduct = updateProduct;
 const archiveProduct = async (req, res) => {
     const id = req.params.id;
-    await (0, util_1.checkIfDocumentExistsById)(id, 'product_id', res, Product_1.Product);
+    await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);
     const request = async () => {
         const log = await (0, activityLog_1.logActivity)({
             req,

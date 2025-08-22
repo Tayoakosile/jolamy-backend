@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 import { Counter } from "./counter";
-import { generateRandom } from "../utils/util";
+import { generateRandom, timestamp } from "../utils/util";
 import { timeStamp } from "console";
 
 export interface ITransaction extends Document {
@@ -79,7 +79,7 @@ const TransactionSchema = new Schema<ITransaction>(
       default: "pending",
     },
   },
-  { timestamps: { ...timeStamp } }
+  { timestamps: { ...timestamp } }
 );
 
 

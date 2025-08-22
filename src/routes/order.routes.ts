@@ -56,7 +56,7 @@ router.patch(
 router.put(
   "/:id/initiate-payment",
   appAuth,
-  isWorker,
+  // isWorker,
   removeSensitiveFields,
   validateOrder,
   initiatePayment
@@ -66,7 +66,7 @@ router.put(
 router.put(
   "/:id/verify-payment",
   appAuth,
-  isWorker,
+  // isWorker,
   removeSensitiveFields,
   validateOrder,
   verifyPayment

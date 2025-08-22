@@ -40,10 +40,10 @@ const financeSchema = new Schema<IFinance>(
     notes: { type: String },
     status: { type: String },
     reference: { type: String },
-    created_by: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    created_by: { type: Schema.Types.ObjectId, ref: "OfficeWorker", required: true },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
   }
 );
 

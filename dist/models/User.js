@@ -21,6 +21,8 @@ const userSchema = new mongoose_1.Schema({
     gender: String,
     dob: Date,
     business_address: String,
+    total_boxes_ordered: { type: Number, default: 0 },
+    total_boxes_sold: { type: Number, default: 0 },
     disabled_reason: String,
     is_first_login: { type: Boolean, default: true },
     distribution_address: String,

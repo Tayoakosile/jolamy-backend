@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { Types } from "mongoose";
-import Order, { IOrder } from "../models/Order";
+import Order from "../models/Order";
+
 import { IProduct, Product } from "../models/Product";
 import Transaction from "../models/Transaction";
 import User from "../models/User";
@@ -8,6 +9,7 @@ import { AuthRequest } from "../types/type";
 import { logActivity } from "../utils/activityLog";
 import { errorResponse, successResponse } from "../utils/response";
 import { getTrend } from "../utils/trend.util";
+import { IOrder } from "../types/order.type";
 import {
   checkIfDocumentExistsById,
   customReqResHandler,
@@ -129,7 +131,7 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
         !productResFromDb?.is_active ||
         productResFromDb?.is_archived
       ) {
-        errorResponse(res, 404, "Product not found", {
+        errorResponse(res, 400, "Product not found", {
           message: `Product ${productResFromDb?.name} is not available for order.`,
           product: productResFromDb,
         });
@@ -176,6 +178,7 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
 
             // Returns the variant with all properties from the matched database variant, and the quantity and total amount.
             return {
+              id: matchedVariant._id,
               name: matchedVariant.name,
               total_boxes_in_stock: matchedVariant.total_boxes_in_stock,
               amount_per_box: matchedVariant.distributor_pricing.price_per_box,
@@ -190,8 +193,8 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       );
 
       const productInfo = productResFromDb ? productResFromDb.toObject() : null;
-
       return {
+        product_id: productInfo?._id,
         name: productInfo?.name || "Unknown Product",
         variants: theVariant,
         total: theVariant.reduce((sum, item) => sum + item.total_amount, 0),
@@ -201,10 +204,10 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
         ),
       };
     };
-
     const Products = await Promise.all(
       product_items.map(async (product: IProduct) => getProductPricing(product))
     );
+
 
     if (Products.length === 0 || Products.some((p) => !p)) {
       errorResponse(res, 400, "No valid products found in order", {
@@ -212,6 +215,7 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       });
       return;
     }
+
 
     const order = await Order.create({
       products: Products,

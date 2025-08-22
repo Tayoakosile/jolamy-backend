@@ -9,6 +9,7 @@ import financesRoutes from "./routes/finance.routes";
 import orderRoutes from "./routes/order.routes";
 import transactionRoutes from "./routes/transactions.routes";
 import productRoutes from "./routes/products.route";
+import cartRoutes from "./routes/carts.route";
 import uploadRoutes from "./routes/upload.routes";
 import userRoutes from "./routes/user.routes";
 
@@ -28,6 +29,7 @@ app.use("/api/finances", financesRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/carts", cartRoutes);
 
 const PORT = process.env.PORT || 5000;
 

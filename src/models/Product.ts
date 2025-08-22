@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { Counter } from "./counter";
-import { generateRandom } from "../utils/util";
+import { generateRandom, timestamp } from "../utils/util";
 
 interface Pricing {
   distributor_price_per_box: number;
@@ -121,7 +121,7 @@ const ProductSchema = new Schema<IProduct>(
     orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     created_by: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
-  { timestamps: true }
+  { timestamps: { ...timestamp } }
 );
 ProductSchema.pre(
   "save",

@@ -3,8 +3,12 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 import { timestamp } from "../utils/util";
 
 export interface ICartItem {
-  user_id: Types.ObjectId;
   product: Types.ObjectId;
+  variants: {
+    _id: Types.ObjectId;
+    name: string;
+    quantity: number;
+  }[];
   quantity: number;
   total: number; // total price for this item
 }
@@ -12,14 +16,23 @@ export interface ICartItem {
 export interface ICart extends Document {
   user: Types.ObjectId;
   items: ICartItem[];
-  total: { type: number, required: true }, // total price for this item;
+  total: { type: number; required: true }; // total price for this item;
 }
 
 const CartItemSchema: Schema = new Schema<ICartItem>(
   {
     product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
-
-    quantity: { type: Number, required: true },
+    variants: [
+      {
+        _id: {
+          type: Schema.Types.ObjectId,
+          ref: "Product.variants",
+          required: true,
+        },
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true },
+      },
+    ],
   },
   { _id: false }
 );
@@ -32,7 +45,6 @@ const CartSchema: Schema = new Schema<ICart>(
       required: true,
     },
     items: { type: [CartItemSchema], required: true },
-    total: { type: Number, default: 0 },
   },
   {
     timestamps: {

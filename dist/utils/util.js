@@ -17,13 +17,13 @@ const response_1 = require("./response");
  * @returns The user document if found, or null.
  * @throws Error if the ID is invalid or the DB fails.
  */
-const checkIfDocumentExistsById = async (id, itemKey, res, Model, populateFields) => {
+const checkIfDocumentExistsById = async (id, itemKey, res, Model, populateFields, errorCode) => {
     if (populateFields) {
         const populatedDocument = await Model.findOne({
             [itemKey]: id,
         }).populate(populateFields);
         if (!populatedDocument) {
-            (0, response_1.errorResponse)(res, 404, "Document not found", {
+            (0, response_1.errorResponse)(res, errorCode || 404, "Document not found", {
                 message: "Document not found",
             });
             return;
@@ -34,7 +34,7 @@ const checkIfDocumentExistsById = async (id, itemKey, res, Model, populateFields
         [itemKey]: id,
     });
     if (!document) {
-        (0, response_1.errorResponse)(res, 404, "Document not found", {
+        (0, response_1.errorResponse)(res, errorCode || 404, "Document not found", {
             message: "Document not found",
         });
         return;
@@ -62,7 +62,7 @@ const customReqResHandler = async (res, reqFunction, errorFunction, responseData
         return;
     }
     catch (error) {
-        console.log('error :', error);
+        console.log("error :", error);
         errorFunction
             ? errorFunction(error)
             : (0, response_1.errorResponse)(res, responseData.errorStatusCode || 500, responseData.errorMessage, responseData.error || error);

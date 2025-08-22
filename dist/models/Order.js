@@ -4,9 +4,10 @@ const mongoose_1 = require("mongoose");
 const counter_1 = require("./counter");
 const util_1 = require("../utils/util");
 const ProductItemSchema = new mongoose_1.Schema({
+    product_id: { type: mongoose_1.Types.ObjectId, ref: "Product", required: true },
     variants: [
         {
-            id: { type: mongoose_1.Types.ObjectId },
+            id: { type: mongoose_1.Types.ObjectId, required: true },
             quantity: { type: Number, required: true },
             name: { type: String, required: true },
             total_boxes_in_stock: { type: Number, default: 0 },
@@ -14,15 +15,23 @@ const ProductItemSchema = new mongoose_1.Schema({
             total_amount: { type: Number, required: true },
         },
     ],
-}, { _id: false });
-const ShippingLocationSchema = new mongoose_1.Schema({
+});
+const ShippingSchema = new mongoose_1.Schema({
+    recipient_name: { type: String, required: true },
+    phone: { type: String, required: true },
     address: { type: String, required: true },
     city: { type: String, required: true },
     state: { type: String, required: true },
-    country: { type: String, required: true },
-    phoneNumber: { type: String, required: true },
-    estimatedDate: { type: Date, required: true },
-}, { _id: false });
+    country: { type: String, default: "Nigeria" },
+    postal_code: { type: String },
+    delivery_type: {
+        type: String,
+        enum: ["pickup", "delivery"],
+        required: true,
+    },
+    notes: { type: String },
+}, { _id: false } // embedded, no extra id
+);
 const OrderSchema = new mongoose_1.Schema({
     assigned_to: {
         office: { type: mongoose_1.Types.ObjectId, ref: "Office", required: false },
@@ -33,6 +42,11 @@ const OrderSchema = new mongoose_1.Schema({
         },
     },
     user_id: { type: mongoose_1.Types.ObjectId, ref: "User", required: true },
+    priority_level: {
+        type: String,
+        enum: ["normal", "urgent"],
+        default: "normal",
+    },
     order_number: { type: String },
     date: { type: Date, default: Date.now },
     delivery_fee: { type: Number },
@@ -42,9 +56,7 @@ const OrderSchema = new mongoose_1.Schema({
         required: true,
     },
     products: { type: [ProductItemSchema], required: true },
-    shipping_location: {
-        type: ShippingLocationSchema,
-    },
+    shipping: { type: ShippingSchema },
     payment_status: {
         type: String,
         enum: [
@@ -64,6 +76,7 @@ const OrderSchema = new mongoose_1.Schema({
         enum: [
             "pending",
             "processing",
+            "delivered",
             "completed",
             "cancelled",
             "failed",
@@ -81,6 +94,7 @@ const OrderSchema = new mongoose_1.Schema({
     admin_notes_to_customer: { type: String },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number, default: 0 },
+    grand_total: { type: Number, default: 0 }, // total_amount + delivery_fee
     total_quantity: { type: Number, default: 0 },
     estimated_delivery_date: { type: Date },
     actual_delivery_date: { type: Date },
@@ -107,9 +121,7 @@ const OrderSchema = new mongoose_1.Schema({
     },
     payment_reference: { type: String },
     logs: [{ type: mongoose_1.Types.ObjectId, ref: "Log" }],
-}, {
-    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
-});
+}, { timestamps: { ...util_1.timestamp } });
 OrderSchema.pre("save", async function (next) {
     if (this.isNew) {
         const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD

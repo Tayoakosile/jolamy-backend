@@ -1,7 +1,7 @@
 import { Request } from "express";
 import { Document, Types } from "mongoose";
-import { IOrder } from "../models/Order";
 import { IOfficeWorker } from "../models/Admin/OfficeWorker";
+import { IOrder } from './order.type';
 
 export type ApprovalStatus =
   | "pending_for_documents"
@@ -20,6 +20,8 @@ export type UserRole =
 export type UserDocument = IUser & Document;
 export interface IUser extends Document {
   _id: Types.ObjectId;
+  total_boxes_ordered: number;
+  total_boxes_sold: number;
   name: string;
   user_id: string;
   internal_sequence: number;
@@ -90,12 +92,12 @@ export interface IUser extends Document {
 }
 
 export interface AuthRequest extends Request {
-  user?: IUser  & {
+  user?: IUser & {
     _id: string;
     is_admin: boolean;
     email: string;
   };
-  worker?: IOfficeWorker  & {
+  worker?: IOfficeWorker & {
     _id: string;
     is_admin: boolean;
     email: string;

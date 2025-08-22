@@ -1,9 +1,10 @@
 import { NextFunction, Response } from "express";
 import { errorResponse } from "../utils/response";
 import { checkIfDocumentExistsById } from "../utils/util";
-import Order, { IOrder } from "../models/Order";
+import Order from "../models/Order";
 import { AuthRequest } from "../types/type";
 import { Types } from "mongoose";
+import { IOrder } from "../types/order.type";
 
 export const validateOrder = async (
   _req: AuthRequest,

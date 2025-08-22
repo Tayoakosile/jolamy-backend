@@ -12,7 +12,9 @@ import { getTrend } from "../../utils/trend.util";
 import {
   checkIfDocumentExistsById,
   customReqResHandler,
+  transactions,
 } from "../../utils/util";
+import { ITransaction } from "../../models/Transaction";
 
 const getTotalCashflow = (
   data: IOffice["transactions"],
@@ -89,20 +91,52 @@ export const getOffices = (_req: AuthRequest, res: Response) => {
 
   customReqResHandler(res, request);
 };
+
 export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
   const id = _req.params.id;
   const request = async () => {
-    await checkIfDocumentExistsById<IOffice>(id, "office_id", res, Offices, [
-      "created_by",
-      "logs",
-    ]);
+    const single_office = await checkIfDocumentExistsById<IOffice>(
+      id,
+      "office_id",
+      res,
+      Offices,
+      ["created_by", "logs"]
+    );
+    const log = await logActivity({
+      req: _req,
+      user_id: new Types.ObjectId(_req.user?._id),
+      action: "GET_SINGLE_OFFICE",
+      description: `${_req.user?.first_name} retrieved office details for ${single_office?.name}`,
+      metadata: {
+        ...single_office,
+        user_id: `${_req.user?._id}`,
+      },
+    });
     const office = (await Offices.findOne({ office_id: id })
       .populate({
         path: "created_by",
         select: "first_name last_name email user_role username email",
       })
-      .populate("logs")
-      .populate("transactions")
+      .populate({
+        path: "logs",
+        populate: [
+          {
+            path: "sender",
+            select: "first_name last_name email user_role username",
+          },
+          {
+            path: "receiver",
+            select: "first_name last_name email user_role username",
+          },
+        ],
+      })
+      .populate({
+        path: "transactions",
+        populate: {
+          path: "created_by",
+          model: "OfficeWorker",
+        },
+      })
       .populate("wallet.logs")
       .populate({
         path: "workers",
@@ -124,7 +158,6 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
       name: string;
       value: number;
     }[] = [
-      // totalInflow,
       getTotalCashflow(office.transactions, "all", "", "Total Transactions"),
       getTotalCashflow(
         office.transactions,
@@ -140,21 +173,13 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
       ),
     ];
 
-    const log = await logActivity({
-      req: _req,
-      user_id: new Types.ObjectId(_req.user?._id),
-      action: "GET_SINGLE_OFFICE",
-      description: `${_req.user?.first_name} retrieved office details for ${office.name}`,
-      metadata: {
-        ...office,
-        user_id: `${_req.user?._id}`,
-      },
-    });
-
     await User.findByIdAndUpdate(_req.user?._id, {
       $push: { logs: log._id },
     });
-    return { stats, office };
+    return {
+      stats,
+      office,
+    };
   };
 
   await customReqResHandler(res, request, undefined, {

@@ -13,7 +13,6 @@ export const uploadImage = async (req: Request, res: Response) => {
     const files = req.files as Express.Multer.File[];
     const urls: string[] = [];
 
-
     for (const file of files) {
       const fullPath = path.join(process.cwd(), file.path);
       const fileUrl = await uploadFileToBytescale(
@@ -24,8 +23,6 @@ export const uploadImage = async (req: Request, res: Response) => {
 
       urls.push(fileUrl);
     }
-
-    console.log("urls :", urls);
   } catch (error) {
     res.status(500).json({
       message: "Upload failed",

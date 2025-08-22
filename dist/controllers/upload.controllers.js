@@ -17,7 +17,6 @@ const uploadImage = async (req, res) => {
             const fileUrl = await (0, upload_1.uploadFileToBytescale)(fullPath, file.originalname, file.mimetype);
             urls.push(fileUrl);
         }
-        console.log("urls :", urls);
     }
     catch (error) {
         res.status(500).json({

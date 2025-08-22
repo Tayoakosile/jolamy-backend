@@ -36,8 +36,6 @@ export const appAuth = async (
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
 
-
-
     if (!decoded || !decoded.id) {
       errorResponse(res, 401, "Invalid token", { message: "Invalid token" });
       return next();
@@ -51,7 +49,7 @@ export const appAuth = async (
       (req as any).worker = worker;
 
       next();
-      return
+      return;
     }
     if (user) {
       if (

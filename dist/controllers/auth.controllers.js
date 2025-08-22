@@ -13,6 +13,8 @@ const bcrypt_util_1 = require("../utils/bcrypt.util");
 const jwt_1 = require("../utils/jwt");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
+const trend_util_1 = require("../utils/trend.util");
+const Order_1 = __importDefault(require("../models/Order"));
 const createAccount = async (req, res) => {
     // return;
     if (!req.body) {
@@ -73,6 +75,7 @@ const loginAccount = async (req, res) => {
                 metadata: {
                     email: officeWorker.email,
                     user_id: officeWorker.id,
+                    role: officeWorker.role,
                 },
             });
             await OfficeWorker_1.default.findOneAndUpdate({ worker_id: officeWorker }, {
@@ -90,6 +93,7 @@ const loginAccount = async (req, res) => {
                 user: {
                     id: officeWorker.worker_id,
                     email: officeWorker.email,
+                    role: officeWorker.role,
                 },
             });
             return;
@@ -129,6 +133,7 @@ const loginAccount = async (req, res) => {
             metadata: {
                 email: user.email,
                 user_id: user._id,
+                role: user.user_role,
             },
         });
         await User_1.default.findByIdAndUpdate(user._id, {
@@ -142,6 +147,7 @@ const loginAccount = async (req, res) => {
             user: {
                 id: user.user_id,
                 email: user.email,
+                role: user.user_role,
             },
         });
     }
@@ -217,17 +223,77 @@ const resetPassword = async (req, res) => {
 exports.resetPassword = resetPassword;
 const getUserProfile = async (req, res) => {
     try {
-        const userId = req.user?.user_id || req.worker?.worker_id;
-        const user = await User_1.default.findOne({ user_id: userId }).select("-password -__v -_id");
-        const worker = await OfficeWorker_1.default.findOne({ worker_id: userId }).select("-password -__v -_id");
+        const userId = req.user?._id || req.worker?._id;
+        const user = await User_1.default.findById(userId)
+            .select("-password -__v ")
+            .populate("orders")
+            .populate("transaction_history")
+            .populate("change_request")
+            .populate("bonus");
+        const worker = await OfficeWorker_1.default.findById(userId).select("-password -__v -_id");
         if (!user && !worker) {
             (0, response_1.errorResponse)(res, 404, "User not found ");
+            return;
+        }
+        const totalBoxesInStock = await (0, trend_util_1.getTrend)(Order_1.default, {
+            period: "week",
+            filter: {
+                user_id: user ? user._id : worker ? worker._id : null,
+                status: "delivered",
+            },
+        });
+        const totalPendingOrders = await (0, trend_util_1.getTrend)(Order_1.default, {
+            period: "week",
+            filter: {
+                user_id: user ? user._id : worker ? worker._id : null,
+                status: "pending",
+            },
+        });
+        if (user?.is_distributor) {
+            totalBoxesInStock;
+            (0, response_1.successResponse)(res, 200, `${user ? "User's" : "Worker's"} profile retrieved successfully`, {
+                ...user.toObject(),
+                stats: [
+                    {
+                        title: "Total Boxes in Stock",
+                        ...totalBoxesInStock,
+                    },
+                    {
+                        title: "Outstanding Boxes Not Paid",
+                        currentTotal: user?.outstanding_boxes,
+                        previousTotal: 0,
+                        percentageChange: 0,
+                        trend: "no-change",
+                    },
+                    {
+                        title: "Total Earnings",
+                        currentTotal: 0,
+                        previousTotal: 0,
+                        percentageChange: 0,
+                        trend: "no-change",
+                        type: "currency",
+                    },
+                    {
+                        title: "Total Bonus This Week",
+                        currentTotal: 0,
+                        previousTotal: 0,
+                        percentageChange: 0,
+                        trend: "no-change",
+                        type: "currency",
+                    },
+                    {
+                        title: "Pending Orders",
+                        ...totalPendingOrders,
+                    },
+                ],
+            });
             return;
         }
         (0, response_1.successResponse)(res, 200, `${user ? "User's" : "Worker's"} profile retrieved successfully`, user || worker);
         return;
     }
     catch (error) {
+        console.log("error :", error);
         (0, response_1.errorResponse)(res, 500, "An error occurred while retrieving profile", error);
     }
 };

@@ -35,7 +35,6 @@ const getStats = async (_req, res) => {
             period: "month",
             sumField: "amount",
         });
-        console.log("totalOrders :", totalOrders, totalUsers, totalProducts);
         (0, response_1.successResponse)(res, 200, "Stats fetched successfully", [
             { title: "Users", ...totalUsers },
             { title: "Products", ...totalProducts },

@@ -36,7 +36,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const counter_1 = require("./counter");
 const util_1 = require("../utils/util");
-const console_1 = require("console");
 // const PricingSchema = new Schema<Pricing>(
 //   {
 //     distributor_price_per_box: { type: Number, required: true },
@@ -85,7 +84,7 @@ const TransactionSchema = new mongoose_1.Schema({
         enum: ["pending", "completed", "failed", "cancelled"],
         default: "pending",
     },
-}, { timestamps: { ...console_1.timeStamp } });
+}, { timestamps: { ...util_1.timestamp } });
 TransactionSchema.pre("save", async function (next) {
     if (this.isNew) {
         const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD

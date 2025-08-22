@@ -9,40 +9,6 @@ import User from "../models/User";
 import { AuthRequest } from "../types/type";
 import { errorResponse } from "../utils/response";
 
-export const getSingleProductForNotAdmin = async (
-  _req: AuthRequest,
-  res: Response
-) => {
-  const id = _req.params.id;
-  await checkIfDocumentExistsById(id, "product_id", res, Product);
-  const request = async () => {
-    const product = await Product.findOne({ _id: id });
-
-    const logs = await logActivity({
-      req: _req,
-      user_id: new Types.ObjectId(_req.user?._id),
-      action: "GET_PRODUCT",
-      sender: new Types.ObjectId(_req.user?._id),
-      receiver: new Types.ObjectId(id),
-      description: `User with ID ${_req.user?._id} fetched product with ID ${id}`,
-      metadata: {
-        product_id: id,
-        user_id: _req.user?._id,
-      },
-    });
-
-    await User.findByIdAndUpdate(_req.user?._id, {
-      $push: { logs: logs.id },
-    });
-
-    return product;
-  };
-  customReqResHandler(res, request, undefined, {
-    successMessage: "Product Fetched Successfully",
-    statusCode: 200,
-  });
-};
-
 export const addToCart = (_req: AuthRequest, res: Response) => {
   const user_id = (_req as any).user._id;
   const product_id = _req.body?.product_id;
@@ -107,7 +73,6 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
     for (const variant of variants) {
       const variantId = variant._id;
 
-
       const singleCart = await Cart.updateOne(
         { "items.variants._id": variantId },
         {
@@ -125,7 +90,7 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
       );
 
 
-      if(singleCart.modifiedCount === 0) {
+      if (singleCart.modifiedCount === 0) {
         await existingCart.updateOne({
           $push: {
             items: {
@@ -165,26 +130,48 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
   });
 };
 
-export const getCart = (_req: AuthRequest, res: Response) => {
+export const getCarts = (_req: AuthRequest, res: Response) => {
   const user_id = (_req as any).user._id;
   const request = async () => {
-    const cart = await Cart.findOne({ user: user_id }).populate(
-      "items.product"
-    );
-    if (!cart) {
-      errorResponse(res, 404, "Cart not found");
-      return;
-    }
+    const cart = (await Cart.findOne({ user: user_id }).populate({
+      path: "items.product",
+      select: "-created_by  -orders -is_archived -logs -inventory",
+    })) as ICart;
+
+
+
+    const updatedCart = cart?.toObject()?.items.map((item: any) => {
+      return item.variants.map((originalVariant: any) => {
+        const variant = item.product.variants.find(
+          (v: any) => v._id.toString() === originalVariant._id.toString()
+        );
+        const { variants, ...rest } = item.product;
+
+        if (variant) {
+          return {
+            ...variant,
+            variant_name: originalVariant.name || "",
+            ...rest,
+            quantity: originalVariant?.quantity || 0,
+            total_price:
+              originalVariant?.quantity *
+                variant?.distributor_pricing?.price_per_box || 0,
+          };
+        }
+      });
+    });
+
+    // console.log("updatedCart :", updatedCart);
 
     const logs = await logActivity({
       req: _req,
       user_id: new Types.ObjectId(_req.user?._id),
       action: "GET_CART",
       sender: new Types.ObjectId(_req.user?._id),
-      receiver: cart._id as Types.ObjectId,
+      receiver: _req.user?._id,
       description: `User with ID ${_req.user?.user_id} fetched cart with product`,
       metadata: {
-        cart_id: cart._id,
+        cart_id: cart?._id || "",
         user_id: _req.user?._id,
       },
     });
@@ -193,39 +180,10 @@ export const getCart = (_req: AuthRequest, res: Response) => {
       $push: { logs: logs.id },
     });
 
-    return cart;
+    return { cart, checkout: updatedCart };
   };
   customReqResHandler(res, request, undefined, {
     successMessage: "Cart retrieved successfully",
     statusCode: 200,
   });
 };
-
-// async function updateVariantQuantities() {
-//   try {
-//     for (const variant of variantsToUpdate) {
-//       const variantId = mongoose.Types.ObjectId(variant._id);
-
-//       await Cart.updateOne(
-//         { "items.variants._id": variantId },
-//         {
-//           $set: {
-//             "items.$[item].variants.$[variant].quantity": variant.quantity,
-//           },
-//         },
-//         {
-//           arrayFilters: [
-//             { "item.variants._id": variantId },
-//             { "variant._id": variantId },
-//           ],
-//         }
-//       );
-//     }
-
-//     console.log("Variant quantities updated!");
-//   } catch (error) {
-//     console.error("Error updating variant quantities:", error);
-//   }
-// }
-
-// updateVariantQuantities();

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Response } from "express";
-import Order, { IOrder } from "../models/Order";
+import Order from "../models/Order";
+
 import User from "../models/User";
 import { AuthRequest, IUser } from "../types/type";
 import { logActivity } from "../utils/activityLog";
@@ -11,13 +12,28 @@ import { statusMap } from "../utils/util";
 import { sendEmail } from "../services/mail.service";
 import Transaction from "../models/Transaction";
 import Offices from "../models/Admin/Office";
+import { IOrder } from "../types/order.type";
 
 export const initiatePayment = async (_req: AuthRequest, res: Response) => {
   try {
     const user = _req.user as IUser;
     const order = _req.order as IOrder;
     const order_id = _req.params.id;
-
+    console.log("order :", order.payment_status);
+    if (order.payment_status === "initiated") {
+      successResponse(res, 200, "Payment initiated successfully", {
+        order_id,
+        user_id: user?.user_id,
+        user_name: user.username,
+        user_email: user.email,
+        order_details: {
+          total_amount: order.total_amount,
+          payment_status: order.payment_status,
+          delivery_status: order.delivery_status,
+        },
+      });
+      return;
+    }
     const log = await logActivity({
       req: _req,
       user_id: user?._id,
@@ -137,6 +153,12 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
         {
           status: "completed",
           payment_method: "Paystack",
+        }
+      );
+      await Cart.findOneAndUpdate(
+        { user_id: user?.id, order_id },
+        {
+          items: [],
         }
       );
       const log = await logActivity({

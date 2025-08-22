@@ -39,7 +39,17 @@ const mongoose_1 = __importStar(require("mongoose"));
 const util_1 = require("../utils/util");
 const CartItemSchema = new mongoose_1.Schema({
     product: { type: mongoose_1.Schema.Types.ObjectId, ref: "Product", required: true },
-    quantity: { type: Number, required: true },
+    variants: [
+        {
+            _id: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: "Product.variants",
+                required: true,
+            },
+            name: { type: String, required: true },
+            quantity: { type: Number, required: true },
+        },
+    ],
 }, { _id: false });
 const CartSchema = new mongoose_1.Schema({
     user: {
@@ -48,7 +58,6 @@ const CartSchema = new mongoose_1.Schema({
         required: true,
     },
     items: { type: [CartItemSchema], required: true },
-    total: { type: Number, default: 0 },
 }, {
     timestamps: {
         ...util_1.timestamp,

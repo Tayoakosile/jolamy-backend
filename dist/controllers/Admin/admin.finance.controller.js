@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateOffice = exports.createNewOffices = exports.getSingleCashFlow = exports.getAllCashFlow = void 0;
+exports.adminFundWallet = exports.updateOffice = exports.createNewOffices = exports.getSingleCashFlow = exports.getAllCashFlow = void 0;
 const Office_1 = __importDefault(require("../../models/Admin/Office"));
 const User_1 = __importDefault(require("../../models/User"));
 const activityLog_1 = require("../../utils/activityLog");
@@ -132,3 +132,51 @@ const updateOffice = async (req, res) => {
     });
 };
 exports.updateOffice = updateOffice;
+const adminFundWallet = async (req, res) => {
+    const officeId = req.params.id;
+    const request = async () => {
+        const office = await (0, util_1.checkIfDocumentExistsById)(officeId, "office_id", res, Office_1.default);
+        if (!office) {
+            (0, response_1.errorResponse)(res, 404, "Office not found");
+            return;
+        }
+        // Assuming the amount to fund is passed in the request body
+        const amount = Number(req.body.amount);
+        if (!amount || amount <= 0) {
+            (0, response_1.errorResponse)(res, 400, "Invalid amount to fund");
+            return;
+        }
+        // Update the office wallet balance
+        if (!office.wallet) {
+            office.wallet = { balance: 0 };
+        }
+        office.wallet.balance += amount;
+        await office.save();
+        // Log the funding activity
+        const log = await (0, activityLog_1.logActivity)({
+            req,
+            user_id: new mongoose_1.Types.ObjectId(req.user?._id),
+            description: `Wallet funded by ${req.user?.first_name} ${req.user?.last_name} with amount ${amount}`,
+            action: "FUND_OFFICE_WALLET",
+            metadata: {
+                office_id: officeId,
+                funded_amount: amount,
+                user_id: `${req.user?._id}`,
+            },
+        });
+        office.logs = Array.isArray(office.logs)
+            ? [...office.logs, log._id]
+            : [log._id];
+        await office.save();
+        await User_1.default.findByIdAndUpdate(req.user?._id, {
+            $push: { logs: log._id },
+        });
+        return { message: "Wallet funded successfully", office };
+    };
+    (0, util_1.customReqResHandler)(res, request, undefined, {
+        successMessage: "Wallet funded successfully",
+        errorMessage: "Error funding wallet",
+        statusCode: 200,
+    });
+};
+exports.adminFundWallet = adminFundWallet;

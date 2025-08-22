@@ -10,6 +10,8 @@ import { isMatch } from "../utils/bcrypt.util";
 import { generateToken } from "../utils/jwt";
 import { errorResponse, successResponse } from "../utils/response";
 import { generateRandom } from "../utils/util";
+import { getTrend } from "../utils/trend.util";
+import Order from "../models/Order";
 
 export const createAccount = async (req: Request, res: Response) => {
   // return;
@@ -85,6 +87,7 @@ export const loginAccount = async (req: Request, res: Response) => {
         metadata: {
           email: officeWorker.email,
           user_id: officeWorker.id,
+          role: officeWorker.role,
         },
       });
 
@@ -109,6 +112,7 @@ export const loginAccount = async (req: Request, res: Response) => {
         user: {
           id: officeWorker.worker_id,
           email: officeWorker.email,
+          role: officeWorker.role,
         },
       });
       return;
@@ -155,6 +159,7 @@ export const loginAccount = async (req: Request, res: Response) => {
       metadata: {
         email: user.email,
         user_id: user._id,
+        role: user.user_role,
       },
     });
 
@@ -174,11 +179,11 @@ export const loginAccount = async (req: Request, res: Response) => {
       user: {
         id: user.user_id,
         email: user.email,
+        role: user.user_role,
       },
     });
   } catch (error) {
     console.log("error :", error);
-
     errorResponse(res, 500, "An error occurred during login", error);
   }
 };
@@ -276,11 +281,14 @@ export const resetPassword = async (req: Request, res: Response) => {
 
 export const getUserProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.user_id || req.worker?.worker_id;
-    const user = await User.findOne({ user_id: userId }).select(
-      "-password -__v -_id"
-    );
-    const worker = await OfficeWorker.findOne({ worker_id: userId }).select(
+    const userId = req.user?._id || req.worker?._id;
+    const user = await User.findById(userId)
+      .select("-password -__v ")
+      .populate("orders")
+      .populate("transaction_history")
+      .populate("change_request")
+      .populate("bonus");
+    const worker = await OfficeWorker.findById(userId).select(
       "-password -__v -_id"
     );
 
@@ -288,14 +296,81 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
       errorResponse(res, 404, "User not found ");
       return;
     }
+
+    const totalBoxesInStock = await getTrend(Order, {
+      period: "week",
+      filter: {
+        user_id: user ? user._id : worker ? worker._id : null,
+        status: "delivered",
+      },
+    });
+    const totalPendingOrders = await getTrend(Order, {
+      period: "week",
+      filter: {
+        user_id: user ? user._id : worker ? worker._id : null,
+        status: "pending",
+      },
+    });
+
+    if (user?.is_distributor) {
+      totalBoxesInStock;
+      successResponse(
+        res,
+        200,
+        `${user ? "User's" : "Worker's"} profile retrieved successfully`,
+        {
+          ...user.toObject(),
+          stats: [
+            {
+              title: "Total Boxes in Stock",
+              ...totalBoxesInStock,
+            },
+            {
+              title: "Outstanding Boxes Not Paid",
+              currentTotal: user?.outstanding_boxes,
+              previousTotal: 0,
+              percentageChange: 0,
+              trend: "no-change",
+            },
+            {
+              title: "Total Earnings",
+              currentTotal: 0,
+              previousTotal: 0,
+              percentageChange: 0,
+              trend: "no-change",
+              type: "currency",
+            },
+
+            {
+              title: "Total Bonus This Week",
+              currentTotal: 0,
+              previousTotal: 0,
+              percentageChange: 0,
+              trend: "no-change",
+              type: "currency",
+            },
+
+            {
+              title: "Pending Orders",
+              ...totalPendingOrders,
+            },
+          ],
+        }
+      );
+      return;
+    }
+
     successResponse(
       res,
       200,
       `${user ? "User's" : "Worker's"} profile retrieved successfully`,
       user || worker
     );
+
     return;
   } catch (error) {
+    console.log("error :", error);
+
     errorResponse(
       res,
       500,

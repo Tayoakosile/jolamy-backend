@@ -21,9 +21,9 @@ const financeSchema = new mongoose_1.Schema({
     notes: { type: String },
     status: { type: String },
     reference: { type: String },
-    created_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
+    created_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "OfficeWorker", required: true },
 }, {
-    timestamps: true,
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
 });
 financeSchema.pre("save", async function (next) {
     if (this.isNew) {

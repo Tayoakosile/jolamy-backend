@@ -1,15 +1,14 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { Types } from "mongoose";
 import { Product } from "../../models/Product";
+import User from "../../models/User";
+import { AuthRequest } from "../../types/type";
 import { logActivity } from "../../utils/activityLog";
 import { errorResponse } from "../../utils/response";
 import {
   checkIfDocumentExistsById,
   customReqResHandler,
 } from "../../utils/util";
-import { uploadToR2 } from "../upload-r2.controllers";
-import User from "../../models/User";
-import { AuthRequest } from "../../types/type";
 
 export const addNewProducts = (_req: AuthRequest, res: Response) => {
   const user = _req.user;
@@ -77,7 +76,12 @@ export const addNewProducts = (_req: AuthRequest, res: Response) => {
 
 export const getProducts = (_req: AuthRequest, res: Response) => {
   const request = async () => {
-    return await Product.find();
+    const isUserAdmin = _req.user?.is_admin;
+    return isUserAdmin
+      ? await Product.find({ is_active: true })
+      : await Product.find({ is_active: true }).select(
+          "-logs -orders -inventory -created_by -is_archived -archived_at -archived_by"
+        );
   };
   customReqResHandler(res, request);
 };
@@ -153,7 +157,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
 
 export const archiveProduct = async (req: AuthRequest, res: Response) => {
   const id = req.params.id;
-  await checkIfDocumentExistsById(id,'product_id', res, Product);
+  await checkIfDocumentExistsById(id, "product_id", res, Product);
   const request = async () => {
     const log = await logActivity({
       req,
