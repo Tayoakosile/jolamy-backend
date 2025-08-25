@@ -1,7 +1,11 @@
 import { Document, model, Schema, Types } from "mongoose";
 import { Counter } from "./counter";
 import { generateRandom, timestamp } from "../utils/util";
-import { IOrder, IShippingDetails } from "../types/order.type";
+import {
+  IDeliveryDetails,
+  IOrder,
+  IShippingDetails,
+} from "../types/order.type";
 
 const ProductItemSchema = new Schema({
   product_id: { type: Types.ObjectId, ref: "Product", required: true },
@@ -24,16 +28,40 @@ const ShippingSchema = new Schema<IShippingDetails>(
     address: { type: String, required: true },
     city: { type: String, required: true },
     state: { type: String, required: true },
-    country: { type: String, default: "Nigeria" },
+    country: { type: String, required: true },
     postal_code: { type: String },
     delivery_type: {
       type: String,
       enum: ["pickup", "delivery"],
-      required: true,
+      default: "delivery",
     },
-    notes: { type: String },
+    note_from_user: { type: String },
   },
   { _id: false } // embedded, no extra id
+);
+
+const DeliveryStepSchema = new Schema<IDeliveryDetails>(
+  {
+    label: {
+      type: String,
+      enum: [
+        "order_placed",
+        "order_paid_for",
+        "order_processing",
+        "on_the_way",
+        "order_delivered",
+        "order_on_hold",
+        "order_cancelled",
+        "order_failed",
+      ],
+    },
+    date: { type: Date },
+  },
+  {
+    timestamps: {
+      ...timestamp,
+    },
+  } // embedded, no extra id
 );
 
 const OrderSchema = new Schema<IOrder>(
@@ -56,6 +84,7 @@ const OrderSchema = new Schema<IOrder>(
     order_number: { type: String },
     date: { type: Date, default: Date.now },
     delivery_fee: { type: Number },
+    delivery_steps: { type: [DeliveryStepSchema], required: true },
     role: {
       type: String,
       enum: ["distributor", "sales_agent"],

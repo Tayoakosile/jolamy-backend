@@ -4,5 +4,6 @@
         "Paystack",
         "randomatic"
     ],
-    "deepscan.enable": true
+    "deepscan.enable": true,
+    "mayank1513.trello-kanban.Workspace.filePath": ".tkb"
 }

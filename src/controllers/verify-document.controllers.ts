@@ -54,7 +54,7 @@ export const verifyDocuments = async (req: Request, res: Response) => {
       updatedUser
     );
   } catch (error) {
-    errorResponse(res, 401, "Error verifying documents");
+    errorResponse(res, 400, "Error verifying documents");
   }
 };
 

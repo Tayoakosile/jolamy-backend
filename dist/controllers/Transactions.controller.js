@@ -50,11 +50,17 @@ const getSingleTransaction = (req, res) => {
             select: "order_number status products  delivery_address    payment_status delivery_status total_amount discount_amount",
         })
             .select("-internal_sequence -__v");
-        if (user?.user_role !== "admin" &&
-            transaction?.user_id.toString() !== user?._id.toString()) {
-            (0, response_1.errorResponse)(res, 403, "You do not have permission to access this transaction");
-            return;
-        }
+        // if (
+        //   user?.user_role !== "admin" &&
+        //   transaction?.user_id.toString() !== user?._id.toString()
+        // ) {
+        //   errorResponse(
+        //     res,
+        //     403,
+        //     "You do not have permission to access this transaction"
+        //   );
+        //   return;
+        // }
         return transaction;
     };
     (0, util_1.customReqResHandler)(res, request, undefined, {

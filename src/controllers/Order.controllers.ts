@@ -9,7 +9,7 @@ import { AuthRequest } from "../types/type";
 import { logActivity } from "../utils/activityLog";
 import { errorResponse, successResponse } from "../utils/response";
 import { getTrend } from "../utils/trend.util";
-import { IOrder } from "../types/order.type";
+import { IOrder, IDeliveryDetails } from "../types/order.type";
 import {
   checkIfDocumentExistsById,
   customReqResHandler,
@@ -117,7 +117,7 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
               ),
             },
           }).select(
-            "name category reference_id  available_weight is_active is_archived  variants"
+            "name category reference_id _id  available_weight is_active is_archived  variants"
           )
         : await Product.findOne({
             _id: productFromPostAPi.id,
@@ -150,7 +150,7 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
               (matchedVariant?.distributor_pricing?.first_time_min_order_qty ||
                 0)
           ) {
-            errorResponse(res, 401, "Minimum order quantity not met", {
+            errorResponse(res, 400, "Minimum order quantity not met", {
               message: `Minimum order quantity for ${matchedVariant?.name} is ${matchedVariant?.distributor_pricing.first_time_min_order_qty} boxes on first order.`,
               product: productResFromDb,
               minimum_order_quantity:
@@ -167,9 +167,10 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
               matchedVariant?.total_boxes_in_stock !== null &&
               matchedVariant?.total_boxes_in_stock < variantFromPostAPi.quantity
             ) {
-              errorResponse(res, 401, "Insufficient stock", {
+              errorResponse(res, 400, "Insufficient stock", {
                 message: `Insufficient stock for ${matchedVariant?.name}. Available: ${matchedVariant?.total_boxes_in_stock}, Requested: ${variantFromPostAPi.quantity}`,
                 product: productResFromDb,
+                _id: productResFromDb?._id,
                 available_stock: matchedVariant?.total_boxes_in_stock,
                 user_requested_quantity: variantFromPostAPi.quantity,
               });
@@ -208,7 +209,6 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       product_items.map(async (product: IProduct) => getProductPricing(product))
     );
 
-
     if (Products.length === 0 || Products.some((p) => !p)) {
       errorResponse(res, 400, "No valid products found in order", {
         message: "Please check the products you are trying to order.",
@@ -216,13 +216,25 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       return;
     }
 
-
     const order = await Order.create({
       products: Products,
-      internal_notes: body.internal_notes || "",
+      shipping: {
+        name: `${user?.first_name} ${user?.last_name}`,
+        phone: user?.phone_number,
+        note_from_user: body.note_from_user || "",
+        address: user?.distribution_address,
+        delivery_type:"delivery",
+        ...body.shipping,
+      },
       role: user?.user_role,
       tracking_number: `JOL-${generateRandom(12)}`,
       total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
+      delivery_steps: [
+        {
+          label: "order_placed",
+          date: new Date(),
+        },
+      ],
       user_id: id,
       total_quantity: Products.reduce(
         (sum, item) => sum + item.total_quantity,

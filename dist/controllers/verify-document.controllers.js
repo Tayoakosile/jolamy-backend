@@ -36,7 +36,7 @@ const verifyDocuments = async (req, res) => {
         (0, response_1.successResponse)(res, 200, "Documents and Referees submitted successfully", updatedUser);
     }
     catch (error) {
-        (0, response_1.errorResponse)(res, 401, "Error verifying documents");
+        (0, response_1.errorResponse)(res, 400, "Error verifying documents");
     }
 };
 exports.verifyDocuments = verifyDocuments;

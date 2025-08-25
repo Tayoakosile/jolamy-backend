@@ -21,6 +21,15 @@ export interface ShippingLocation {
 type OrderRole = "distributor" | "sales_agent";
 type PaymentStatus = "pending" | "paid" | "cancelled" | "initiated";
 type DeliveryStatus = "not_assigned" | "in_transit" | "delivered" | "pending";
+type DeliverySteps =
+  | "order_placed"
+  | "order_paid_for"
+  | "order_processing"
+  | "on_the_way"
+  | "order_delivered"
+  | "order_on_hold"
+  | "order_cancelled"
+  | "order_failed";
 type RefundStatus = "none" | "pending" | "processed";
 type PaymentMethod =
   | "bank_transfer"
@@ -39,9 +48,12 @@ export interface IShippingDetails {
   country: string;
   postal_code?: string;
   delivery_type: "pickup" | "delivery"; // pickup at office or deliver to address
-  notes?: string; // optional delivery notes
+  note_from_user?: string; // optional delivery notes
 }
-
+export interface IDeliveryDetails {
+  label: DeliverySteps;
+  date: Date;
+}
 export interface IOrder extends Document {
   user_id: { type: Types.ObjectId; ref: "User"; required: true };
   assigned_to?: {
@@ -51,6 +63,7 @@ export interface IOrder extends Document {
   order_number?: string;
   date?: Date;
   shipping: IShippingDetails;
+  delivery_steps: IDeliveryDetails[];
   delivery_fee?: number;
   role: OrderRole;
   products: ProductItem[];
@@ -66,7 +79,7 @@ export interface IOrder extends Document {
   total_quantity?: number;
   estimated_delivery_date?: Date;
   actual_delivery_date?: Date;
-  priority_level:"normal" | "urgent";
+  priority_level: "normal" | "urgent";
   discount_amount?: number;
   tax_amount?: number;
   tracking_number?: string;

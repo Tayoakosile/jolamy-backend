@@ -105,7 +105,7 @@ const createNewOrder = (_req, res) => {
                     "variants._id": {
                         $in: productFromPostAPi?.variants?.map((variant) => variant.id),
                     },
-                }).select("name category reference_id  available_weight is_active is_archived  variants")
+                }).select("name category reference_id _id  available_weight is_active is_archived  variants")
                 : await Product_1.Product.findOne({
                     _id: productFromPostAPi.id,
                 }).select("name category reference_id  available_weight is_active is_archived  variants");
@@ -125,7 +125,7 @@ const createNewOrder = (_req, res) => {
                     variantFromPostAPi.quantity <
                         (matchedVariant?.distributor_pricing?.first_time_min_order_qty ||
                             0)) {
-                    (0, response_1.errorResponse)(res, 401, "Minimum order quantity not met", {
+                    (0, response_1.errorResponse)(res, 400, "Minimum order quantity not met", {
                         message: `Minimum order quantity for ${matchedVariant?.name} is ${matchedVariant?.distributor_pricing.first_time_min_order_qty} boxes on first order.`,
                         product: productResFromDb,
                         minimum_order_quantity: matchedVariant?.distributor_pricing.first_time_min_order_qty,
@@ -138,9 +138,10 @@ const createNewOrder = (_req, res) => {
                     // so we don't check for it  but if it is less than the requested quantity, return error
                     if (matchedVariant?.total_boxes_in_stock !== null &&
                         matchedVariant?.total_boxes_in_stock < variantFromPostAPi.quantity) {
-                        (0, response_1.errorResponse)(res, 401, "Insufficient stock", {
+                        (0, response_1.errorResponse)(res, 400, "Insufficient stock", {
                             message: `Insufficient stock for ${matchedVariant?.name}. Available: ${matchedVariant?.total_boxes_in_stock}, Requested: ${variantFromPostAPi.quantity}`,
                             product: productResFromDb,
+                            _id: productResFromDb?._id,
                             available_stock: matchedVariant?.total_boxes_in_stock,
                             user_requested_quantity: variantFromPostAPi.quantity,
                         });
@@ -177,10 +178,23 @@ const createNewOrder = (_req, res) => {
         }
         const order = await Order_1.default.create({
             products: Products,
-            internal_notes: body.internal_notes || "",
+            shipping: {
+                name: `${user?.first_name} ${user?.last_name}`,
+                phone: user?.phone_number,
+                note_from_user: body.note_from_user || "",
+                address: user?.distribution_address,
+                delivery_type: "delivery",
+                ...body.shipping,
+            },
             role: user?.user_role,
             tracking_number: `JOL-${(0, util_1.generateRandom)(12)}`,
             total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
+            delivery_steps: [
+                {
+                    label: "order_placed",
+                    date: new Date(),
+                },
+            ],
             user_id: id,
             total_quantity: Products.reduce((sum, item) => sum + item.total_quantity, 0),
         });

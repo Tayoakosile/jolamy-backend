@@ -22,15 +22,36 @@ const ShippingSchema = new mongoose_1.Schema({
     address: { type: String, required: true },
     city: { type: String, required: true },
     state: { type: String, required: true },
-    country: { type: String, default: "Nigeria" },
+    country: { type: String, required: true },
     postal_code: { type: String },
     delivery_type: {
         type: String,
         enum: ["pickup", "delivery"],
-        required: true,
+        default: "delivery",
     },
-    notes: { type: String },
+    note_from_user: { type: String },
 }, { _id: false } // embedded, no extra id
+);
+const DeliveryStepSchema = new mongoose_1.Schema({
+    label: {
+        type: String,
+        enum: [
+            "order_placed",
+            "order_paid_for",
+            "order_processing",
+            "on_the_way",
+            "order_delivered",
+            "order_on_hold",
+            "order_cancelled",
+            "order_failed",
+        ],
+    },
+    date: { type: Date },
+}, {
+    timestamps: {
+        ...util_1.timestamp,
+    },
+} // embedded, no extra id
 );
 const OrderSchema = new mongoose_1.Schema({
     assigned_to: {
@@ -50,6 +71,7 @@ const OrderSchema = new mongoose_1.Schema({
     order_number: { type: String },
     date: { type: Date, default: Date.now },
     delivery_fee: { type: Number },
+    delivery_steps: { type: [DeliveryStepSchema], required: true },
     role: {
         type: String,
         enum: ["distributor", "sales_agent"],
