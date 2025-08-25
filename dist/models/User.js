@@ -20,12 +20,10 @@ const userSchema = new mongoose_1.Schema({
     phone_number: String,
     gender: String,
     dob: Date,
-    business_address: String,
     total_boxes_ordered: { type: Number, default: 0 },
     total_boxes_sold: { type: Number, default: 0 },
     disabled_reason: String,
     is_first_login: { type: Boolean, default: true },
-    distribution_address: String,
     email: { type: String, required: true, unique: true },
     cart: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Cart" }],
     warehouse_location: { type: String },
@@ -67,6 +65,22 @@ const userSchema = new mongoose_1.Schema({
     admin_notes: String,
     years_in_operation: Number,
     registration_number: Number,
+    address: {
+        distributors_address: {
+            country: { type: String, required: true },
+            state: { type: String, required: true },
+            city: { type: String, required: true },
+            postal_code: { type: String },
+            address: { type: String, required: true },
+        },
+        business_address: {
+            address: { type: String, required: true },
+            country: { type: String, required: true },
+            state: { type: String, required: true },
+            city: { type: String, required: true },
+            postal_code: { type: String },
+        },
+    },
     logs: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Log" }],
 }, {
     timestamps: {

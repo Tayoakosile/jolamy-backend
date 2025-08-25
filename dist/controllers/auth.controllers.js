@@ -102,7 +102,7 @@ const loginAccount = async (req, res) => {
             $or: [{ email }, { username: email }],
         }));
         if (!user) {
-            (0, response_1.errorResponse)(res, 404, "User not found with this email", {
+            (0, response_1.errorResponse)(res, 400, "User not found with this email", {
                 message: "User not found with this email",
             });
             return;
@@ -232,7 +232,7 @@ const getUserProfile = async (req, res) => {
             .populate("bonus");
         const worker = await OfficeWorker_1.default.findById(userId).select("-password -__v -_id");
         if (!user && !worker) {
-            (0, response_1.errorResponse)(res, 404, "User not found ");
+            (0, response_1.errorResponse)(res, 400, "User not found ");
             return;
         }
         const totalBoxesInStock = await (0, trend_util_1.getTrend)(Order_1.default, {

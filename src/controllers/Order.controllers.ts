@@ -219,12 +219,12 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
     const order = await Order.create({
       products: Products,
       shipping: {
-        name: `${user?.first_name} ${user?.last_name}`,
+        recipient_name: `${user?.first_name} ${user?.last_name}`,
         phone: user?.phone_number,
         note_from_user: body.note_from_user || "",
-        address: user?.distribution_address,
-        delivery_type:"delivery",
-        ...body.shipping,
+        ...user?.address?.distributors_address,
+        delivery_type: "delivery",
+        ...body?.shipping,
       },
       role: user?.user_role,
       tracking_number: `JOL-${generateRandom(12)}`,

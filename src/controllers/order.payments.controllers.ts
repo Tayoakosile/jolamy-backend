@@ -53,6 +53,7 @@ export const initiatePayment = async (_req: AuthRequest, res: Response) => {
       { order_number: order_id },
       {
         payment_status: "initiated",
+        note_from_user: _req?.body?.note_from_user || "",
         $push: { logs: log.id },
       }
     );
@@ -210,12 +211,23 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
           payment_status: "paid",
           delivery_status: "processing",
           status: "processing",
+
           payment_method: "Paystack",
           payment_reference: response.data?.data?.reference,
           $push: {
             logs: {
               $each: [log._id, officeLog.id],
             },
+            delivery_steps: [
+              {
+                label: "order_paid_for",
+                date: new Date(),
+              },
+              {
+                label: "order_processing",
+                date: new Date(),
+              },
+            ],
           },
           assigned_to: {
             office: office_to_be_in_charge[0]?._id || null,

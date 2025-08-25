@@ -179,12 +179,12 @@ const createNewOrder = (_req, res) => {
         const order = await Order_1.default.create({
             products: Products,
             shipping: {
-                name: `${user?.first_name} ${user?.last_name}`,
+                recipient_name: `${user?.first_name} ${user?.last_name}`,
                 phone: user?.phone_number,
                 note_from_user: body.note_from_user || "",
-                address: user?.distribution_address,
+                ...user?.address?.distributors_address,
                 delivery_type: "delivery",
-                ...body.shipping,
+                ...body?.shipping,
             },
             role: user?.user_role,
             tracking_number: `JOL-${(0, util_1.generateRandom)(12)}`,

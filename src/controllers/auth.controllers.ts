@@ -122,7 +122,7 @@ export const loginAccount = async (req: Request, res: Response) => {
     })) as IUser;
 
     if (!user) {
-      errorResponse(res, 404, "User not found with this email", {
+      errorResponse(res, 400, "User not found with this email", {
         message: "User not found with this email",
       });
       return;
@@ -293,7 +293,7 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
     );
 
     if (!user && !worker) {
-      errorResponse(res, 404, "User not found ");
+      errorResponse(res, 400, "User not found ");
       return;
     }
 

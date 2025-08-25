@@ -1,7 +1,7 @@
 import { Request } from "express";
 import { Document, Types } from "mongoose";
 import { IOfficeWorker } from "../models/Admin/OfficeWorker";
-import { IOrder } from './order.type';
+import { IOrder } from "./order.type";
 
 export type ApprovalStatus =
   | "pending_for_documents"
@@ -49,6 +49,22 @@ export interface IUser extends Document {
   is_sales_agent: boolean;
   is_worker: boolean;
   is_first_login: boolean;
+  address: {
+    distributors_address: {
+      country: string;
+      state: string;
+      city: string;
+      postal_code: string;
+      address: string;
+    };
+    business_address: {
+      address: string;
+      country: string;
+      state: string;
+      city: string;
+      postal_code: string;
+    };
+  };
   last_login: Date;
   distribution_address?: string;
   status: ApprovalStatus;
