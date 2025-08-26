@@ -17,6 +17,7 @@ const products_route_1 = __importDefault(require("./routes/products.route"));
 const carts_route_1 = __importDefault(require("./routes/carts.route"));
 const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
+const office_routes_1 = __importDefault(require("./routes/office.routes"));
 const app = (0, express_1.default)();
 // Middleware
 app.use((0, cors_1.default)());
@@ -29,6 +30,7 @@ app.use("/api/upload", upload_routes_1.default);
 app.use("/api/admin", admin_routes_1.default);
 app.use("/api/finances", finance_routes_1.default);
 app.use("/api/orders", order_routes_1.default);
+app.use("/api/offices", office_routes_1.default);
 app.use("/api/transactions", transactions_routes_1.default);
 app.use("/api/products", products_route_1.default);
 app.use("/api/carts", carts_route_1.default);

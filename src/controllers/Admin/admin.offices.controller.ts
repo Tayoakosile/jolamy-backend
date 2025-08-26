@@ -1,5 +1,5 @@
-import { Response } from "express";
 import dayjs from "dayjs";
+import { Response } from "express";
 import _ from "lodash";
 import { Types } from "mongoose";
 import Offices, { IOffice } from "../../models/Admin/Office";
@@ -11,10 +11,8 @@ import { errorResponse } from "../../utils/response";
 import { getTrend } from "../../utils/trend.util";
 import {
   checkIfDocumentExistsById,
-  customReqResHandler,
-  transactions,
+  customReqResHandler
 } from "../../utils/util";
-import { ITransaction } from "../../models/Transaction";
 
 const getTotalCashflow = (
   data: IOffice["transactions"],
@@ -94,14 +92,19 @@ export const getOffices = (_req: AuthRequest, res: Response) => {
 
 export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
   const id = _req.params.id;
+  console.log('id :', id);
+
   const request = async () => {
     const single_office = await checkIfDocumentExistsById<IOffice>(
       id,
       "office_id",
       res,
       Offices,
-      ["created_by", "logs"]
+      ["created_by", "logs","orders"]
     );
+
+
+
     const log = await logActivity({
       req: _req,
       user_id: new Types.ObjectId(_req.user?._id),

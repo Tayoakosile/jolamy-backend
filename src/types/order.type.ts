@@ -53,6 +53,10 @@ export interface IShippingDetails {
 export interface IDeliveryDetails {
   label: DeliverySteps;
   date: Date;
+  updated_by: {
+    type: "system" | "worker" | "admin";
+    user_id: Types.ObjectId;
+  };
 }
 export interface IOrder extends Document {
   user_id: { type: Types.ObjectId; ref: "User"; required: true };
@@ -64,6 +68,7 @@ export interface IOrder extends Document {
   date?: Date;
   shipping: IShippingDetails;
   delivery_steps: IDeliveryDetails[];
+  delivery_steps_logs: IDeliveryDetails[];
   delivery_fee?: number;
   role: OrderRole;
   products: ProductItem[];

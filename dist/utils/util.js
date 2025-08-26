@@ -88,6 +88,9 @@ async function generateEntityNumber(entityPrefix, model) {
     return `${entityPrefix}-${yearMonth}-${(0, exports.generateRandom)(6)}-${String(sequence).padStart(4, "0")}`;
 }
 const removeSensitiveFields = (req, _res, next) => {
+    if (!req.body) {
+        (0, response_1.errorResponse)(_res, 400, "No data provided");
+    }
     const forbidden = [
         "payment_status",
         "estimated_date",

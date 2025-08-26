@@ -144,6 +144,9 @@ export const removeSensitiveFields = (
   _res: Response,
   next: NextFunction
 ) => {
+  if (!req.body) {
+    errorResponse(_res, 400, "No data provided");
+  }
   const forbidden = [
     "payment_status",
     "estimated_date",

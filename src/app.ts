@@ -12,6 +12,7 @@ import productRoutes from "./routes/products.route";
 import cartRoutes from "./routes/carts.route";
 import uploadRoutes from "./routes/upload.routes";
 import userRoutes from "./routes/user.routes";
+import officeRoutes from "./routes/office.routes";
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/finances", financesRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/offices", officeRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/carts", cartRoutes);

@@ -124,42 +124,6 @@ export const getOffices = (_req: AuthRequest, res: Response) => {
   };
   customReqResHandler(res, request);
 };
-export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
-  const id = _req.params.id;
-  const office = await checkIfDocumentExistsById<IOffice>(
-    id,
-    "office_id",
-    res,
-    Offices,
-    ["created_by", "logs"]
-  );
-
-  const request = async () => {
-    const log = await logActivity({
-      req: _req,
-      user_id: new Types.ObjectId(_req.user?._id),
-      action: "GET_OFFICE",
-      sender: new Types.ObjectId(_req.user?.user_id),
-      receiver: new Types.ObjectId(id),
-      description: `Office fetched: ${(office as any).name}`,
-      metadata: {
-        office_id: id,
-        user_id: _req.user?._id,
-      },
-    });
-
-    await User.findByIdAndUpdate(_req.user?._id, {
-      $push: { logs: log._id },
-    });
-    return office;
-  };
-
-  await customReqResHandler(res, request, undefined, {
-    successMessage: "Office retrieved successfully",
-    errorMessage: "Error retrieving office",
-    statusCode: 200,
-  });
-};
 /**
  *
  *

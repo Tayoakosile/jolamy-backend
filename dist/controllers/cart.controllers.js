@@ -108,7 +108,7 @@ const addToCart = (_req, res) => {
 };
 exports.addToCart = addToCart;
 const getCarts = (_req, res) => {
-    const user_id = _req.user._id;
+    const user_id = _req?.user?._id;
     const request = async () => {
         const cart = (await Cart_1.Cart.findOne({ user: user_id }).populate({
             path: "items.product",

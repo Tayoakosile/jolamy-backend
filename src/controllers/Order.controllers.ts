@@ -5,11 +5,11 @@ import Order from "../models/Order";
 import { IProduct, Product } from "../models/Product";
 import Transaction from "../models/Transaction";
 import User from "../models/User";
+import { IOrder } from "../types/order.type";
 import { AuthRequest } from "../types/type";
 import { logActivity } from "../utils/activityLog";
 import { errorResponse, successResponse } from "../utils/response";
 import { getTrend } from "../utils/trend.util";
-import { IOrder, IDeliveryDetails } from "../types/order.type";
 import {
   checkIfDocumentExistsById,
   customReqResHandler,
@@ -18,6 +18,7 @@ import {
 
 export const getAllOrders = (_req: AuthRequest, res: Response) => {
   const user = _req.user;
+  const worker = _req.worker;
 
   const request = async () => {
     if (user?.user_role === "admin") {
@@ -65,6 +66,15 @@ export const getAllOrders = (_req: AuthRequest, res: Response) => {
         ],
         orders: allOrders,
       };
+    }
+
+    if (worker?.worker_id) {
+      const allOrders = await Order.find({
+        "assigned_to.office": worker?.office,
+        payment_status: "paid",
+      });
+
+      return allOrders;
     }
     return await Order.find({ user_id: user?._id });
   };
@@ -233,6 +243,18 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
         {
           label: "order_placed",
           date: new Date(),
+          updated_by: {
+            type: "system",
+          },
+        },
+      ],
+      delivery_steps_logs: [
+        {
+          label: "order_placed",
+          date: new Date(),
+          updated_by: {
+            type: "system",
+          },
         },
       ],
       user_id: id,
@@ -387,6 +409,28 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
       message: `Your order with ID ${_req.params?.id} has been updated successfully.`,
     }
   );
+};
+
+export const updateOrderStatus = async (_req: AuthRequest, res: Response) => {
+  const body = _req.body;
+  const user = _req.user;
+  if (!body) {
+    errorResponse(res, 400, "Body is required", {
+      message: `Body is required `,
+    });
+    return;
+  }
+  const orderID = _req.params?.id;
+  const order = await checkIfDocumentExistsById<IOrder>(
+    orderID,
+    "order_number",
+    res,
+    Order
+  );
+
+  const request = async () => {
+    console.log("order :", order);
+  };
 };
 
 export const cancelOrder = async (_req: AuthRequest, res: Response) => {};

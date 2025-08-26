@@ -131,7 +131,7 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
 };
 
 export const getCarts = (_req: AuthRequest, res: Response) => {
-  const user_id = (_req as any).user._id;
+  const user_id = (_req as any)?.user?._id;
   const request = async () => {
     const cart = (await Cart.findOne({ user: user_id }).populate({
       path: "items.product",

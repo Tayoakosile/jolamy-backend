@@ -50,7 +50,7 @@ router.post(
   createNewOffices
 );
 router.get("/offices", appAuth, isAdmin, getOffices);
-router.get("/offices/:id", appAuth, isAdmin, getSingleOffice);
+router.get("/offices/:id", appAuth,  getSingleOffice);
 router.put(
   "/offices/:id",
   appAuth,

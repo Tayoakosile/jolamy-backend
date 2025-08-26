@@ -18,7 +18,7 @@ router.post("/reject/:user_id", auth_1.appAuth, auth_1.isAdmin, admin_controller
 // offices
 router.post("/offices", auth_1.appAuth, auth_1.isAdmin, util_1.removeSensitiveFields, admin_offices_controller_1.createNewOffices);
 router.get("/offices", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.getOffices);
-router.get("/offices/:id", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.getSingleOffice);
+router.get("/offices/:id", auth_1.appAuth, admin_offices_controller_1.getSingleOffice);
 router.put("/offices/:id", auth_1.appAuth, auth_1.isAdmin, util_1.removeSensitiveFields, admin_offices_controller_1.updateOffice);
 router.patch("/offices/:id", auth_1.appAuth, auth_1.isAdmin, admin_offices_controller_1.updateOffice);
 router.put("/offices/:id/fund-wallet", auth_1.appAuth, auth_1.isAdmin, util_1.removeSensitiveFields, admin_finance_controller_1.adminFundWallet);

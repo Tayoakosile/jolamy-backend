@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateWorkerDetails = exports.getSingleOffice = exports.getOffices = exports.addOfficeWorker = void 0;
+exports.updateWorkerDetails = exports.getOffices = exports.addOfficeWorker = void 0;
 const mongoose_1 = require("mongoose");
 const Office_1 = __importDefault(require("../../models/Admin/Office"));
 const OfficeWorker_1 = __importDefault(require("../../models/Admin/OfficeWorker"));
@@ -99,34 +99,6 @@ const getOffices = (_req, res) => {
     (0, util_1.customReqResHandler)(res, request);
 };
 exports.getOffices = getOffices;
-const getSingleOffice = async (_req, res) => {
-    const id = _req.params.id;
-    const office = await (0, util_1.checkIfDocumentExistsById)(id, "office_id", res, Office_1.default, ["created_by", "logs"]);
-    const request = async () => {
-        const log = await (0, activityLog_1.logActivity)({
-            req: _req,
-            user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
-            action: "GET_OFFICE",
-            sender: new mongoose_1.Types.ObjectId(_req.user?.user_id),
-            receiver: new mongoose_1.Types.ObjectId(id),
-            description: `Office fetched: ${office.name}`,
-            metadata: {
-                office_id: id,
-                user_id: _req.user?._id,
-            },
-        });
-        await User_1.default.findByIdAndUpdate(_req.user?._id, {
-            $push: { logs: log._id },
-        });
-        return office;
-    };
-    await (0, util_1.customReqResHandler)(res, request, undefined, {
-        successMessage: "Office retrieved successfully",
-        errorMessage: "Error retrieving office",
-        statusCode: 200,
-    });
-};
-exports.getSingleOffice = getSingleOffice;
 /**
  *
  *

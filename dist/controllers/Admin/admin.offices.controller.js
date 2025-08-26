@@ -72,8 +72,9 @@ const getOffices = (_req, res) => {
 exports.getOffices = getOffices;
 const getSingleOffice = async (_req, res) => {
     const id = _req.params.id;
+    console.log('id :', id);
     const request = async () => {
-        const single_office = await (0, util_1.checkIfDocumentExistsById)(id, "office_id", res, Office_1.default, ["created_by", "logs"]);
+        const single_office = await (0, util_1.checkIfDocumentExistsById)(id, "office_id", res, Office_1.default, ["created_by", "logs", "orders"]);
         const log = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(_req.user?._id),

@@ -5,14 +5,15 @@ import {
   getAllOrders,
   getSingleOrder,
   updateOrder,
+  updateOrderStatus,
 } from "../controllers/Order.controllers";
-import { appAuth, isWorker } from "../middlewares/auth";
-import { removeSensitiveFields } from "../utils/util";
 import {
   initiatePayment,
   verifyPayment,
 } from "../controllers/order.payments.controllers";
+import { appAuth, isWorker } from "../middlewares/auth";
 import { validateOrder } from "../middlewares/order";
+import { removeSensitiveFields } from "../utils/util";
 
 const router = Router();
 
@@ -28,6 +29,14 @@ router.put(
   updateOrder
 );
 router.patch(
+  "/:id/status",
+  appAuth,
+  isWorker,
+  removeSensitiveFields,
+  validateOrder,
+  updateOrderStatus
+);
+router.patch(
   "/:id",
   appAuth,
   isWorker,
@@ -35,6 +44,7 @@ router.patch(
   validateOrder,
   updateOrder
 );
+
 router.put(
   "/:id/cancel-order",
   appAuth,

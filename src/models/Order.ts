@@ -40,29 +40,32 @@ const ShippingSchema = new Schema<IShippingDetails>(
   { _id: false } // embedded, no extra id
 );
 
-const DeliveryStepSchema = new Schema<IDeliveryDetails>(
-  {
-    label: {
-      type: String,
-      enum: [
-        "order_placed",
-        "order_paid_for",
-        "order_processing",
-        "on_the_way",
-        "order_delivered",
-        "order_on_hold",
-        "order_cancelled",
-        "order_failed",
-      ],
-    },
-    date: { type: Date },
+const DeliveryStepSchema = new Schema<IDeliveryDetails>({
+  label: {
+    type: String,
+    enum: [
+      "order_placed",
+      "order_paid_for",
+      "order_processing",
+      "on_the_way",
+      "order_delivered",
+      "order_on_hold",
+      "order_cancelled",
+      "order_failed",
+    ],
   },
-  {
-    timestamps: {
-      ...timestamp,
+  date: { type: Date },
+  updated_by: {
+    type: { type: String },
+    id: {
+      name: { type: String },
+      role: { type: String },
+      id: { type: String },
+      office_id: { type: String },
+      office: { type: String },
     },
-  } // embedded, no extra id
-);
+  },
+});
 
 const OrderSchema = new Schema<IOrder>(
   {
@@ -85,6 +88,7 @@ const OrderSchema = new Schema<IOrder>(
     date: { type: Date, default: Date.now },
     delivery_fee: { type: Number },
     delivery_steps: { type: [DeliveryStepSchema], required: true },
+    delivery_steps_logs: { type: [DeliveryStepSchema], required: true },
     role: {
       type: String,
       enum: ["distributor", "sales_agent"],

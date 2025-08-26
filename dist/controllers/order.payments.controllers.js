@@ -201,6 +201,22 @@ const verifyPayment = async (_req, res) => {
                             date: new Date(),
                         },
                     ],
+                    delivery_steps_logs: [
+                        {
+                            label: "order_paid_for",
+                            date: new Date(),
+                            updated_by: {
+                                type: "system",
+                            },
+                        },
+                        {
+                            label: "order_processing",
+                            date: new Date(),
+                            updated_by: {
+                                type: "system",
+                            },
+                        },
+                    ],
                 },
                 assigned_to: {
                     office: office_to_be_in_charge[0]?._id || null,

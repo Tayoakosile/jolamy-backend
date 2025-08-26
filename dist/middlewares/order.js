@@ -10,8 +10,10 @@ const Order_1 = __importDefault(require("../models/Order"));
 const mongoose_1 = require("mongoose");
 const validateOrder = async (_req, res, next) => {
     const user = _req.user;
+    const worker = _req.worker;
     const orderID = _req.params?.id;
     const order = await (0, util_1.checkIfDocumentExistsById)(orderID, mongoose_1.Types.ObjectId.isValid(orderID) ? "_id" : "order_number", res, Order_1.default);
+    const isOrderAssignedToThisWorkerOffice = order?.assigned_to?.office?._id?.toString() === worker?.office?.toString();
     // Ensure both IDs are strings for comparison
     const checkIfOrderBelongsToUser = user?.orders.some((singleOrder) => String(singleOrder._id) === String(order?._id));
     // If payment made already or it is delivered, do not allow update
@@ -26,13 +28,15 @@ const validateOrder = async (_req, res, next) => {
         });
         return;
     }
-    if (user?.user_role !== "admin" && !checkIfOrderBelongsToUser) {
-        (0, response_1.errorResponse)(res, 404, "Order not found", {
-            message: "Order not found or does not belong to the user",
-        });
+    if ((isOrderAssignedToThisWorkerOffice && worker?.worker_id) ||
+        checkIfOrderBelongsToUser) {
+        _req.order = order;
+        next();
         return;
     }
-    _req.order = order;
-    next();
+    (0, response_1.errorResponse)(res, 404, "Order not found", {
+        message: `Order not found or does not belong to this ${worker?.worker_id ? "Office" : "user"}`,
+    });
+    return;
 };
 exports.validateOrder = validateOrder;

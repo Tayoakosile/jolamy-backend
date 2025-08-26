@@ -17,8 +17,8 @@ export type UserRole =
   | "worker"
   | "factory_worker";
 
-export type UserDocument = IUser & Document;
-export interface IUser extends Document {
+export type UserDocument = IUser & IOfficeWorker & Document;
+export interface IUser extends IOfficeWorker {
   _id: Types.ObjectId;
   total_boxes_ordered: number;
   total_boxes_sold: number;
@@ -104,7 +104,7 @@ export interface IUser extends Document {
   admin_notes: string;
   years_in_operation: number;
   registration_number: number;
-  logs: { type: Types.ObjectId[]; ref: "Logs" }; // refs to Log model
+  // logs: { type: Types.ObjectId[]; ref: "Logs" }; // refs to Log model
 }
 
 export interface AuthRequest extends Request {

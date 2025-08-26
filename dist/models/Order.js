@@ -47,12 +47,17 @@ const DeliveryStepSchema = new mongoose_1.Schema({
         ],
     },
     date: { type: Date },
-}, {
-    timestamps: {
-        ...util_1.timestamp,
+    updated_by: {
+        type: { type: String },
+        id: {
+            name: { type: String },
+            role: { type: String },
+            id: { type: String },
+            office_id: { type: String },
+            office: { type: String },
+        },
     },
-} // embedded, no extra id
-);
+});
 const OrderSchema = new mongoose_1.Schema({
     assigned_to: {
         office: { type: mongoose_1.Types.ObjectId, ref: "Office", required: false },
@@ -72,6 +77,7 @@ const OrderSchema = new mongoose_1.Schema({
     date: { type: Date, default: Date.now },
     delivery_fee: { type: Number },
     delivery_steps: { type: [DeliveryStepSchema], required: true },
+    delivery_steps_logs: { type: [DeliveryStepSchema], required: true },
     role: {
         type: String,
         enum: ["distributor", "sales_agent"],

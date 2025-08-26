@@ -211,7 +211,6 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
           payment_status: "paid",
           delivery_status: "processing",
           status: "processing",
-
           payment_method: "Paystack",
           payment_reference: response.data?.data?.reference,
           $push: {
@@ -226,6 +225,22 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
               {
                 label: "order_processing",
                 date: new Date(),
+              },
+            ],
+            delivery_steps_logs: [
+              {
+                label: "order_paid_for",
+                date: new Date(),
+                updated_by: {
+                  type: "system",
+                },
+              },
+              {
+                label: "order_processing",
+                date: new Date(),
+                updated_by: {
+                  type: "system",
+                },
               },
             ],
           },

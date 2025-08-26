@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cancelOrder = exports.updateOrder = exports.createNewOrder = exports.getSingleOrder = exports.getAllOrders = void 0;
+exports.cancelOrder = exports.updateOrderStatus = exports.updateOrder = exports.createNewOrder = exports.getSingleOrder = exports.getAllOrders = void 0;
 const mongoose_1 = require("mongoose");
 const Order_1 = __importDefault(require("../models/Order"));
 const Product_1 = require("../models/Product");
@@ -15,6 +15,7 @@ const trend_util_1 = require("../utils/trend.util");
 const util_1 = require("../utils/util");
 const getAllOrders = (_req, res) => {
     const user = _req.user;
+    const worker = _req.worker;
     const request = async () => {
         if (user?.user_role === "admin") {
             const allOrders = await Order_1.default.find({});
@@ -60,6 +61,13 @@ const getAllOrders = (_req, res) => {
                 ],
                 orders: allOrders,
             };
+        }
+        if (worker?.worker_id) {
+            const allOrders = await Order_1.default.find({
+                "assigned_to.office": worker?.office,
+                payment_status: "paid",
+            });
+            return allOrders;
         }
         return await Order_1.default.find({ user_id: user?._id });
     };
@@ -193,6 +201,18 @@ const createNewOrder = (_req, res) => {
                 {
                     label: "order_placed",
                     date: new Date(),
+                    updated_by: {
+                        type: "system",
+                    },
+                },
+            ],
+            delivery_steps_logs: [
+                {
+                    label: "order_placed",
+                    date: new Date(),
+                    updated_by: {
+                        type: "system",
+                    },
                 },
             ],
             user_id: id,
@@ -310,5 +330,21 @@ const updateOrder = async (_req, res) => {
     });
 };
 exports.updateOrder = updateOrder;
+const updateOrderStatus = async (_req, res) => {
+    const body = _req.body;
+    const user = _req.user;
+    if (!body) {
+        (0, response_1.errorResponse)(res, 400, "Body is required", {
+            message: `Body is required `,
+        });
+        return;
+    }
+    const orderID = _req.params?.id;
+    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, "order_number", res, Order_1.default);
+    const request = async () => {
+        console.log("order :", order);
+    };
+};
+exports.updateOrderStatus = updateOrderStatus;
 const cancelOrder = async (_req, res) => { };
 exports.cancelOrder = cancelOrder;
