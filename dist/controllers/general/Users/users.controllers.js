@@ -20,21 +20,36 @@ const getPendingUsers = async (_req, res) => {
 exports.getPendingUsers = getPendingUsers;
 const getAllUsers = async (_req, res) => {
     // Get all users not admin
+    const orderStatus = _req.query?.status;
     const period = "week";
     const user = _req.user;
+    const worker = _req.worker;
+    const orderStatusContained = orderStatus
+        ? ["pending_for_documents", "submitted_for_review", "pending_for_approval"]
+        : ["approved"];
+    console.log("orderStatusContained :", orderStatusContained);
     try {
         if (user?.is_admin) {
             const users = await User_1.default.find({
                 user_role: { $ne: "admin" },
-                status: "approved",
+                status: {
+                    $in: orderStatusContained,
+                },
             }).select("-_id -password -internal_sequence  -updatedAt -__v -logs -transaction_history");
+            // console.log('users :', users);
             const allDistributors = await (0, trend_util_1.getTrend)(User_1.default, {
                 period,
-                filter: { user_role: "distributor", status: "approved" },
+                filter: {
+                    user_role: "distributor",
+                    status: orderStatus ? { $nin: ["approved", "deleted"] } : "approved",
+                },
             });
             const allSalesAgents = await (0, trend_util_1.getTrend)(User_1.default, {
                 period,
-                filter: { user_role: "sales_agent", status: "approved" },
+                filter: {
+                    user_role: "sales_agent",
+                    status: orderStatus ? { $nin: ["approved", "deleted"] } : "approved",
+                },
             });
             (0, response_1.successResponse)(res, 200, "Users fetched successfully", {
                 users,

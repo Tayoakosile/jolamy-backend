@@ -11,7 +11,7 @@ const auth_1 = require("../middlewares/auth");
 const util_1 = require("../utils/util");
 const authApiLimiter = (0, express_rate_limit_1.default)({
     windowMs: 5 * 60 * 1000,
-    max: 10,
+    max: 20,
     standardHeaders: true, // Return rate limit info in headers
     legacyHeaders: false, // Disable `X-RateLimit-*` headers
     message: {
@@ -21,6 +21,11 @@ const authApiLimiter = (0, express_rate_limit_1.default)({
 });
 const router = (0, express_1.Router)();
 router.post("/signup", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.createAccount);
+router.put("/signup", authApiLimiter, auth_1.appAuth, util_1.removeSensitiveFields, auth_controllers_1.updateAccountOnSignUp);
+router.post("/send-otp", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.sendVerificationOtpToMail);
+router.post("/verify-otp", authApiLimiter, util_1.removeSensitiveFields, 
+// appAuth,
+auth_controllers_1.verifySignUpDetails);
 router.post("/login", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.loginAccount);
 router.post("/forgot-password", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.forgotPassword);
 router.post("/reset-password/:token", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.resetPassword);

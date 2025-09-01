@@ -1,24 +1,21 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { Types } from "mongoose";
 import Order from "../models/Order";
 
 import { IProduct, Product } from "../models/Product";
 import Transaction from "../models/Transaction";
 import User from "../models/User";
-import { IOrder } from "../types/order.type";
 import { AuthRequest } from "../types/type";
 import { logActivity } from "../utils/activityLog";
 import { errorResponse, successResponse } from "../utils/response";
 import { getTrend } from "../utils/trend.util";
-import {
-  checkIfDocumentExistsById,
-  customReqResHandler,
-  generateRandom,
-} from "../utils/util";
+import { customReqResHandler, generateRandom } from "../utils/util";
+import OfficeWorker from "../models/Admin/OfficeWorker";
+import Offices from "../models/Admin/Office";
 
-export const getAllOrders = (_req: AuthRequest, res: Response) => {
-  const user = _req.user;
-  const worker = _req.worker;
+export const getAllOrders = (_req: Request, res: Response) => {
+  const user = (_req as any).user;
+  const worker = (_req as any).worker;
 
   const request = async () => {
     if (user?.user_role === "admin") {
@@ -270,7 +267,7 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
       order_id: order._id,
       transaction_type: "debit",
       category: "order_payment",
-      description: `Payment for order ${order._id}`,
+      description: `Payment for order ${order.order_number} by ${user?.first_name} ${user?.last_name}, total amount ${order.total_amount}`,
       total: order.total_amount,
       status: "pending",
       metadata: {
@@ -337,15 +334,9 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
   const body = _req.body;
   const user = _req.user;
   const orderID = _req.params?.id;
-  const order = await checkIfDocumentExistsById<IOrder>(
-    orderID,
-    "order_number",
-    res,
-    Order
-  );
+  const order = _req.order;
   const request = async () => {
     // Log that user filled in extra details of the order.... if it contains address
-
     const log = await logActivity({
       req: _req,
       user_id: new Types.ObjectId(user?._id),
@@ -413,24 +404,93 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
 
 export const updateOrderStatus = async (_req: AuthRequest, res: Response) => {
   const body = _req.body;
+
   const user = _req.user;
+  const worker = _req.worker;
   if (!body) {
     errorResponse(res, 400, "Body is required", {
       message: `Body is required `,
     });
     return;
   }
-  const orderID = _req.params?.id;
-  const order = await checkIfDocumentExistsById<IOrder>(
-    orderID,
-    "order_number",
-    res,
-    Order
-  );
 
-  const request = async () => {
-    console.log("order :", order);
+  const order = _req.order;
+  const isOrderStatusAlreadyIn = order?.delivery_steps_logs.find(
+    (step) => step.label === body.delivery_status
+  );
+  if (isOrderStatusAlreadyIn) {
+    successResponse(res, 200, "Order status updated successfully");
+    return;
+  }
+
+  await logActivity({
+    req: _req,
+    user_id: new Types.ObjectId(worker?.id || user?._id),
+    action: "UPDATE_ORDER_STATUS",
+    sender: new Types.ObjectId(worker?.id || user?._id),
+    receiver: order?._id as Types.ObjectId,
+    description: `Order status updated to ${body.delivery_status} by ${
+      worker?.id ? "worker" : "admin"
+    } ${worker?.first_name || user?.first_name} ${
+      worker?.last_name || user?.last_name
+    }`,
+    metadata: {
+      order_id: order?._id as Types.ObjectId,
+      user_id: worker?.id || user?._id,
+      new_status: body.delivery_status,
+      updated_by: worker?.id ? "worker" : "admin",
+      sender: user?.first_name + " " + user?.last_name,
+      receiver: user?.first_name + " " + user?.last_name,
+    },
+  });
+
+  const delivery_steps = {
+    label: body.delivery_status,
+    description: body.description || "",
+    date: new Date(),
+    updated_by: {
+      type: worker?.worker_id ? "worker" : "admin",
+      name: worker
+        ? worker?.first_name + " " + worker?.last_name
+        : user?.first_name + " " + user?.last_name,
+      role: worker ? "worker" : user?.user_role,
+      id: worker?.worker_id || user?._id,
+      office_id: worker?.office_id || null,
+      office: worker?.office_id || null,
+    },
   };
+  await Order.findByIdAndUpdate(order?._id, {
+    delivery_status: body.delivery_status,
+    assigned_to: {
+      worker_handling_order:
+        order?.assigned_to?.worker_handling_order || worker?.worker_id || null,
+    },
+    status: body?.status
+      ? body?.status
+      : body?.delivery_status === "delivered"
+      ? "delivered"
+      : "processing",
+    $push: {
+      delivery_steps,
+      delivery_steps_logs: delivery_steps,
+    },
+  });
+  if (worker?.worker_id) {
+    await OfficeWorker.findByIdAndUpdate(worker?.id, {
+      $push: {
+        logs: order?._id,
+      },
+    });
+    await Offices.findByIdAndUpdate(worker?.office, {
+      $push: {
+        logs: order?._id,
+      },
+    });
+    return successResponse(res, 200, "Order status updated successfully", {
+      message: " Order status updated successfully by worker",
+    });
+  }
+  const request = async () => {};
 };
 
 export const cancelOrder = async (_req: AuthRequest, res: Response) => {};

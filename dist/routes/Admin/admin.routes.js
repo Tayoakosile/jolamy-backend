@@ -7,7 +7,6 @@ const admin_finance_controller_1 = require("../../controllers/Admin/admin.financ
 const admin_offices_controller_1 = require("../../controllers/Admin/admin.offices.controller");
 const admin_offices_worker_controller_1 = require("../../controllers/Admin/admin.offices.worker.controller");
 const admin_products_controller_1 = require("../../controllers/Admin/admin.products.controller");
-const admin_stats_controller_1 = require("../../controllers/Admin/admin.stats.controller");
 const auth_1 = require("../../middlewares/auth");
 const util_1 = require("../../utils/util");
 const router = (0, express_1.Router)();
@@ -43,7 +42,6 @@ router.patch("/products/:id", auth_1.appAuth, auth_1.isAdmin, admin_products_con
 router.patch("/products/:id/archive", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.archiveProduct);
 // users
 // stats
-router.get("/stats", auth_1.appAuth, auth_1.isAdmin, admin_stats_controller_1.getStats);
 // users
 router.get("/pending-users", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.getPendingUsers);
 // users

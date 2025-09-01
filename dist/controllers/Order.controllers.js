@@ -13,6 +13,8 @@ const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
 const trend_util_1 = require("../utils/trend.util");
 const util_1 = require("../utils/util");
+const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
+const Office_1 = __importDefault(require("../models/Admin/Office"));
 const getAllOrders = (_req, res) => {
     const user = _req.user;
     const worker = _req.worker;
@@ -224,7 +226,7 @@ const createNewOrder = (_req, res) => {
             order_id: order._id,
             transaction_type: "debit",
             category: "order_payment",
-            description: `Payment for order ${order._id}`,
+            description: `Payment for order ${order.order_number} by ${user?.first_name} ${user?.last_name}, total amount ${order.total_amount}`,
             total: order.total_amount,
             status: "pending",
             metadata: {
@@ -279,7 +281,7 @@ const updateOrder = async (_req, res) => {
     const body = _req.body;
     const user = _req.user;
     const orderID = _req.params?.id;
-    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, "order_number", res, Order_1.default);
+    const order = _req.order;
     const request = async () => {
         // Log that user filled in extra details of the order.... if it contains address
         const log = await (0, activityLog_1.logActivity)({
@@ -333,17 +335,81 @@ exports.updateOrder = updateOrder;
 const updateOrderStatus = async (_req, res) => {
     const body = _req.body;
     const user = _req.user;
+    const worker = _req.worker;
     if (!body) {
         (0, response_1.errorResponse)(res, 400, "Body is required", {
             message: `Body is required `,
         });
         return;
     }
-    const orderID = _req.params?.id;
-    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, "order_number", res, Order_1.default);
-    const request = async () => {
-        console.log("order :", order);
+    const order = _req.order;
+    const isOrderStatusAlreadyIn = order?.delivery_steps_logs.find((step) => step.label === body.delivery_status);
+    if (isOrderStatusAlreadyIn) {
+        (0, response_1.successResponse)(res, 200, "Order status updated successfully");
+        return;
+    }
+    await (0, activityLog_1.logActivity)({
+        req: _req,
+        user_id: new mongoose_1.Types.ObjectId(worker?.id || user?._id),
+        action: "UPDATE_ORDER_STATUS",
+        sender: new mongoose_1.Types.ObjectId(worker?.id || user?._id),
+        receiver: order?._id,
+        description: `Order status updated to ${body.delivery_status} by ${worker?.id ? "worker" : "admin"} ${worker?.first_name || user?.first_name} ${worker?.last_name || user?.last_name}`,
+        metadata: {
+            order_id: order?._id,
+            user_id: worker?.id || user?._id,
+            new_status: body.delivery_status,
+            updated_by: worker?.id ? "worker" : "admin",
+            sender: user?.first_name + " " + user?.last_name,
+            receiver: user?.first_name + " " + user?.last_name,
+        },
+    });
+    const delivery_steps = {
+        label: body.delivery_status,
+        description: body.description || "",
+        date: new Date(),
+        updated_by: {
+            type: worker?.worker_id ? "worker" : "admin",
+            name: worker
+                ? worker?.first_name + " " + worker?.last_name
+                : user?.first_name + " " + user?.last_name,
+            role: worker ? "worker" : user?.user_role,
+            id: worker?.worker_id || user?._id,
+            office_id: worker?.office_id || null,
+            office: worker?.office_id || null,
+        },
     };
+    await Order_1.default.findByIdAndUpdate(order?._id, {
+        delivery_status: body.delivery_status,
+        assigned_to: {
+            worker_handling_order: order?.assigned_to?.worker_handling_order || worker?.worker_id || null,
+        },
+        status: body?.status
+            ? body?.status
+            : body?.delivery_status === "delivered"
+                ? "delivered"
+                : "processing",
+        $push: {
+            delivery_steps,
+            delivery_steps_logs: delivery_steps,
+        },
+    });
+    if (worker?.worker_id) {
+        await OfficeWorker_1.default.findByIdAndUpdate(worker?.id, {
+            $push: {
+                logs: order?._id,
+            },
+        });
+        await Office_1.default.findByIdAndUpdate(worker?.office, {
+            $push: {
+                logs: order?._id,
+            },
+        });
+        return (0, response_1.successResponse)(res, 200, "Order status updated successfully", {
+            message: " Order status updated successfully by worker",
+        });
+    }
+    const request = async () => { };
 };
 exports.updateOrderStatus = updateOrderStatus;
 const cancelOrder = async (_req, res) => { };

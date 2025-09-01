@@ -32,6 +32,9 @@ const appAuth = async (req, res, next) => {
         const worker = (await OfficeWorker_1.default.findOne({
             worker_id: decoded.id,
         }));
+        req.isWorker = Boolean(worker?.worker_id);
+        req.isUserAdmin = Boolean(user?.user_role == "admin");
+        req.isOtherUser = Boolean(user?.user_role !== "admin" && !worker?.worker_id);
         if (worker) {
             req.worker = worker;
             next();
@@ -39,6 +42,7 @@ const appAuth = async (req, res, next) => {
         }
         if (user) {
             if (user?.rejected_by ||
+                user?.status === "inactive" ||
                 user?.status === "disabled" ||
                 user?.status === "rejected") {
                 (0, response_1.errorResponse)(res, 403, "User account is inactive", {
@@ -54,6 +58,7 @@ const appAuth = async (req, res, next) => {
         }
         req.user = worker ? worker : user;
         next();
+        return;
     }
     catch (err) {
         (0, response_1.errorResponse)(res, 401, "Invalid or expired token", {
@@ -66,7 +71,7 @@ exports.appAuth = appAuth;
 // middleware/auth.ts
 const isAdmin = (req, res, next) => {
     const user = req.user;
-    if (user?.is_admin || user.user_role == "admin")
+    if (user?.is_admin || user?.user_role == "admin")
         return next();
     (0, response_1.errorResponse)(res, 403, "Access denied, admin only");
     return;

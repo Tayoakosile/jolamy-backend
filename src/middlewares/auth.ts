@@ -6,7 +6,6 @@ import OfficeWorker from "../models/Admin/OfficeWorker";
 import User from "../models/User";
 import { IUser } from "../types/type";
 import { errorResponse } from "../utils/response";
-import { decodeToken } from "../utils/jwt";
 
 interface JwtPayload {
   id: string;
@@ -18,6 +17,8 @@ export const appAuth = async (
   next: NextFunction
 ) => {
   let token;
+
+
 
   const authHeader = req.headers.authorization;
   // const authHeader = req.headers.authorization;
@@ -45,15 +46,20 @@ export const appAuth = async (
       worker_id: decoded.id,
     })) as IUser;
 
+    (req as any).isWorker = Boolean(worker?.worker_id);
+    (req as any).isUserAdmin = Boolean(user?.user_role == "admin");
+    (req as any).isOtherUser = Boolean(
+      user?.user_role !== "admin" && !worker?.worker_id
+    );
     if (worker) {
       (req as any).worker = worker;
-
       next();
       return;
     }
     if (user) {
       if (
         user?.rejected_by ||
+        user?.status === "inactive"||
         user?.status === "disabled" ||
         user?.status === "rejected"
       ) {
@@ -68,9 +74,10 @@ export const appAuth = async (
       errorResponse(res, 401, "User not found", { message: "User not found" });
       return;
     }
-
     (req as any).user = worker ? worker : user;
+
     next();
+    return;
   } catch (err) {
     errorResponse(res, 401, "Invalid or expired token", {
       message: "Invalid or expired token",
@@ -83,7 +90,7 @@ export const appAuth = async (
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   const user = (req as any).user as IUser;
 
-  if (user?.is_admin || user.user_role == "admin") return next();
+  if (user?.is_admin || user?.user_role == "admin") return next();
   errorResponse(res, 403, "Access denied, admin only");
   return;
 };

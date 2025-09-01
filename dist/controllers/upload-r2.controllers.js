@@ -10,11 +10,12 @@ const path_1 = __importDefault(require("path"));
 const R2_1 = require("../utils/R2");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
-const uploadToR2 = async (req, res, next, shouldIncludeSuccessResponse) => {
+const uploadToR2 = async (req, res) => {
     if (!req.files) {
         (0, response_1.errorResponse)(res, 400, "No file uploaded");
         return;
     }
+    // return;
     try {
         const files = req.files;
         const fileNamesAndUrls = [];
@@ -33,17 +34,15 @@ const uploadToR2 = async (req, res, next, shouldIncludeSuccessResponse) => {
         }
         // return;
         const publicUrls = fileNamesAndUrls.map((fileName) => `${process.env.CDN_URL}/${fileName}`);
-        if (shouldIncludeSuccessResponse) {
-            (0, response_1.successResponse)(res, 200, "File uploaded successfully", {
-                url: publicUrls,
-            });
-        }
+        console.log('publicUrls :', publicUrls);
+        (0, response_1.successResponse)(res, 200, "File uploaded successfully", {
+            url: publicUrls,
+        });
         return publicUrls;
     }
     catch (err) {
-        res.status(500).json({ message: "Upload failed", error: err });
         (0, response_1.errorResponse)(res, 500, "Failed to upload file to R2", err instanceof Error ? err.message : "Unknown error");
-        next ? next() : undefined;
+        // next ? next() : undefined;
     }
 };
 exports.uploadToR2 = uploadToR2;

@@ -4,10 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateOrder = void 0;
+const mongoose_1 = require("mongoose");
+const Order_1 = __importDefault(require("../models/Order"));
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
-const Order_1 = __importDefault(require("../models/Order"));
-const mongoose_1 = require("mongoose");
 const validateOrder = async (_req, res, next) => {
     const user = _req.user;
     const worker = _req.worker;
@@ -17,19 +17,20 @@ const validateOrder = async (_req, res, next) => {
     // Ensure both IDs are strings for comparison
     const checkIfOrderBelongsToUser = user?.orders.some((singleOrder) => String(singleOrder._id) === String(order?._id));
     // If payment made already or it is delivered, do not allow update
-    if ((_req.method !== "GET" &&
-        order?.payment_status === "paid" &&
-        user?.user_role !== "admin") ||
-        (_req.method !== "GET" &&
-            order?.delivery_status === "delivered" &&
-            user?.user_role !== "admin")) {
-        (0, response_1.errorResponse)(res, 400, "Order cannot be updated", {
-            message: "Order has already been paid or delivered",
-        });
-        return;
+    if (_req.method !== "GET") {
+        // order?.delivery_status === "delivered"
+        if (order?.payment_status === "paid") {
+            if (!worker?.worker_id?.length && user?.user_role !== "admin") {
+                (0, response_1.errorResponse)(res, 400, "Order cannot be updated", {
+                    message: "Order has already been paid",
+                });
+                return;
+            }
+        }
     }
     if ((isOrderAssignedToThisWorkerOffice && worker?.worker_id) ||
-        checkIfOrderBelongsToUser) {
+        checkIfOrderBelongsToUser ||
+        user?.user_role === "admin") {
         _req.order = order;
         next();
         return;

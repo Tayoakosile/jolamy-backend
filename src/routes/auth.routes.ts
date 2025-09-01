@@ -6,18 +6,20 @@ import {
   getUserProfile,
   loginAccount,
   resetPassword,
+  sendVerificationOtpToMail,
+  updateAccountOnSignUp,
+  verifySignUpDetails,
 } from "../controllers/auth.controllers";
 import {
   getUserInfo,
   verifyDocuments,
 } from "../controllers/verify-document.controllers";
 import { appAuth } from "../middlewares/auth";
-import { validateOrder } from "../middlewares/order";
 import { removeSensitiveFields } from "../utils/util";
 
 const authApiLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
-  max: 10,
+  max: 20,
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   message: {
@@ -29,6 +31,27 @@ const authApiLimiter = rateLimit({
 const router = Router();
 
 router.post("/signup", authApiLimiter, removeSensitiveFields, createAccount);
+router.put(
+  "/signup",
+  authApiLimiter,
+  appAuth,
+  removeSensitiveFields,
+  updateAccountOnSignUp
+);
+router.post(
+  "/send-otp",
+  authApiLimiter,
+  removeSensitiveFields,
+  sendVerificationOtpToMail
+);
+
+router.post(
+  "/verify-otp",
+  authApiLimiter,
+  removeSensitiveFields,
+  // appAuth,
+  verifySignUpDetails
+);
 router.post("/login", authApiLimiter, removeSensitiveFields, loginAccount);
 router.post(
   "/forgot-password",

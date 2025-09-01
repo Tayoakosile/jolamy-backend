@@ -53,6 +53,7 @@ export interface IShippingDetails {
 export interface IDeliveryDetails {
   label: DeliverySteps;
   date: Date;
+  description: string;
   updated_by: {
     type: "system" | "worker" | "admin";
     user_id: Types.ObjectId;
@@ -63,6 +64,7 @@ export interface IOrder extends Document {
   assigned_to?: {
     office: Types.ObjectId;
     office_worker: Types.ObjectId;
+    worker_handling_order: Types.ObjectId;
   };
   order_number?: string;
   date?: Date;

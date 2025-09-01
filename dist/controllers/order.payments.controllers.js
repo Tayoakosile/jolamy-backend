@@ -169,17 +169,17 @@ const verifyPayment = async (_req, res) => {
                     office_name: office_to_be_in_charge[0]?.name,
                 },
             });
-            await Office_1.default.findByIdAndUpdate(office_to_be_in_charge[0]?._id, {
-                $push: {
-                    orders: new mongoose_1.Types.ObjectId(order?.id),
-                    logs: {
-                        $each: [
-                            new mongoose_1.Types.ObjectId(log.id),
-                            new mongoose_1.Types.ObjectId(officeLog.id),
-                        ],
-                    },
-                },
-            });
+            // await Offices.findByIdAndUpdate(office_to_be_in_charge[0]?._id, {
+            //   $push: {
+            //     orders: new Types.ObjectId(order?.id),
+            //     logs: {
+            //       $each: [
+            //         new Types.ObjectId(log.id),
+            //         new Types.ObjectId(officeLog.id),
+            //       ],
+            //     },
+            //   },
+            // });
             // return;
             await Order_1.default.findOneAndUpdate({ order_number: order_id }, {
                 payment_status: "paid",
@@ -226,10 +226,7 @@ const verifyPayment = async (_req, res) => {
             await User_1.default.findByIdAndUpdate(user._id, {
                 $push: {
                     logs: {
-                        $each: [
-                            new mongoose_1.Types.ObjectId(log.id),
-                            new mongoose_1.Types.ObjectId(officeLog.id),
-                        ],
+                        $each: [log.id, officeLog.id],
                     },
                 },
                 $inc: {

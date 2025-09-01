@@ -23,7 +23,7 @@ router.get("/:id", appAuth, validateOrder, getSingleOrder);
 router.put(
   "/:id",
   appAuth,
-  isWorker,
+  // isWorker,
   removeSensitiveFields,
   validateOrder,
   updateOrder
@@ -31,7 +31,7 @@ router.put(
 router.patch(
   "/:id/status",
   appAuth,
-  isWorker,
+  // isWorker,
   removeSensitiveFields,
   validateOrder,
   updateOrderStatus
@@ -39,7 +39,7 @@ router.patch(
 router.patch(
   "/:id",
   appAuth,
-  isWorker,
+  // isWorker,
   removeSensitiveFields,
   validateOrder,
   updateOrder
@@ -48,7 +48,7 @@ router.patch(
 router.put(
   "/:id/cancel-order",
   appAuth,
-  isWorker,
+  // isWorker,
   removeSensitiveFields,
   validateOrder,
   cancelOrder
@@ -56,7 +56,7 @@ router.put(
 router.patch(
   "/:id/cancel-order",
   appAuth,
-  isWorker,
+  // isWorker,
   removeSensitiveFields,
   validateOrder,
   cancelOrder
