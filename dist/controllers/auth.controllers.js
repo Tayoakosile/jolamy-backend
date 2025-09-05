@@ -40,7 +40,7 @@ const createAccount = async (req, res, next) => {
             is_worker: req.body.user_role === "worker",
         }, res);
         (0, mail_service_1.sendEmail)(req.body.email, "Welcome to Our Service", `Hello ${user.username}, welcome to our service!`);
-        await (0, exports.sendVerificationOtpToMail)(req, res, user.email);
+        await (0, exports.sendVerificationOtpToMail)(req, res, next, user.email);
         (0, response_1.successResponse)(res, 201, "User created successfully", {
             user: {
                 id: user.user_id,
@@ -59,12 +59,11 @@ const createAccount = async (req, res, next) => {
 exports.createAccount = createAccount;
 const updateAccountOnSignUp = async (req, res) => {
     const user = req.user;
-    console.log("user :", user);
     try {
         if (req?.body?.payment_reference) {
             const paymentReference = (await (0, util_1.paystackVerification)(req?.body?.payment_reference)).data;
             if (paymentReference?.data?.status === "success") {
-                await Transaction_1.default.create({
+                const transaction = await Transaction_1.default.create({
                     user_id: user._id,
                     user_role: user?.user_role || "distributor",
                     amount: paymentReference.amount / 100, // convert to Naira
@@ -95,6 +94,7 @@ const updateAccountOnSignUp = async (req, res) => {
                     paid_registration_fee: true,
                     $push: {
                         logs: log._id,
+                        transaction_history: transaction._id,
                     },
                 });
                 (0, response_1.successResponse)(res, 200, "Payment verified and account updated");
@@ -103,10 +103,10 @@ const updateAccountOnSignUp = async (req, res) => {
         }
         await User_1.default.findOneAndUpdate({ email: user?.email }, {
             ...req.body,
-            status: Object.keys(req?.body?.address ?? {}).length > 0
-                ? "pending_for_documents"
-                : req?.body?.proof_of_identity?.id_type
-                    ? "awaiting_registration_fee_payment"
+            status: req?.body?.files
+                ? "awaiting_registration_fee_payment"
+                : Object.keys(req?.body?.address ?? {}).length > 0
+                    ? "pending_for_documents"
                     : user.status,
             //
         });
@@ -118,7 +118,7 @@ const updateAccountOnSignUp = async (req, res) => {
     }
 };
 exports.updateAccountOnSignUp = updateAccountOnSignUp;
-const loginAccount = async (req, res) => {
+const loginAccount = async (req, res, next) => {
     try {
         const email = req.body?.username?.toLowerCase() || req.body?.email?.toLowerCase();
         const password = req.body?.password;
@@ -133,7 +133,7 @@ const loginAccount = async (req, res) => {
         if (officeWorker) {
             const comparePassword = await (0, bcrypt_util_1.isMatch)(password, officeWorker.password);
             if (!comparePassword) {
-                (0, response_1.errorResponse)(res, 401, "invalid Email or Password");
+                (0, response_1.errorResponse)(res, 400, "invalid Email or Password");
                 return;
             }
             const token = (0, jwt_1.generateToken)(`${officeWorker?.worker_id}`);
@@ -185,7 +185,7 @@ const loginAccount = async (req, res) => {
             user_id: user.user_id,
         };
         if (!user?.is_admin && !user.is_verified) {
-            await (0, exports.sendVerificationOtpToMail)(req, res, user?.email);
+            await (0, exports.sendVerificationOtpToMail)(req, res, next, user?.email);
             (0, response_1.errorResponse)(res, 400, "Email not verified", {
                 message: "Please verify your email before logging in.",
                 error,
@@ -204,7 +204,7 @@ const loginAccount = async (req, res) => {
         }
         const comparePassword = await (0, bcrypt_util_1.isMatch)(password, user.password);
         if (!comparePassword) {
-            (0, response_1.errorResponse)(res, 401, "invalid Email or Password");
+            (0, response_1.errorResponse)(res, 400, "invalid Email or Password");
             return;
         }
         const token = (0, jwt_1.generateToken)(user.user_id);
@@ -242,9 +242,9 @@ const loginAccount = async (req, res) => {
     }
 };
 exports.loginAccount = loginAccount;
-const sendVerificationOtpToMail = async (req, res, userEmail) => {
+const sendVerificationOtpToMail = async (_req, res, next, userEmail) => {
+    const req = _req;
     const email = req.body?.email || userEmail;
-    console.log("email :", email);
     try {
         if (!email) {
             (0, response_1.errorResponse)(res, 400, "Email is required");
@@ -405,8 +405,9 @@ const resetPassword = async (req, res) => {
     }
 };
 exports.resetPassword = resetPassword;
-const getUserProfile = async (req, res) => {
+const getUserProfile = async (_req, res) => {
     try {
+        const req = _req;
         const userId = req.user?._id || req.worker?._id;
         const user = await User_1.default.findById(userId)
             .select("-password -__v ")

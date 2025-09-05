@@ -53,8 +53,11 @@ export const upload = multer({
       "image/jpeg",
       "image/jpg",
       "image/png",
+      "image/webp",
+      "image/gif",
       "application/pdf",
       ".docx",
+      ".webp",
     ];
     console.log('cb :', cb);
 

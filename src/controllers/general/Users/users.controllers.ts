@@ -37,7 +37,6 @@ export const getAllUsers = async (_req: AuthRequest, res: Response) => {
       }).select(
         "-_id -password -internal_sequence  -updatedAt -__v -logs -transaction_history"
       );
-      // console.log('users :', users);
 
       const allDistributors = await getTrend(User, {
         period,

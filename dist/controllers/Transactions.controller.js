@@ -47,7 +47,7 @@ const getSingleTransaction = (req, res) => {
         })
             .populate({
             path: "order_id",
-            select: "order_number status products  delivery_address    payment_status delivery_status total_amount discount_amount",
+            select: "order_number status products  delivery_address    payment_status delivery_status total discount_amount",
         })
             .select("-internal_sequence -__v");
         // if (

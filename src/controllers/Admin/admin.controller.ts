@@ -12,7 +12,6 @@ export const getPendingUsers = async (_req: AuthRequest, res: Response) => {
   return res.status(200).json({ users });
 };
 
-
 export const approveUser = async (req: AuthRequest, res: Response) => {
   try {
     const user_id = req.params?.user_id;
@@ -44,6 +43,7 @@ export const approveUser = async (req: AuthRequest, res: Response) => {
         admin_notes: req.body?.admin_notes || "No notes provided",
         approved_by: new mongoose.Types.ObjectId(adminId),
         logs: Array.isArray(user.logs) ? [...user.logs, log._id] : [log._id],
+        warehouse_verified: true,
       },
       {
         new: true,

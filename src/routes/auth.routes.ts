@@ -14,7 +14,7 @@ import {
   getUserInfo,
   verifyDocuments,
 } from "../controllers/verify-document.controllers";
-import { appAuth } from "../middlewares/auth";
+import { appAuth, appAuthForInactiveUsers } from "../middlewares/auth";
 import { removeSensitiveFields } from "../utils/util";
 
 const authApiLimiter = rateLimit({
@@ -34,7 +34,7 @@ router.post("/signup", authApiLimiter, removeSensitiveFields, createAccount);
 router.put(
   "/signup",
   authApiLimiter,
-  appAuth,
+  appAuthForInactiveUsers,
   removeSensitiveFields,
   updateAccountOnSignUp
 );
@@ -65,7 +65,7 @@ router.post(
   removeSensitiveFields,
   resetPassword
 );
-router.post("/verify-documents", appAuth, verifyDocuments);
+router.post("/verify-documents", appAuthForInactiveUsers, verifyDocuments);
 router.post(
   "/verify-documents/:id",
   appAuth,
@@ -73,6 +73,6 @@ router.post(
   verifyDocuments
 );
 router.get("/verify-documents/:id", appAuth, getUserInfo);
-router.get("/profile", appAuth, getUserProfile);
+router.get("/profile", appAuthForInactiveUsers, getUserProfile);
 
 export default router;

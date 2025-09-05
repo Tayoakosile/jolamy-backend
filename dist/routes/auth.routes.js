@@ -21,7 +21,7 @@ const authApiLimiter = (0, express_rate_limit_1.default)({
 });
 const router = (0, express_1.Router)();
 router.post("/signup", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.createAccount);
-router.put("/signup", authApiLimiter, auth_1.appAuth, util_1.removeSensitiveFields, auth_controllers_1.updateAccountOnSignUp);
+router.put("/signup", authApiLimiter, auth_1.appAuthForInactiveUsers, util_1.removeSensitiveFields, auth_controllers_1.updateAccountOnSignUp);
 router.post("/send-otp", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.sendVerificationOtpToMail);
 router.post("/verify-otp", authApiLimiter, util_1.removeSensitiveFields, 
 // appAuth,
@@ -29,8 +29,8 @@ auth_controllers_1.verifySignUpDetails);
 router.post("/login", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.loginAccount);
 router.post("/forgot-password", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.forgotPassword);
 router.post("/reset-password/:token", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.resetPassword);
-router.post("/verify-documents", auth_1.appAuth, verify_document_controllers_1.verifyDocuments);
+router.post("/verify-documents", auth_1.appAuthForInactiveUsers, verify_document_controllers_1.verifyDocuments);
 router.post("/verify-documents/:id", auth_1.appAuth, verify_document_controllers_1.verifyDocuments);
 router.get("/verify-documents/:id", auth_1.appAuth, verify_document_controllers_1.getUserInfo);
-router.get("/profile", auth_1.appAuth, auth_controllers_1.getUserProfile);
+router.get("/profile", auth_1.appAuthForInactiveUsers, auth_controllers_1.getUserProfile);
 exports.default = router;

@@ -43,8 +43,8 @@ const userSchema = new Schema<IUser>(
         files: { type: [] },
       },
       warehouse_photos: {
-        internal: [],
-        external: [],
+        interior: {type:[]},
+        exterior: {type:[]},
       },
     },
     password: { type: String },
@@ -100,30 +100,30 @@ const userSchema = new Schema<IUser>(
     },
   }
 );
-userSchema.virtual("full_name").get(function () {
+userSchema.virtual("full_name").get(function (this: IUser) {
   return `${this.first_name} ${this.last_name}`;
 });
-userSchema.virtual("is_admin").get(function () {
+userSchema.virtual("is_admin").get(function (this: IUser) {
   return (this.is_admin = this.user_role === "admin");
 });
 
-userSchema.virtual("is_distributor").get(function () {
+userSchema.virtual("is_distributor").get(function (this: IUser) {
   return (this.is_distributor = this.user_role === "distributor");
 });
 
-userSchema.virtual("is_sales_agent").get(function () {
+userSchema.virtual("is_sales_agent").get(function (this: IUser) {
   return (this.is_sales_agent = this.user_role === "sales_agent");
 });
 
-userSchema.virtual("is_worker").get(function () {
+userSchema.virtual("is_worker").get(function (this: IUser) {
   return (this.is_worker = this.user_role === "worker");
 });
 
-userSchema.virtual("is_factory_worker").get(function () {
+userSchema.virtual("is_factory_worker").get(function (this: IUser) {
   return (this.is_factory_worker = this.user_role === "factory_worker");
 });
 
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function (this: import("mongoose").Document & IUser, next) {
   if (!this.isModified("password")) return next();
   this.password = await encrypt(this.password);
   next();
@@ -164,7 +164,7 @@ userSchema.pre(
   }
 );
 
-userSchema.pre("save", function (next) {
+userSchema.pre("save", function (this: import("mongoose").Document & IUser, next) {
   if (this.email) {
     this.email = this.email.trim().toLowerCase();
   }

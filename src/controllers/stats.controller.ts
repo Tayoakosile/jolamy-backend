@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import Offices from "../models/Admin/Office";
 import CashFlow from "../models/CashFlow";
 import Order from "../models/Order";
@@ -7,7 +7,8 @@ import { AuthRequest } from "../types/type";
 import { errorResponse, successResponse } from "../utils/response";
 import { getTrend } from "../utils/trend.util";
 
-export const getStats = async (_req: AuthRequest, res: Response) => {
+export const getStats = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   // get total users, total products, total orders, total cash flow in an object from mongoose db
   const worker = _req.worker;
   const user = _req.user;

@@ -6,11 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.paystackVerification = exports.transactions = exports.statusMap = exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
 exports.generateEntityNumber = generateEntityNumber;
 exports.customIDGenerator = customIDGenerator;
+// utils/checkIfExists.ts
+const axios_1 = __importDefault(require("axios"));
 const randomatic_1 = __importDefault(require("randomatic"));
 const counter_1 = require("../models/counter");
 const mail_service_1 = require("../services/mail.service");
 const response_1 = require("./response");
-const axios_1 = __importDefault(require("axios"));
 /**
  * Checks if a user exists by ID.
  * @param id - The MongoDB ObjectId as string.

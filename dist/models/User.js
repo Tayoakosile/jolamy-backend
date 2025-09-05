@@ -41,8 +41,8 @@ const userSchema = new mongoose_1.Schema({
             files: { type: [] },
         },
         warehouse_photos: {
-            internal: [],
-            external: [],
+            interior: { type: [] },
+            exterior: { type: [] },
         },
     },
     password: { type: String },

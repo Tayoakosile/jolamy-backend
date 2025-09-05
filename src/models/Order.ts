@@ -98,7 +98,7 @@ const OrderSchema = new Schema<IOrder>(
       required: true,
     },
     products: { type: [ProductItemSchema], required: true },
-    chats: [{ type: Types.ObjectId, ref: "Chat" }],
+    // chats: [{ type: Types.ObjectId, ref: "Chat" }],
     shipping: { type: ShippingSchema },
     payment_status: {
       type: String,

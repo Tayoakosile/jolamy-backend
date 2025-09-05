@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { logActivity } from "../utils/activityLog";
 import { checkIfDocumentExistsById, customReqResHandler } from "../utils/util";
 
@@ -89,7 +89,6 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
         }
       );
 
-
       if (singleCart.modifiedCount === 0) {
         await existingCart.updateOne({
           $push: {
@@ -130,15 +129,14 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
   });
 };
 
-export const getCarts = (_req: AuthRequest, res: Response) => {
-  const user_id = (_req as any)?.user?._id;
+export const getCarts = (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
+  const user_id = (_req as AuthRequest)?.user?._id;
   const request = async () => {
     const cart = (await Cart.findOne({ user: user_id }).populate({
       path: "items.product",
       select: "-created_by  -orders -is_archived -logs -inventory",
     })) as ICart;
-
-
 
     const updatedCart = cart?.toObject()?.items.map((item: any) => {
       return item.variants.map((originalVariant: any) => {
@@ -187,3 +185,6 @@ export const getCarts = (_req: AuthRequest, res: Response) => {
     statusCode: 200,
   });
 };
+export const deleteCart  = ()=>{
+
+}

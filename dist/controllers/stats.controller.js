@@ -10,7 +10,8 @@ const Order_1 = __importDefault(require("../models/Order"));
 const User_1 = __importDefault(require("../models/User"));
 const response_1 = require("../utils/response");
 const trend_util_1 = require("../utils/trend.util");
-const getStats = async (_req, res) => {
+const getStats = async (req, res) => {
+    const _req = req;
     // get total users, total products, total orders, total cash flow in an object from mongoose db
     const worker = _req.worker;
     const user = _req.user;

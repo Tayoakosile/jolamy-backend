@@ -36,7 +36,6 @@ const getAllUsers = async (_req, res) => {
                     $in: orderStatusContained,
                 },
             }).select("-_id -password -internal_sequence  -updatedAt -__v -logs -transaction_history");
-            // console.log('users :', users);
             const allDistributors = await (0, trend_util_1.getTrend)(User_1.default, {
                 period,
                 filter: {

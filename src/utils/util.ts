@@ -1,14 +1,13 @@
 import { NextFunction } from "express";
 // utils/checkIfExists.ts
 
+import axios from "axios";
 import { Request, Response } from "express";
 import mongoose, { Document } from "mongoose";
 import randomatic from "randomatic";
 import { Counter } from "../models/counter";
 import { sendEmail } from "../services/mail.service";
 import { errorResponse, successResponse } from "./response";
-import { AuthRequest } from "../types/type";
-import axios from "axios";
 
 /**
  * Checks if a user exists by ID.

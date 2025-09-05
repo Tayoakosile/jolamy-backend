@@ -53,6 +53,17 @@ export interface IUser extends IOfficeWorker {
   is_distributor: boolean;
   is_sales_agent: boolean;
   is_worker: boolean;
+  files: {
+    proof_of_identity: {
+      id_type: string,
+      id_number: string,
+      files: string[],
+    },
+    warehouse_photos: {
+      interior: string[],
+      exterior: string[],
+    },
+  },
   is_first_login: boolean;
   address: {
     distributors_address: {

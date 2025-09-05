@@ -88,7 +88,7 @@ const OrderSchema = new mongoose_1.Schema({
         required: true,
     },
     products: { type: [ProductItemSchema], required: true },
-    chats: [{ type: mongoose_1.Types.ObjectId, ref: "Chat" }],
+    // chats: [{ type: Types.ObjectId, ref: "Chat" }],
     shipping: { type: ShippingSchema },
     payment_status: {
         type: String,
