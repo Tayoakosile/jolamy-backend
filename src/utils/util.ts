@@ -1,6 +1,7 @@
 import { NextFunction } from "express";
 // utils/checkIfExists.ts
 
+import axios from "axios";
 import { Request, Response } from "express";
 import mongoose, { Document } from "mongoose";
 import randomatic from "randomatic";
@@ -144,8 +145,17 @@ export const removeSensitiveFields = (
   _res: Response,
   next: NextFunction
 ) => {
-  if (!req.body) {
+  if (
+    (req as any).worker?.worker_id ||
+    (req as any).user?.user_role === "admin"
+  ) {
+    next();
+    return;
+  }
+
+  if (!(req as any).body) {
     errorResponse(_res, 400, "No data provided");
+    return;
   }
   const forbidden = [
     "payment_status",
@@ -171,7 +181,7 @@ export const removeSensitiveFields = (
     "tax_amount",
     "tracking_number",
     "courier_service",
-    "payment_reference",
+    // "payment_reference",
     "createdAt",
     "updatedAt",
     "logs",
@@ -179,8 +189,10 @@ export const removeSensitiveFields = (
     "cancelled_at",
     "actual_delivery_date",
   ];
-  forbidden.forEach((f) => delete req.body[f]);
+
+  forbidden.forEach((f) => delete (req as any).body[f]);
   next();
+  return;
 };
 
 export const statusMap = {
@@ -338,3 +350,14 @@ export async function customIDGenerator<T extends Document>(
   }
   next();
 }
+
+export const paystackVerification = async (reference: string) => {
+  return await axios.get(
+    `https://api.paystack.co/transaction/verify/${reference}`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+      },
+    }
+  );
+};

@@ -39,7 +39,8 @@ const getSingleProductForNotAdmin = async (_req, res) => {
     });
 };
 exports.getSingleProductForNotAdmin = getSingleProductForNotAdmin;
-const addToCart = (_req, res) => {
+const addToCart = (req, res) => {
+    const _req = req;
     const user_id = _req.user._id;
     const product_id = _req.body?.product_id;
     const variants = _req.body?.variants || [];

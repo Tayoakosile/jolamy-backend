@@ -54,16 +54,15 @@ const DeliveryStepSchema = new Schema<IDeliveryDetails>({
       "order_failed",
     ],
   },
+  description: { type: String },
   date: { type: Date },
   updated_by: {
     type: { type: String },
-    id: {
-      name: { type: String },
-      role: { type: String },
-      id: { type: String },
-      office_id: { type: String },
-      office: { type: String },
-    },
+    name: { type: String },
+    role: { type: String },
+    id: { type: String },
+    office_id: { type: String },
+    office: { type: String },
   },
 });
 
@@ -76,8 +75,12 @@ const OrderSchema = new Schema<IOrder>(
         ref: "OfficeWorker",
         required: false,
       },
+      worker_handling_order: {
+        type: Types.ObjectId,
+        ref: "OfficeWorker",
+        required: false,
+      },
     },
-
     user_id: { type: Types.ObjectId, ref: "User", required: true },
     priority_level: {
       type: String,
@@ -95,6 +98,7 @@ const OrderSchema = new Schema<IOrder>(
       required: true,
     },
     products: { type: [ProductItemSchema], required: true },
+    // chats: [{ type: Types.ObjectId, ref: "Chat" }],
     shipping: { type: ShippingSchema },
     payment_status: {
       type: String,
@@ -129,12 +133,19 @@ const OrderSchema = new Schema<IOrder>(
       default: "not_assigned",
     },
     internal_notes: { type: String },
+    // undo_request: [
+    //   {
+    //     type: Types.ObjectId,
+    //     ref: "UndoRequest",
+    //   },
+    // ],
     admin_notes_to_office: { type: String },
     admin_notes_to_customer: { type: String },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number, default: 0 },
     grand_total: { type: Number, default: 0 }, // total_amount + delivery_fee
     total_quantity: { type: Number, default: 0 },
+    order_confirmed: { type: Boolean, default: false },
     estimated_delivery_date: { type: Date },
     actual_delivery_date: { type: Date },
     discount_amount: { type: Number, default: 0 },

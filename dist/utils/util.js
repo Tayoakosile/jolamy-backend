@@ -3,9 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.transactions = exports.statusMap = exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
+exports.paystackVerification = exports.transactions = exports.statusMap = exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
 exports.generateEntityNumber = generateEntityNumber;
 exports.customIDGenerator = customIDGenerator;
+// utils/checkIfExists.ts
+const axios_1 = __importDefault(require("axios"));
 const randomatic_1 = __importDefault(require("randomatic"));
 const counter_1 = require("../models/counter");
 const mail_service_1 = require("../services/mail.service");
@@ -88,8 +90,14 @@ async function generateEntityNumber(entityPrefix, model) {
     return `${entityPrefix}-${yearMonth}-${(0, exports.generateRandom)(6)}-${String(sequence).padStart(4, "0")}`;
 }
 const removeSensitiveFields = (req, _res, next) => {
+    if (req.worker?.worker_id ||
+        req.user?.user_role === "admin") {
+        next();
+        return;
+    }
     if (!req.body) {
         (0, response_1.errorResponse)(_res, 400, "No data provided");
+        return;
     }
     const forbidden = [
         "payment_status",
@@ -115,7 +123,7 @@ const removeSensitiveFields = (req, _res, next) => {
         "tax_amount",
         "tracking_number",
         "courier_service",
-        "payment_reference",
+        // "payment_reference",
         "createdAt",
         "updatedAt",
         "logs",
@@ -125,6 +133,7 @@ const removeSensitiveFields = (req, _res, next) => {
     ];
     forbidden.forEach((f) => delete req.body[f]);
     next();
+    return;
 };
 exports.removeSensitiveFields = removeSensitiveFields;
 exports.statusMap = {
@@ -260,3 +269,11 @@ async function customIDGenerator(next, db_name, keyName) {
     }
     next();
 }
+const paystackVerification = async (reference) => {
+    return await axios_1.default.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+        headers: {
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        },
+    });
+};
+exports.paystackVerification = paystackVerification;

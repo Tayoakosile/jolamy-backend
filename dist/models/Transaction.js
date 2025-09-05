@@ -69,7 +69,13 @@ const TransactionSchema = new mongoose_1.Schema({
     },
     category: {
         type: String,
-        enum: ["wallet_funding", "order_payment", "bonus_settlement", "other"],
+        enum: [
+            "registration_fee",
+            "wallet_funding",
+            "order_payment",
+            "bonus_settlement",
+            "other",
+        ],
         required: true,
     },
     description: { type: String },

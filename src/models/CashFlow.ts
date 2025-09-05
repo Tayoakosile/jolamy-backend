@@ -1,5 +1,5 @@
 import { Schema, model, Types, Document } from "mongoose";
-import { generateRandom } from "../utils/util";
+import { generateRandom, timestamp } from "../utils/util";
 import { Counter } from "./counter";
 
 export interface IFinance extends Document {
@@ -32,18 +32,22 @@ const financeSchema = new Schema<IFinance>(
     amount: { type: Number, required: true },
     internal_sequence: { type: Number, default: 0 },
     cashflow_id: { type: String, unique: true },
-    office_id: { type: Schema.Types.ObjectId, ref:"Office", required: true },
+    office_id: { type: Schema.Types.ObjectId, ref: "Office", required: true },
     payment_method: { type: String, trim: true },
     attachments: { type: [] },
-    category: { type: String, required: true, trim: true },
+    category: { type: String, required: true },
     description: { type: String },
     notes: { type: String },
     status: { type: String },
     reference: { type: String },
-    created_by: { type: Schema.Types.ObjectId, ref: "OfficeWorker", required: true },
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: "OfficeWorker",
+      required: true,
+    },
   },
   {
-    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    timestamps: { ...timestamp },
   }
 );
 

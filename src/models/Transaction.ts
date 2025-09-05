@@ -22,8 +22,13 @@ export interface ITransaction extends Document {
   office_id?: Types.ObjectId;
   transaction_type: "credit" | "debit";
   type: "credit" | "debit";
-  created_at:Date,
-  category: "wallet_funding" | "order_payment" | "bonus_settlement" | "other";
+  created_at: Date;
+  category:
+    | "registration_fee"
+    | "wallet_funding"
+    | "order_payment"
+    | "bonus_settlement"
+    | "other";
 }
 
 // const PricingSchema = new Schema<Pricing>(
@@ -62,7 +67,13 @@ const TransactionSchema = new Schema<ITransaction>(
     },
     category: {
       type: String,
-      enum: ["wallet_funding", "order_payment", "bonus_settlement", "other"],
+      enum: [
+        "registration_fee",
+        "wallet_funding",
+        "order_payment",
+        "bonus_settlement",
+        "other",
+      ],
       required: true,
     },
 
@@ -81,7 +92,6 @@ const TransactionSchema = new Schema<ITransaction>(
   },
   { timestamps: { ...timestamp } }
 );
-
 
 TransactionSchema.pre(
   "save",

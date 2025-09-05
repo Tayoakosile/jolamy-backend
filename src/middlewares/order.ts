@@ -1,19 +1,18 @@
-import { NextFunction, Response } from "express";
+import { NextFunction, Request, Response } from "express";
+import { Types } from "mongoose";
+import Order from "../models/Order";
+import { IOrder } from "../types/order.type";
 import { errorResponse } from "../utils/response";
 import { checkIfDocumentExistsById } from "../utils/util";
-import Order from "../models/Order";
-import { AuthRequest } from "../types/type";
-import { Types } from "mongoose";
-import { IOrder } from "../types/order.type";
 
 export const validateOrder = async (
-  _req: AuthRequest,
+  _req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const user = _req.user;
-  const worker = _req.worker;
-  const orderID = _req.params?.id;
+  const user = (_req as any).user;
+  const worker = (_req as any).worker;
+  const orderID = (_req as any).params?.id;
 
   const order = await checkIfDocumentExistsById<IOrder>(
     orderID,
@@ -32,24 +31,23 @@ export const validateOrder = async (
 
   // If payment made already or it is delivered, do not allow update
 
-  if (
-    (_req.method !== "GET" &&
-      order?.payment_status === "paid" &&
-      user?.user_role !== "admin") ||
-    (_req.method !== "GET" &&
-      order?.delivery_status === "delivered" &&
-      user?.user_role !== "admin")
-  ) {
-    errorResponse(res, 400, "Order cannot be updated", {
-      message: "Order has already been paid or delivered",
-    });
-    return;
-  }
+  if (_req.method !== "GET") {
+    // order?.delivery_status === "delivered"
 
+    if (order?.payment_status === "paid") {
+      if (!worker?.worker_id?.length && user?.user_role !== "admin") {
+        errorResponse(res, 400, "Order cannot be updated", {
+          message: "Order has already been paid",
+        });
+        return;
+      }
+    }
+  }
 
   if (
     (isOrderAssignedToThisWorkerOffice && worker?.worker_id) ||
-    checkIfOrderBelongsToUser
+    checkIfOrderBelongsToUser ||
+    user?.user_role === "admin"
   ) {
     (_req as any).order = order as IOrder;
     next();

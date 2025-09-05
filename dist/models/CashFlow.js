@@ -16,14 +16,18 @@ const financeSchema = new mongoose_1.Schema({
     office_id: { type: mongoose_1.Schema.Types.ObjectId, ref: "Office", required: true },
     payment_method: { type: String, trim: true },
     attachments: { type: [] },
-    category: { type: String, required: true, trim: true },
+    category: { type: String, required: true },
     description: { type: String },
     notes: { type: String },
     status: { type: String },
     reference: { type: String },
-    created_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "OfficeWorker", required: true },
+    created_by: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "OfficeWorker",
+        required: true,
+    },
 }, {
-    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    timestamps: { ...util_1.timestamp },
 });
 financeSchema.pre("save", async function (next) {
     if (this.isNew) {

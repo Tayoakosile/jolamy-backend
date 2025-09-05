@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import User from "../models/User";
 
 import OfficeWorker, { IOfficeWorker } from "../models/Admin/OfficeWorker";
@@ -9,16 +9,24 @@ import { logActivity } from "../utils/activityLog";
 import { isMatch } from "../utils/bcrypt.util";
 import { generateToken } from "../utils/jwt";
 import { errorResponse, successResponse } from "../utils/response";
-import { generateRandom } from "../utils/util";
+import { generateRandom, paystackVerification } from "../utils/util";
 import { getTrend } from "../utils/trend.util";
 import Order from "../models/Order";
+import Otp from "../models/Otp";
+import Transaction from "../models/Transaction";
+import { Types } from "mongoose";
+import { nextTick } from "process";
 
-export const createAccount = async (req: Request, res: Response) => {
-  // return;
+export const createAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   if (!req.body) {
     errorResponse(res, 400, "Request body is required");
     return;
   }
+
   if (req.body.user_role === "admin") {
     errorResponse(res, 400, "Admin role cannot be created via this endpoint");
     return;
@@ -31,7 +39,7 @@ export const createAccount = async (req: Request, res: Response) => {
     const user = await signupService(
       {
         ...req.body,
-        status: "pending_for_documents",
+        status: "inactive",
         is_distributor: req.body.user_role === "distributor",
         is_sales_agents: req.body.user_role === "sales_agent",
         is_worker: req.body.user_role === "worker",
@@ -43,15 +51,99 @@ export const createAccount = async (req: Request, res: Response) => {
       "Welcome to Our Service",
       `Hello ${user.username}, welcome to our service!`
     );
-
-    successResponse(res, 201, "User created successfully");
-    return;
+    await sendVerificationOtpToMail(req as AuthRequest, res, next, user.email);
+    successResponse(res, 201, "User created successfully", {
+      user: {
+        id: user.user_id,
+        email: user.email,
+        is_verified: user.is_verified,
+      },
+    });
+    return {
+      is_verified: user.is_verified,
+    };
   } catch (error: { error: string } | any) {
     errorResponse(res, 400, error as string, error);
   }
 };
 
-export const loginAccount = async (req: Request, res: Response) => {
+export const updateAccountOnSignUp = async (req: Request, res: Response) => {
+  const user = (req as any).user;
+
+  try {
+    if (req?.body?.payment_reference) {
+      const paymentReference = (
+        await paystackVerification(req?.body?.payment_reference)
+      ).data;
+
+      if (paymentReference?.data?.status === "success") {
+        const transaction = await Transaction.create({
+          user_id: user._id,
+          user_role: user?.user_role || "distributor",
+          amount: paymentReference.amount / 100, // convert to Naira
+          reference: paymentReference.reference,
+          status: "completed",
+          category: "registration_fee",
+          transaction_type: "credit",
+          payment_gateway: "paystack",
+          metadata: paymentReference,
+          total: paymentReference?.data.amount / 100,
+        });
+        const log = await logActivity({
+          req,
+          action: "REGISTRATION_FEE_PAID",
+          description: "User paid registration fee successfully",
+          user_id: new Types.ObjectId(user._id),
+          sender: new Types.ObjectId(user._id),
+          receiver: new Types.ObjectId(),
+          metadata: {
+            email: user.email,
+            user_id: new Types.ObjectId(user._id),
+            amount: paymentReference.amount / 100,
+            reference: paymentReference.reference,
+          },
+        });
+        await User.findOneAndUpdate(
+          { email: user?.email },
+          {
+            status: "submitted_for_review",
+
+            paid_registration_fee: true,
+            $push: {
+              logs: log._id,
+              transaction_history: transaction._id,
+            },
+          }
+        );
+        successResponse(res, 200, "Payment verified and account updated");
+        return;
+      }
+    }
+
+    await User.findOneAndUpdate(
+      { email: user?.email },
+      {
+        ...req.body,
+        status: req?.body?.files
+          ? "awaiting_registration_fee_payment"
+          : Object.keys(req?.body?.address ?? {}).length > 0
+          ? "pending_for_documents"
+          : user.status,
+        //
+      }
+    );
+    successResponse(res, 200, "Account Updated Successfully");
+  } catch (error) {
+    console.log("error :", error);
+    errorResponse(res, 400, "Error updating account", error);
+  }
+};
+
+export const loginAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const email =
       req.body?.username?.toLowerCase() || req.body?.email?.toLowerCase();
@@ -72,7 +164,7 @@ export const loginAccount = async (req: Request, res: Response) => {
       const comparePassword = await isMatch(password, officeWorker.password);
 
       if (!comparePassword) {
-        errorResponse(res, 401, "invalid Email or Password");
+        errorResponse(res, 400, "invalid Email or Password");
         return;
       }
       const token = generateToken(`${officeWorker?.worker_id}`);
@@ -127,6 +219,24 @@ export const loginAccount = async (req: Request, res: Response) => {
       });
       return;
     }
+    const error = {
+      is_verified: user.is_verified,
+      email: user.email,
+      user_id: user.user_id,
+    };
+    if (!user?.is_admin && !user.is_verified) {
+      await sendVerificationOtpToMail(
+        req as AuthRequest,
+        res,
+        next,
+        user?.email
+      );
+      errorResponse(res, 400, "Email not verified", {
+        message: "Please verify your email before logging in.",
+        error,
+      });
+      return;
+    }
     if (
       user.status === "disabled" ||
       user.status === "rejected" ||
@@ -143,7 +253,7 @@ export const loginAccount = async (req: Request, res: Response) => {
     const comparePassword = await isMatch(password, user.password);
 
     if (!comparePassword) {
-      errorResponse(res, 401, "invalid Email or Password");
+      errorResponse(res, 400, "invalid Email or Password");
       return;
     }
 
@@ -185,6 +295,147 @@ export const loginAccount = async (req: Request, res: Response) => {
   } catch (error) {
     console.log("error :", error);
     errorResponse(res, 500, "An error occurred during login", error);
+  }
+};
+export const sendVerificationOtpToMail = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+  userEmail?: string
+) => {
+  const req = _req as AuthRequest;
+  const email = req.body?.email || userEmail;
+  try {
+    if (!email) {
+      errorResponse(res, 400, "Email is required");
+      return;
+    }
+
+    const user = await User?.findOne({
+      email,
+    });
+
+    if (!user) {
+      errorResponse(res, 404, "User not found");
+      return;
+    }
+
+    if (user.is_verified) {
+      errorResponse(res, 400, "User is already verified");
+      return;
+    }
+
+    const otp = generateRandom(6, "0");
+    const otpRecord = await Otp.findOne({
+      email,
+      code: otp,
+      type: "email_verification",
+      expires_at: { $gt: new Date() },
+    });
+
+    if (otpRecord) {
+      await sendEmail(
+        email as string,
+        "Email Verification OTP",
+        `Your OTP for email verification is: ${otp}. It will expire in 10 minutes.`
+      );
+      return otp;
+    }
+
+    await Otp.create({
+      email,
+      code: otp,
+      type: "email_verification",
+      expires_at: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
+    });
+    await sendEmail(
+      email as string,
+      "Email Verification OTP",
+      `Your OTP for email verification is: ${otp}. It will expire in 10 minutes.`
+    );
+
+    if (req.body?.show_success) {
+      successResponse(res, 200, "OTP sent successfully");
+    }
+    return otp;
+  } catch (error) {
+    console.log("error :", error);
+
+    errorResponse(
+      res,
+      500,
+      "An error occurred while sending verification OTP",
+      error
+    );
+  }
+};
+
+export const verifySignUpDetails = async (req: Request, res: Response) => {
+  try {
+    if (!req.body || !req.body.email || !req.body.otp) {
+      errorResponse(res, 400, "Email and OTP are required");
+      return;
+    }
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      errorResponse(res, 404, "User not found");
+      return;
+    }
+
+    if (user.is_verified) {
+      errorResponse(res, 400, "User is already verified");
+      return;
+    }
+
+    const otpRecord = await Otp.findOne({
+      email,
+      code: otp,
+      type: "email_verification",
+      expires_at: { $gt: new Date() },
+    });
+
+    if (!otpRecord) {
+      errorResponse(res, 400, "Invalid or expired OTP");
+      return;
+    }
+
+    const activityLog = await logActivity({
+      req,
+      user_id: user._id,
+      sender: user._id,
+      receiver: user._id,
+      action: "EMAIL_VERIFIED",
+      description: "User email verified successfully",
+      metadata: {
+        email: user.email,
+        user_id: user._id,
+      },
+    });
+
+    await User.findByIdAndUpdate(user._id, {
+      is_verified: true,
+      $push: { logs: activityLog._id },
+    });
+
+    await Otp.deleteMany({ email, type: "email_verification" });
+
+    await sendEmail(
+      user.email,
+      "Email Verified Successfully",
+      "Your email has been verified successfully."
+    );
+
+    successResponse(res, 200, "Email verified successfully");
+  } catch (error) {
+    errorResponse(
+      res,
+      500,
+      "An error occurred during email verification",
+      error
+    );
   }
 };
 
@@ -279,8 +530,9 @@ export const resetPassword = async (req: Request, res: Response) => {
   }
 };
 
-export const getUserProfile = async (req: AuthRequest, res: Response) => {
+export const getUserProfile = async (_req: Request, res: Response) => {
   try {
+    const req = _req as AuthRequest
     const userId = req.user?._id || req.worker?._id;
     const user = await User.findById(userId)
       .select("-password -__v ")

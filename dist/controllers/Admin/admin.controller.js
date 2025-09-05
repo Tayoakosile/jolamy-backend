@@ -70,6 +70,7 @@ const approveUser = async (req, res) => {
             admin_notes: req.body?.admin_notes || "No notes provided",
             approved_by: new mongoose_1.default.Types.ObjectId(adminId),
             logs: Array.isArray(user.logs) ? [...user.logs, log._id] : [log._id],
+            warehouse_verified: true,
         }, {
             new: true,
         });

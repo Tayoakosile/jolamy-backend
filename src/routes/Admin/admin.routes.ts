@@ -28,7 +28,6 @@ import {
   getSingleProducts,
   updateProduct,
 } from "../../controllers/Admin/admin.products.controller";
-import { getStats } from "../../controllers/Admin/admin.stats.controller";
 
 import { appAuth, isAdmin } from "../../middlewares/auth";
 import { removeSensitiveFields } from "../../utils/util";
@@ -117,7 +116,7 @@ router.patch("/products/:id/archive", appAuth, isAdmin, archiveProduct);
 // users
 
 // stats
-router.get("/stats", appAuth, isAdmin, getStats);
+
 
 // users
 router.get("/pending-users", appAuth, isAdmin, getPendingUsers);

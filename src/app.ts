@@ -13,6 +13,8 @@ import cartRoutes from "./routes/carts.route";
 import uploadRoutes from "./routes/upload.routes";
 import userRoutes from "./routes/user.routes";
 import officeRoutes from "./routes/office.routes";
+import { appAuth } from "./middlewares/auth";
+import { getStats } from "./controllers/stats.controller";
 
 const app = express();
 
@@ -32,6 +34,7 @@ app.use("/api/offices", officeRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/carts", cartRoutes);
+app.get("/api/stats", appAuth, getStats);
 
 const PORT = process.env.PORT || 5000;
 

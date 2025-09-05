@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { logActivity } from "../utils/activityLog";
 import { checkIfDocumentExistsById, customReqResHandler } from "../utils/util";
 
@@ -43,7 +43,8 @@ export const getSingleProductForNotAdmin = async (
   });
 };
 
-export const addToCart = (_req: AuthRequest, res: Response) => {
+export const addToCart = (req: Request, res: Response) => {
+  const _req  = req as AuthRequest;
   const user_id = (_req as any).user._id;
   const product_id = _req.body?.product_id;
   const variants = _req.body?.variants || [];

@@ -11,16 +11,17 @@ const userSchema = new Schema<IUser>(
     last_name: { type: String, required: true },
     user_id: { type: String, unique: true },
     username: String,
-    date_joined: { type: Date, default: Date.now },
-    last_login: { type: Date },
-    approved_at: Date,
-    rejected_at: Date,
+    date_joined: { type: Date, default: Date.now() },
+    last_login: { type: Date, default: null },
+    is_verified: { type: Boolean, default: false },
+    approved_at: { type: Date, default: null },
+    rejected_at: { type: Date, default: null },
     approved_by: { type: Schema.Types.ObjectId, ref: "User" },
     rejected_by: { type: Schema.Types.ObjectId, ref: "User" },
     change_requests: [{ type: Schema.Types.ObjectId, ref: "ChangeRequest" }],
     phone_number: String,
     gender: String,
-    dob: Date,
+    dob: { type: Date, default: null },
     total_boxes_ordered: { type: Number, default: 0 },
     total_boxes_sold: { type: Number, default: 0 },
     disabled_reason: String,
@@ -28,19 +29,28 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     cart: [{ type: Schema.Types.ObjectId, ref: "Cart" }],
     warehouse_location: { type: String },
-    warehouse_photos: {
-      internal: [],
-      external: [],
-    },
+
     warehouse_verified: { type: Boolean, default: false },
     inventory_obligations_accepted: { type: Boolean, default: false },
     status: {
       type: String,
       default: "pending_for_documents",
     },
-    password: { type: String, required: true },
+    files: {
+      proof_of_identity: {
+        id_type: { type: String },
+        id_number: { type: String },
+        files: { type: [] },
+      },
+      warehouse_photos: {
+        interior: {type:[]},
+        exterior: {type:[]},
+      },
+    },
+    password: { type: String },
     internal_sequence: { type: Number, default: 0 },
     forgot_password_expires: { type: String },
+    has_accepted_distributor_terms: { type: Boolean, default: false },
     forgot_password_token: { type: String },
     last_order_date: Date,
     user_role: {
@@ -56,7 +66,6 @@ const userSchema = new Schema<IUser>(
     bonus: [{ type: Schema.Types.ObjectId, ref: "Bonus" }],
     transaction_history: [{ type: Schema.Types.ObjectId, ref: "Transaction" }],
     change_request: { type: Schema.Types.ObjectId, ref: "ChangeRequest" },
-
     account_details: {
       bank_name: { type: String },
       account_number: { type: String },
@@ -69,17 +78,17 @@ const userSchema = new Schema<IUser>(
     registration_number: Number,
     address: {
       distributors_address: {
-        country: { type: String, required: true },
-        state: { type: String, required: true },
-        city: { type: String, required: true },
+        country: { type: String },
+        state: { type: String },
+        city: { type: String },
         postal_code: { type: String },
-        address: { type: String, required: true },
+        address: { type: String },
       },
       business_address: {
-        address: { type: String, required: true },
-        country: { type: String, required: true },
-        state: { type: String, required: true },
-        city: { type: String, required: true },
+        address: { type: String },
+        country: { type: String },
+        state: { type: String },
+        city: { type: String },
         postal_code: { type: String },
       },
     },
@@ -91,30 +100,30 @@ const userSchema = new Schema<IUser>(
     },
   }
 );
-userSchema.virtual("full_name").get(function () {
+userSchema.virtual("full_name").get(function (this: IUser) {
   return `${this.first_name} ${this.last_name}`;
 });
-userSchema.virtual("is_admin").get(function () {
+userSchema.virtual("is_admin").get(function (this: IUser) {
   return (this.is_admin = this.user_role === "admin");
 });
 
-userSchema.virtual("is_distributor").get(function () {
+userSchema.virtual("is_distributor").get(function (this: IUser) {
   return (this.is_distributor = this.user_role === "distributor");
 });
 
-userSchema.virtual("is_sales_agent").get(function () {
+userSchema.virtual("is_sales_agent").get(function (this: IUser) {
   return (this.is_sales_agent = this.user_role === "sales_agent");
 });
 
-userSchema.virtual("is_worker").get(function () {
+userSchema.virtual("is_worker").get(function (this: IUser) {
   return (this.is_worker = this.user_role === "worker");
 });
 
-userSchema.virtual("is_factory_worker").get(function () {
+userSchema.virtual("is_factory_worker").get(function (this: IUser) {
   return (this.is_factory_worker = this.user_role === "factory_worker");
 });
 
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function (this: import("mongoose").Document & IUser, next) {
   if (!this.isModified("password")) return next();
   this.password = await encrypt(this.password);
   next();
@@ -155,7 +164,7 @@ userSchema.pre(
   }
 );
 
-userSchema.pre("save", function (next) {
+userSchema.pre("save", function (this: import("mongoose").Document & IUser, next) {
   if (this.email) {
     this.email = this.email.trim().toLowerCase();
   }

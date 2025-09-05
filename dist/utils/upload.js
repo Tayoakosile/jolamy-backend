@@ -51,7 +51,7 @@ const uploadManager = new Bytescale.UploadManager({
     fetchApi: node_fetch_1.default,
     apiKey: process.env.BYTESCALE_API_KEY,
 });
-// Utility function to upload
+// Utility function to upload a file to Bytescale
 const uploadFileToBytescale = async (filePath, originalFileName, mime) => {
     const fileStats = fs_1.default.statSync(filePath);
     const fileStream = fs_1.default.createReadStream(filePath);
@@ -73,15 +73,19 @@ const generateUniqueFileName = (originalName, prefix = "upload") => {
 exports.generateUniqueFileName = generateUniqueFileName;
 exports.upload = (0, multer_1.default)({
     storage: multer_1.default.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }, // Limit to 10MB
+    limits: { files: 10, fileSize: 10 * 1024 * 1024 }, // Limit to 10MB
     fileFilter: (req, file, cb) => {
         const allowedTypes = [
             "image/jpeg",
             "image/jpg",
             "image/png",
+            "image/webp",
+            "image/gif",
             "application/pdf",
             ".docx",
+            ".webp",
         ];
+        console.log('cb :', cb);
         if (!allowedTypes.includes(file.mimetype)) {
             return cb(new Error("Invalid file type. Only JPEG, PNG, and PDF are allowed."));
         }

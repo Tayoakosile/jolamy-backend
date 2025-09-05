@@ -192,17 +192,17 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
         },
       });
 
-      await Offices.findByIdAndUpdate(office_to_be_in_charge[0]?._id, {
-        $push: {
-          orders: new Types.ObjectId(order?.id),
-          logs: {
-            $each: [
-              new Types.ObjectId(log.id),
-              new Types.ObjectId(officeLog.id),
-            ],
-          },
-        },
-      });
+      // await Offices.findByIdAndUpdate(office_to_be_in_charge[0]?._id, {
+      //   $push: {
+      //     orders: new Types.ObjectId(order?.id),
+      //     logs: {
+      //       $each: [
+      //         new Types.ObjectId(log.id),
+      //         new Types.ObjectId(officeLog.id),
+      //       ],
+      //     },
+      //   },
+      // });
 
       // return;
       await Order.findOneAndUpdate(
@@ -254,10 +254,7 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
       await User.findByIdAndUpdate(user._id, {
         $push: {
           logs: {
-            $each: [
-              new Types.ObjectId(log.id),
-              new Types.ObjectId(officeLog.id),
-            ],
+            $each: [log.id, officeLog.id],
           },
         },
         $inc: {

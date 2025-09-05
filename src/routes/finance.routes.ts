@@ -2,16 +2,18 @@ import { Router } from "express";
 import {
   createNewFinance,
   getAllFinance,
+  getSingleFinance,
   updateFinance,
 } from "../controllers/finance.controllers";
-import { appAuth, isWorker } from "../middlewares/auth";
+import { appAuth } from "../middlewares/auth";
 
 const router = Router();
 
-router.get("/", appAuth, isWorker, getAllFinance);
-router.post("/", appAuth, isWorker, createNewFinance);
+router.get("/", appAuth, getAllFinance);
+router.get("/:id", appAuth, getSingleFinance);
+router.post("/", appAuth, createNewFinance);
 // edit cash flow
-router.put("/:id", appAuth, isWorker, updateFinance);
-router.patch("/:id", appAuth, isWorker, updateFinance);
+router.put("/:id", appAuth, updateFinance);
+router.patch("/:id", appAuth, updateFinance);
 
 export default router;

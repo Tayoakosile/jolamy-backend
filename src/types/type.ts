@@ -4,7 +4,10 @@ import { IOfficeWorker } from "../models/Admin/OfficeWorker";
 import { IOrder } from "./order.type";
 
 export type ApprovalStatus =
+  | "inactive"
+  | "pending"
   | "pending_for_documents"
+  | "awaiting_registration_fee_payment"
   | "submitted_for_review"
   | "pending_for_approval"
   | "approved"
@@ -40,7 +43,9 @@ export interface IUser extends IOfficeWorker {
   gender: string;
   dob: Date;
   business_address: string;
+  has_accepted_distributor_terms: boolean;
   is_factory_worker: boolean;
+  is_verified: boolean;
   disabled_reason?: string;
   change_requests?: [];
   cart?: [];
@@ -48,6 +53,17 @@ export interface IUser extends IOfficeWorker {
   is_distributor: boolean;
   is_sales_agent: boolean;
   is_worker: boolean;
+  files: {
+    proof_of_identity: {
+      id_type: string,
+      id_number: string,
+      files: string[],
+    },
+    warehouse_photos: {
+      interior: string[],
+      exterior: string[],
+    },
+  },
   is_first_login: boolean;
   address: {
     distributors_address: {
@@ -119,4 +135,7 @@ export interface AuthRequest extends Request {
     email: string;
   };
   order?: IOrder;
+  isWorker: boolean;
+  isUserAdmin: boolean;
+  isOtherUser: boolean;
 }

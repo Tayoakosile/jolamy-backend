@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserProfile = exports.resetPassword = exports.forgotPassword = exports.loginAccount = exports.createAccount = void 0;
+exports.getUserProfile = exports.resetPassword = exports.forgotPassword = exports.verifySignUpDetails = exports.sendVerificationOtpToMail = exports.loginAccount = exports.updateAccountOnSignUp = exports.createAccount = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
 const auth_service_1 = require("../services/auth.service");
@@ -15,8 +15,10 @@ const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
 const trend_util_1 = require("../utils/trend.util");
 const Order_1 = __importDefault(require("../models/Order"));
-const createAccount = async (req, res) => {
-    // return;
+const Otp_1 = __importDefault(require("../models/Otp"));
+const Transaction_1 = __importDefault(require("../models/Transaction"));
+const mongoose_1 = require("mongoose");
+const createAccount = async (req, res, next) => {
     if (!req.body) {
         (0, response_1.errorResponse)(res, 400, "Request body is required");
         return;
@@ -32,21 +34,91 @@ const createAccount = async (req, res) => {
     try {
         const user = await (0, auth_service_1.signupService)({
             ...req.body,
-            status: "pending_for_documents",
+            status: "inactive",
             is_distributor: req.body.user_role === "distributor",
             is_sales_agents: req.body.user_role === "sales_agent",
             is_worker: req.body.user_role === "worker",
         }, res);
         (0, mail_service_1.sendEmail)(req.body.email, "Welcome to Our Service", `Hello ${user.username}, welcome to our service!`);
-        (0, response_1.successResponse)(res, 201, "User created successfully");
-        return;
+        await (0, exports.sendVerificationOtpToMail)(req, res, next, user.email);
+        (0, response_1.successResponse)(res, 201, "User created successfully", {
+            user: {
+                id: user.user_id,
+                email: user.email,
+                is_verified: user.is_verified,
+            },
+        });
+        return {
+            is_verified: user.is_verified,
+        };
     }
     catch (error) {
         (0, response_1.errorResponse)(res, 400, error, error);
     }
 };
 exports.createAccount = createAccount;
-const loginAccount = async (req, res) => {
+const updateAccountOnSignUp = async (req, res) => {
+    const user = req.user;
+    try {
+        if (req?.body?.payment_reference) {
+            const paymentReference = (await (0, util_1.paystackVerification)(req?.body?.payment_reference)).data;
+            if (paymentReference?.data?.status === "success") {
+                const transaction = await Transaction_1.default.create({
+                    user_id: user._id,
+                    user_role: user?.user_role || "distributor",
+                    amount: paymentReference.amount / 100, // convert to Naira
+                    reference: paymentReference.reference,
+                    status: "completed",
+                    category: "registration_fee",
+                    transaction_type: "credit",
+                    payment_gateway: "paystack",
+                    metadata: paymentReference,
+                    total: paymentReference?.data.amount / 100,
+                });
+                const log = await (0, activityLog_1.logActivity)({
+                    req,
+                    action: "REGISTRATION_FEE_PAID",
+                    description: "User paid registration fee successfully",
+                    user_id: new mongoose_1.Types.ObjectId(user._id),
+                    sender: new mongoose_1.Types.ObjectId(user._id),
+                    receiver: new mongoose_1.Types.ObjectId(),
+                    metadata: {
+                        email: user.email,
+                        user_id: new mongoose_1.Types.ObjectId(user._id),
+                        amount: paymentReference.amount / 100,
+                        reference: paymentReference.reference,
+                    },
+                });
+                await User_1.default.findOneAndUpdate({ email: user?.email }, {
+                    status: "submitted_for_review",
+                    paid_registration_fee: true,
+                    $push: {
+                        logs: log._id,
+                        transaction_history: transaction._id,
+                    },
+                });
+                (0, response_1.successResponse)(res, 200, "Payment verified and account updated");
+                return;
+            }
+        }
+        await User_1.default.findOneAndUpdate({ email: user?.email }, {
+            ...req.body,
+            status: req?.body?.files
+                ? "awaiting_registration_fee_payment"
+                : Object.keys(req?.body?.address ?? {}).length > 0
+                    ? "pending_for_documents"
+                    : user.status,
+            //
+        });
+        (0, response_1.successResponse)(res, 200, "Account Updated Successfully");
+    }
+    catch (error) {
+        console.log("error :", error);
+        (0, response_1.errorResponse)(res, 400, "Error updating account", error);
+    }
+};
+exports.updateAccountOnSignUp = updateAccountOnSignUp;
+const loginAccount = async (req, res, next) => {
     try {
         const email = req.body?.username?.toLowerCase() || req.body?.email?.toLowerCase();
         const password = req.body?.password;
@@ -61,7 +133,7 @@ const loginAccount = async (req, res) => {
         if (officeWorker) {
             const comparePassword = await (0, bcrypt_util_1.isMatch)(password, officeWorker.password);
             if (!comparePassword) {
-                (0, response_1.errorResponse)(res, 401, "invalid Email or Password");
+                (0, response_1.errorResponse)(res, 400, "invalid Email or Password");
                 return;
             }
             const token = (0, jwt_1.generateToken)(`${officeWorker?.worker_id}`);
@@ -107,6 +179,19 @@ const loginAccount = async (req, res) => {
             });
             return;
         }
+        const error = {
+            is_verified: user.is_verified,
+            email: user.email,
+            user_id: user.user_id,
+        };
+        if (!user?.is_admin && !user.is_verified) {
+            await (0, exports.sendVerificationOtpToMail)(req, res, next, user?.email);
+            (0, response_1.errorResponse)(res, 400, "Email not verified", {
+                message: "Please verify your email before logging in.",
+                error,
+            });
+            return;
+        }
         if (user.status === "disabled" ||
             user.status === "rejected" ||
             user.rejected_by) {
@@ -119,7 +204,7 @@ const loginAccount = async (req, res) => {
         }
         const comparePassword = await (0, bcrypt_util_1.isMatch)(password, user.password);
         if (!comparePassword) {
-            (0, response_1.errorResponse)(res, 401, "invalid Email or Password");
+            (0, response_1.errorResponse)(res, 400, "invalid Email or Password");
             return;
         }
         const token = (0, jwt_1.generateToken)(user.user_id);
@@ -157,6 +242,105 @@ const loginAccount = async (req, res) => {
     }
 };
 exports.loginAccount = loginAccount;
+const sendVerificationOtpToMail = async (_req, res, next, userEmail) => {
+    const req = _req;
+    const email = req.body?.email || userEmail;
+    try {
+        if (!email) {
+            (0, response_1.errorResponse)(res, 400, "Email is required");
+            return;
+        }
+        const user = await User_1.default?.findOne({
+            email,
+        });
+        if (!user) {
+            (0, response_1.errorResponse)(res, 404, "User not found");
+            return;
+        }
+        if (user.is_verified) {
+            (0, response_1.errorResponse)(res, 400, "User is already verified");
+            return;
+        }
+        const otp = (0, util_1.generateRandom)(6, "0");
+        const otpRecord = await Otp_1.default.findOne({
+            email,
+            code: otp,
+            type: "email_verification",
+            expires_at: { $gt: new Date() },
+        });
+        if (otpRecord) {
+            await (0, mail_service_1.sendEmail)(email, "Email Verification OTP", `Your OTP for email verification is: ${otp}. It will expire in 10 minutes.`);
+            return otp;
+        }
+        await Otp_1.default.create({
+            email,
+            code: otp,
+            type: "email_verification",
+            expires_at: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
+        });
+        await (0, mail_service_1.sendEmail)(email, "Email Verification OTP", `Your OTP for email verification is: ${otp}. It will expire in 10 minutes.`);
+        if (req.body?.show_success) {
+            (0, response_1.successResponse)(res, 200, "OTP sent successfully");
+        }
+        return otp;
+    }
+    catch (error) {
+        console.log("error :", error);
+        (0, response_1.errorResponse)(res, 500, "An error occurred while sending verification OTP", error);
+    }
+};
+exports.sendVerificationOtpToMail = sendVerificationOtpToMail;
+const verifySignUpDetails = async (req, res) => {
+    try {
+        if (!req.body || !req.body.email || !req.body.otp) {
+            (0, response_1.errorResponse)(res, 400, "Email and OTP are required");
+            return;
+        }
+        const { email, otp } = req.body;
+        const user = await User_1.default.findOne({ email });
+        if (!user) {
+            (0, response_1.errorResponse)(res, 404, "User not found");
+            return;
+        }
+        if (user.is_verified) {
+            (0, response_1.errorResponse)(res, 400, "User is already verified");
+            return;
+        }
+        const otpRecord = await Otp_1.default.findOne({
+            email,
+            code: otp,
+            type: "email_verification",
+            expires_at: { $gt: new Date() },
+        });
+        if (!otpRecord) {
+            (0, response_1.errorResponse)(res, 400, "Invalid or expired OTP");
+            return;
+        }
+        const activityLog = await (0, activityLog_1.logActivity)({
+            req,
+            user_id: user._id,
+            sender: user._id,
+            receiver: user._id,
+            action: "EMAIL_VERIFIED",
+            description: "User email verified successfully",
+            metadata: {
+                email: user.email,
+                user_id: user._id,
+            },
+        });
+        await User_1.default.findByIdAndUpdate(user._id, {
+            is_verified: true,
+            $push: { logs: activityLog._id },
+        });
+        await Otp_1.default.deleteMany({ email, type: "email_verification" });
+        await (0, mail_service_1.sendEmail)(user.email, "Email Verified Successfully", "Your email has been verified successfully.");
+        (0, response_1.successResponse)(res, 200, "Email verified successfully");
+    }
+    catch (error) {
+        (0, response_1.errorResponse)(res, 500, "An error occurred during email verification", error);
+    }
+};
+exports.verifySignUpDetails = verifySignUpDetails;
 const forgotPassword = async (req, res) => {
     try {
         if (!req.body || !req.body.email)
@@ -221,8 +405,9 @@ const resetPassword = async (req, res) => {
     }
 };
 exports.resetPassword = resetPassword;
-const getUserProfile = async (req, res) => {
+const getUserProfile = async (_req, res) => {
     try {
+        const req = _req;
         const userId = req.user?._id || req.worker?._id;
         const user = await User_1.default.findById(userId)
             .select("-password -__v ")

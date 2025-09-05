@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCarts = exports.addToCart = void 0;
+exports.deleteCart = exports.getCarts = exports.addToCart = void 0;
 const activityLog_1 = require("../utils/activityLog");
 const util_1 = require("../utils/util");
 const mongoose_1 = require("mongoose");
@@ -107,7 +107,8 @@ const addToCart = (_req, res) => {
     });
 };
 exports.addToCart = addToCart;
-const getCarts = (_req, res) => {
+const getCarts = (req, res) => {
+    const _req = req;
     const user_id = _req?.user?._id;
     const request = async () => {
         const cart = (await Cart_1.Cart.findOne({ user: user_id }).populate({
@@ -154,3 +155,6 @@ const getCarts = (_req, res) => {
     });
 };
 exports.getCarts = getCarts;
+const deleteCart = () => {
+};
+exports.deleteCart = deleteCart;
