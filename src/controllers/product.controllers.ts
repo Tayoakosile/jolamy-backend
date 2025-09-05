@@ -44,7 +44,7 @@ export const getSingleProductForNotAdmin = async (
 };
 
 export const addToCart = (req: Request, res: Response) => {
-  const _req  = req as AuthRequest;
+  const _req = req as AuthRequest;
   const user_id = (_req as any).user._id;
   const product_id = _req.body?.product_id;
   const variants = _req.body?.variants || [];
@@ -108,9 +108,8 @@ export const addToCart = (req: Request, res: Response) => {
     for (const variant of variants) {
       const variantId = variant._id;
 
-
       const singleCart = await Cart.updateOne(
-        { "items.variants._id": variantId },
+        { "items.variants._id": variantId, "items.product": product._id },
         {
           $set: {
             "items.$[i].variants.$[j].quantity": variant.quantity,
@@ -126,7 +125,7 @@ export const addToCart = (req: Request, res: Response) => {
       );
 
 
-      if(singleCart.modifiedCount === 0) {
+      if (singleCart && singleCart.modifiedCount === 0) {
         await existingCart.updateOne({
           $push: {
             items: {

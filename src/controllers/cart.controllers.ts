@@ -19,6 +19,7 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
     return;
   }
   const request = async () => {
+
     const product = await checkIfDocumentExistsById(
       product_id,
       "product_id",
@@ -35,6 +36,9 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
     const existingCart = (await Cart.findOne({
       user: user_id,
     })) as any;
+    console.log('existingCart :', existingCart);
+
+
 
     if (!existingCart) {
       const cart = (await Cart.create({
@@ -150,6 +154,8 @@ export const getCarts = (req: Request, res: Response) => {
             ...variant,
             variant_name: originalVariant.name || "",
             ...rest,
+            variant_id: originalVariant?._id,
+            original_product_id: item.product?._id,
             quantity: originalVariant?.quantity || 0,
             total_price:
               originalVariant?.quantity *
@@ -158,8 +164,6 @@ export const getCarts = (req: Request, res: Response) => {
         }
       });
     });
-
-    // console.log("updatedCart :", updatedCart);
 
     const logs = await logActivity({
       req: _req,
@@ -185,6 +189,52 @@ export const getCarts = (req: Request, res: Response) => {
     statusCode: 200,
   });
 };
-export const deleteCart  = ()=>{
 
-}
+export const deleteCart = async (_req: Request, res: Response) => {
+  const req = _req as AuthRequest;
+
+  const id = req.params?.id;
+  console.log(" :", req.params, req.body, "_req.body");
+  console.log("req.user?._id :", req.user?._id);
+
+  // return;
+  //
+  const request = async () => {
+    const user_id = req.user?._id as string;
+    // const cart = (await Cart.findOneAndDelete({ user: user_id })) as ICart;
+    const cart = await Cart.findOneAndUpdate(
+      { user: user_id, "items.product": req.body.product_id },
+      { $pull: { items: { "variants._id": { _id: req.body?.variant_id } } } },
+      { new: true }
+    );
+    const findCart = await Cart.findOne({
+      user: user_id,
+      "items.product": req.body.product_id,
+    });
+    console.log("findCart :", findCart);
+
+    console.log("cart :", cart);
+    return;
+    // await User.findByIdAndUpdate(user_id, { $pull: { cart: cart?._id } });
+
+    await logActivity({
+      req,
+      user_id,
+      action: "DELETE_CART",
+      sender: user_id,
+      receiver: cart?._id as string,
+      description: `User with name ${req.user?.first_name} ${req.user?.last_name} deleted cart with ID ${cart?._id}`,
+      metadata: {
+        cart_id: cart?._id,
+        user_id,
+      },
+    });
+
+    res.status(200).json({ message: "Cart deleted successfully" });
+  };
+  customReqResHandler(res, request, undefined, {
+    successMessage: "Cart deleted successfully",
+    errorMessage: "Error deleting cart",
+    statusCode: 200,
+  });
+};

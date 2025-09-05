@@ -7,13 +7,16 @@ import { logActivity } from "../../utils/activityLog";
 import { errorResponse, successResponse } from "../../utils/response";
 import { checkIfDocumentExistsById } from "../../utils/util";
 
-export const getPendingUsers = async (_req: AuthRequest, res: Response) => {
+export const getPendingUsers = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest
   const users = await User.find({ status: "pending" });
   return res.status(200).json({ users });
 };
 
-export const approveUser = async (req: AuthRequest, res: Response) => {
+export const approveUser = async (_req: Request, res: Response) => {
+
   try {
+    const req = _req as AuthRequest
     const user_id = req.params?.user_id;
     const adminId = req.user?._id;
 

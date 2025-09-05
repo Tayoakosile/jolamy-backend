@@ -27,6 +27,7 @@ const addToCart = (_req, res) => {
         const existingCart = (await Cart_1.Cart.findOne({
             user: user_id,
         }));
+        console.log('existingCart :', existingCart);
         if (!existingCart) {
             const cart = (await Cart_1.Cart.create({
                 user: user_id,
@@ -124,6 +125,8 @@ const getCarts = (req, res) => {
                         ...variant,
                         variant_name: originalVariant.name || "",
                         ...rest,
+                        variant_id: originalVariant?._id,
+                        original_product_id: item.product?._id,
                         quantity: originalVariant?.quantity || 0,
                         total_price: originalVariant?.quantity *
                             variant?.distributor_pricing?.price_per_box || 0,
@@ -131,7 +134,6 @@ const getCarts = (req, res) => {
                 }
             });
         });
-        // console.log("updatedCart :", updatedCart);
         const logs = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
@@ -155,6 +157,43 @@ const getCarts = (req, res) => {
     });
 };
 exports.getCarts = getCarts;
-const deleteCart = () => {
+const deleteCart = async (_req, res) => {
+    const req = _req;
+    const id = req.params?.id;
+    console.log(" :", req.params, req.body, "_req.body");
+    console.log("req.user?._id :", req.user?._id);
+    // return;
+    //
+    const request = async () => {
+        const user_id = req.user?._id;
+        // const cart = (await Cart.findOneAndDelete({ user: user_id })) as ICart;
+        const cart = await Cart_1.Cart.findOneAndUpdate({ user: user_id, "items.product": req.body.product_id }, { $pull: { items: { "variants._id": { _id: req.body?.variant_id } } } }, { new: true });
+        const findCart = await Cart_1.Cart.findOne({
+            user: user_id,
+            "items.product": req.body.product_id,
+        });
+        console.log("findCart :", findCart);
+        console.log("cart :", cart);
+        return;
+        // await User.findByIdAndUpdate(user_id, { $pull: { cart: cart?._id } });
+        await (0, activityLog_1.logActivity)({
+            req,
+            user_id,
+            action: "DELETE_CART",
+            sender: user_id,
+            receiver: cart?._id,
+            description: `User with name ${req.user?.first_name} ${req.user?.last_name} deleted cart with ID ${cart?._id}`,
+            metadata: {
+                cart_id: cart?._id,
+                user_id,
+            },
+        });
+        res.status(200).json({ message: "Cart deleted successfully" });
+    };
+    (0, util_1.customReqResHandler)(res, request, undefined, {
+        successMessage: "Cart deleted successfully",
+        errorMessage: "Error deleting cart",
+        statusCode: 200,
+    });
 };
 exports.deleteCart = deleteCart;

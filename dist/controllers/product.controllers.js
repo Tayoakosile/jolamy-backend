@@ -89,7 +89,7 @@ const addToCart = (req, res) => {
         }
         for (const variant of variants) {
             const variantId = variant._id;
-            const singleCart = await Cart_1.Cart.updateOne({ "items.variants._id": variantId }, {
+            const singleCart = await Cart_1.Cart.updateOne({ "items.variants._id": variantId, "items.product": product._id }, {
                 $set: {
                     "items.$[i].variants.$[j].quantity": variant.quantity,
                 },
@@ -99,7 +99,7 @@ const addToCart = (req, res) => {
                     { "j._id": variantId },
                 ],
             });
-            if (singleCart.modifiedCount === 0) {
+            if (singleCart && singleCart.modifiedCount === 0) {
                 await existingCart.updateOne({
                     $push: {
                         items: {

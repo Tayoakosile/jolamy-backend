@@ -43,13 +43,15 @@ const mail_service_1 = require("../../services/mail.service");
 const activityLog_1 = require("../../utils/activityLog");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
-const getPendingUsers = async (_req, res) => {
+const getPendingUsers = async (req, res) => {
+    const _req = req;
     const users = await User_1.default.find({ status: "pending" });
     return res.status(200).json({ users });
 };
 exports.getPendingUsers = getPendingUsers;
-const approveUser = async (req, res) => {
+const approveUser = async (_req, res) => {
     try {
+        const req = _req;
         const user_id = req.params?.user_id;
         const adminId = req.user?._id;
         const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, "user_id", res, User_1.default));

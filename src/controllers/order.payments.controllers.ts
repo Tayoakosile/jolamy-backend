@@ -357,7 +357,7 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
         "Payment Failed",
         `Your payment for order ${order_id} has failed or been reversed. Please try again or contact support.`
       );
-      errorResponse(res, 400, "Payment failed,abadoned or reversed", {
+      errorResponse(res, 400, "Payment failed, abandoned or reversed", {
         order_id,
         user_id: user?.user_id,
         user_name: user.username,
