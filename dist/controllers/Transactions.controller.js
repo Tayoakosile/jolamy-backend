@@ -11,7 +11,8 @@ const Transaction_1 = __importDefault(require("../models/Transaction"));
 const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
-const getAllTransactions = async (_req, res) => {
+const getAllTransactions = async (req, res) => {
+    const _req = req;
     const user = _req.user;
     if (user?.user_role !== "admin") {
         const transactions = await Transaction_1.default.find({ user_id: user?._id });

@@ -38,7 +38,7 @@ ChatSchema.pre(
 
             // Increment sequence for today
             const counter = await Counter.findOneAndUpdate(
-                { name: "order", date: today },
+                { name: "chat", date: today },
                 { $inc: { sequence: 1 } },
                 { new: true, upsert: true }
             );
@@ -49,7 +49,7 @@ ChatSchema.pre(
             // Random 5-character alphanumeric
             const randomPart = generateRandom(8, "00").toUpperCase();
             const datePart = today.replace(/-/g, "");
-            const chat_id = `ORD-${datePart}-${randomPart}-${String(
+            const chat_id = `CHT-${datePart}-${randomPart}-${String(
                 seq
             ).padStart(4, "0")}`;
             this.chat_id = chat_id;

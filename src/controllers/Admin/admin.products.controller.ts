@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { Types } from "mongoose";
 import { Product } from "../../models/Product";
 import User from "../../models/User";
@@ -10,7 +10,8 @@ import {
   customReqResHandler,
 } from "../../utils/util";
 
-export const addNewProducts = (_req: AuthRequest, res: Response) => {
+export const addNewProducts = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   const user = _req.user;
 
   // if (!_req.files || _req.files.length === 0)  {
@@ -74,7 +75,8 @@ export const addNewProducts = (_req: AuthRequest, res: Response) => {
   customReqResHandler(res, request);
 };
 
-export const getProducts = (_req: AuthRequest, res: Response) => {
+export const getProducts = (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   const request = async () => {
     const isUserAdmin = _req.user?.is_admin;
     return isUserAdmin
@@ -85,7 +87,8 @@ export const getProducts = (_req: AuthRequest, res: Response) => {
   };
   customReqResHandler(res, request);
 };
-export const getSingleProducts = async (_req: AuthRequest, res: Response) => {
+export const getSingleProducts = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   const id = _req.params.id;
   await checkIfDocumentExistsById(id, "product_id", res, Product);
   const request = async () => {
@@ -116,7 +119,8 @@ export const getSingleProducts = async (_req: AuthRequest, res: Response) => {
   });
 };
 
-export const updateProduct = async (req: AuthRequest, res: Response) => {
+export const updateProduct = async (_req: Request, res: Response) => {
+  const req = _req as AuthRequest;
   const id = req.params.id;
   await checkIfDocumentExistsById(id, "product_id", res, Product);
   const body = req.body;
@@ -155,7 +159,8 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
   });
 };
 
-export const archiveProduct = async (req: AuthRequest, res: Response) => {
+export const archiveProduct = async (_req: Request, res: Response) => {
+  const req = _req as AuthRequest;
   const id = req.params.id;
   await checkIfDocumentExistsById(id, "product_id", res, Product);
   const request = async () => {

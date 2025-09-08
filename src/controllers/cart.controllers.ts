@@ -8,21 +8,22 @@ import { Product } from "../models/Product";
 import User from "../models/User";
 import { AuthRequest } from "../types/type";
 import { errorResponse } from "../utils/response";
+import { ProductVariant } from "../types/order.type";
 
-export const addToCart = (_req: AuthRequest, res: Response) => {
+export const addToCart = (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   const user_id = (_req as any).user._id;
   const product_id = _req.body?.product_id;
-  const variants = _req.body?.variants || [];
 
   if (!product_id) {
     errorResponse(res, 400, "Product ID is required");
     return;
   }
-  const request = async () => {
 
+  const request = async () => {
     const product = await checkIfDocumentExistsById(
       product_id,
-      "product_id",
+      "_id",
       res,
       Product,
       undefined,
@@ -33,14 +34,11 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
       return;
     }
 
-    const existingCart = (await Cart.findOne({
+    const cart = (await Cart.findOne({
       user: user_id,
     })) as any;
-    console.log('existingCart :', existingCart);
 
-
-
-    if (!existingCart) {
+    if (!cart) {
       const cart = (await Cart.create({
         user: user_id,
         items: [
@@ -74,56 +72,36 @@ export const addToCart = (_req: AuthRequest, res: Response) => {
       return { message: "Product added to cart successfully" };
     }
 
-    for (const variant of variants) {
-      const variantId = variant._id;
+    // check if product already exists in items
+    const existingItem = cart.items.find(
+      (item) => item.product.toString() === _req?.body?.product_id.toString()
+    );
 
-      const singleCart = await Cart.updateOne(
-        { "items.variants._id": variantId },
-        {
-          $set: {
-            "items.$[i].variants.$[j].quantity": variant.quantity,
-          },
-        },
-        {
-          arrayFilters: [
-            { "i.variants._id": variantId },
+    if (existingItem) {
+      // loop through each variant
+      _req.body?.variants.forEach((variant: ProductVariant) => {
+        const existingVariant = existingItem.variants.find(
+          (v: ProductVariant) => v.name === variant.name
+        );
 
-            { "j._id": variantId },
-          ],
+        if (existingVariant) {
+          existingVariant.quantity = variant.quantity;
+        } else {
+          existingItem.variants.push({
+            ...variant,
+          });
         }
-      );
-
-      if (singleCart.modifiedCount === 0) {
-        await existingCart.updateOne({
-          $push: {
-            items: {
-              product: product._id,
-              variants: [{ ...variant }],
-            },
-          },
-        });
-      }
+      });
+    } else {
+      // ✅ product not found → push new item with all variants
+      cart.items.push({
+        product: _req.body?.product_id,
+        variants: _req.body.variants,
+      });
     }
-    return;
 
-    const log = await logActivity({
-      req: _req,
-      user_id: user_id,
-      action: "ADD_TO_CART",
-      sender: user_id,
-      receiver: product?._id as Types.ObjectId,
-      description: `User with ID ${user_id} added product with ID ${product_id} to cart`,
-      metadata: {
-        cart_id: existingCart._id,
-        product_id: product_id,
-        user_id: user_id,
-      },
-    });
-
-    await User.findByIdAndUpdate(user_id, {
-      $push: { cart: existingCart._id, logs: log._id },
-    });
-    return { message: "Product quantity updated in cart successfully" };
+    await cart.save();
+    return cart;
   };
 
   customReqResHandler(res, request, undefined, {
@@ -137,15 +115,19 @@ export const getCarts = (req: Request, res: Response) => {
   const _req = req as AuthRequest;
   const user_id = (_req as AuthRequest)?.user?._id;
   const request = async () => {
-    const cart = (await Cart.findOne({ user: user_id }).populate({
+    const allCarts = await Cart.findOne({ user: user_id }).populate({
       path: "items.product",
       select: "-created_by  -orders -is_archived -logs -inventory",
-    })) as ICart;
+    });
+    const carts = allCarts
+      ?.toObject()
+      ?.items?.filter((item: any) => item.variants.length >= 1);
 
-    const updatedCart = cart?.toObject()?.items.map((item: any) => {
+    const updatedCart = carts?.map((item: any) => {
       return item.variants.map((originalVariant: any) => {
         const variant = item.product.variants.find(
-          (v: any) => v._id.toString() === originalVariant._id.toString()
+          (productVariant: any) =>
+            productVariant._id.toString() === originalVariant._id.toString()
         );
         const { variants, ...rest } = item.product;
 
@@ -173,7 +155,7 @@ export const getCarts = (req: Request, res: Response) => {
       receiver: _req.user?._id,
       description: `User with ID ${_req.user?.user_id} fetched cart with product`,
       metadata: {
-        cart_id: cart?._id || "",
+        // cart_id: carts?._id || "",
         user_id: _req.user?._id,
       },
     });
@@ -182,7 +164,7 @@ export const getCarts = (req: Request, res: Response) => {
       $push: { logs: logs.id },
     });
 
-    return { cart, checkout: updatedCart };
+    return { cart:carts, checkout: updatedCart };
   };
   customReqResHandler(res, request, undefined, {
     successMessage: "Cart retrieved successfully",
@@ -197,23 +179,25 @@ export const deleteCart = async (_req: Request, res: Response) => {
   console.log(" :", req.params, req.body, "_req.body");
   console.log("req.user?._id :", req.user?._id);
 
-  // return;
   //
   const request = async () => {
     const user_id = req.user?._id as string;
-    // const cart = (await Cart.findOneAndDelete({ user: user_id })) as ICart;
     const cart = await Cart.findOneAndUpdate(
       { user: user_id, "items.product": req.body.product_id },
-      { $pull: { items: { "variants._id": { _id: req.body?.variant_id } } } },
+      {
+        $pull: {
+          "items.$.variants": { _id: req.body?.variant_id },
+        },
+      },
       { new: true }
     );
     const findCart = await Cart.findOne({
       user: user_id,
       "items.product": req.body.product_id,
     });
-    console.log("findCart :", findCart);
 
-    console.log("cart :", cart);
+
+
     return;
     // await User.findByIdAndUpdate(user_id, { $pull: { cart: cart?._id } });
 
@@ -235,6 +219,42 @@ export const deleteCart = async (_req: Request, res: Response) => {
   customReqResHandler(res, request, undefined, {
     successMessage: "Cart deleted successfully",
     errorMessage: "Error deleting cart",
+    statusCode: 200,
+  });
+};
+
+export const getCart = (_req: AuthRequest, res: Response) => {
+  const user_id = (_req as any).user._id;
+  const request = async () => {
+    const cart = await Cart.findOne({ user: user_id }).populate(
+      "items.product"
+    );
+    if (!cart) {
+      errorResponse(res, 404, "Cart not found");
+      return;
+    }
+
+    const logs = await logActivity({
+      req: _req,
+      user_id: new Types.ObjectId(_req.user?._id),
+      action: "GET_CART",
+      sender: new Types.ObjectId(_req.user?._id),
+      receiver: cart._id as Types.ObjectId,
+      description: `User with ID ${_req.user?.user_id} fetched cart with product`,
+      metadata: {
+        cart_id: cart._id,
+        user_id: _req.user?._id,
+      },
+    });
+
+    await User.findByIdAndUpdate(_req.user?._id, {
+      $push: { logs: logs.id },
+    });
+
+    return cart;
+  };
+  customReqResHandler(res, request, undefined, {
+    successMessage: "Cart retrieved successfully",
     statusCode: 200,
   });
 };

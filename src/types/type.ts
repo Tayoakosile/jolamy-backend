@@ -21,6 +21,19 @@ export type UserRole =
   | "factory_worker";
 
 export type UserDocument = IUser & IOfficeWorker & Document;
+export interface IStockLog {
+  type: "restock" | "deduction" | "delivery" | "adjustment";
+  quantity: number;
+  user_id:  Types.ObjectId;
+  previous_stock?: number;
+  new_stock?: number;
+  internal_sequence?: number;
+  reason?: string;
+  stock_log_id?: string;
+  order?: Types.ObjectId; // ref: "Order"
+  updated_by?: Types.ObjectId; // ref: "User"
+  created_at: Date;
+}
 export interface IUser extends IOfficeWorker {
   _id: Types.ObjectId;
   total_boxes_ordered: number;
@@ -29,6 +42,7 @@ export interface IUser extends IOfficeWorker {
   user_id: string;
   internal_sequence: number;
   first_name: string;
+  stock_logs?: IStockLog[];
   full_name: string;
   last_name: string;
   approved_by: Types.ObjectId;
@@ -43,7 +57,7 @@ export interface IUser extends IOfficeWorker {
   gender: string;
   dob: Date;
   business_address: string;
-  has_accepted_distributor_terms: boolean;
+  has_accepted_terms: boolean;
   is_factory_worker: boolean;
   is_verified: boolean;
   disabled_reason?: string;
@@ -52,18 +66,19 @@ export interface IUser extends IOfficeWorker {
   is_admin: boolean;
   is_distributor: boolean;
   is_sales_agent: boolean;
+
   is_worker: boolean;
   files: {
     proof_of_identity: {
-      id_type: string,
-      id_number: string,
-      files: string[],
-    },
+      id_type: string;
+      id_number: string;
+      files: string[];
+    };
     warehouse_photos: {
-      interior: string[],
-      exterior: string[],
-    },
-  },
+      interior: string[];
+      exterior: string[];
+    };
+  };
   is_first_login: boolean;
   address: {
     distributors_address: {

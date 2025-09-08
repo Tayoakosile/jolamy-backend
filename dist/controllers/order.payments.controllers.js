@@ -15,7 +15,8 @@ const util_1 = require("../utils/util");
 const mail_service_1 = require("../services/mail.service");
 const Transaction_1 = __importDefault(require("../models/Transaction"));
 const Office_1 = __importDefault(require("../models/Admin/Office"));
-const initiatePayment = async (_req, res) => {
+const initiatePayment = async (req, res) => {
+    const _req = req;
     try {
         const user = _req.user;
         const order = _req.order;
@@ -97,7 +98,8 @@ const initiatePaymentWithPaystack = async (order_id) => {
     });
 };
 exports.initiatePaymentWithPaystack = initiatePaymentWithPaystack;
-const verifyPayment = async (_req, res) => {
+const verifyPayment = async (req, res) => {
+    const _req = req;
     try {
         const user = _req.user;
         const order = _req.order;
@@ -155,7 +157,7 @@ const verifyPayment = async (_req, res) => {
                     transaction_id: transaction?.transaction_id,
                 },
             });
-            // Log that order was asssinged to this office
+            // Log that order was assinged to this office
             const officeLog = await (0, activityLog_1.logActivity)({
                 req: _req,
                 user_id: user?._id,
@@ -186,6 +188,10 @@ const verifyPayment = async (_req, res) => {
                 delivery_status: "processing",
                 status: "processing",
                 payment_method: "Paystack",
+                estimated_delivery_date: {
+                    start: new Date(new Date().setDate(new Date().getDate() + 21)),
+                    end: new Date(new Date().setDate(new Date().getDate() + 28)),
+                },
                 payment_reference: response.data?.data?.reference,
                 $push: {
                     logs: {
@@ -228,9 +234,6 @@ const verifyPayment = async (_req, res) => {
                     logs: {
                         $each: [log.id, officeLog.id],
                     },
-                },
-                $inc: {
-                    total_boxes_in_stock: Number(order?.total_quantity || 0),
                 },
             });
             //   find the cart and delete it items array, if the id is in items then delete the collection

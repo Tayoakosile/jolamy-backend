@@ -34,8 +34,8 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const counter_1 = require("./counter");
 const util_1 = require("../utils/util");
+const counter_1 = require("./counter");
 // const PricingSchema = new Schema<Pricing>(
 //   {
 //     distributor_price_per_box: { type: Number, required: true },
@@ -95,7 +95,7 @@ TransactionSchema.pre("save", async function (next) {
     if (this.isNew) {
         const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
         // Increment sequence for today
-        const counter = await counter_1.Counter.findOneAndUpdate({ name: "order", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
+        const counter = await counter_1.Counter.findOneAndUpdate({ name: "transaction", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
         const seq = counter.sequence;
         this.internal_sequence = seq;
         // Random 5-character alphanumeric

@@ -15,13 +15,13 @@ ChatSchema.pre("save", async function (next) {
     if (this.isNew) {
         const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
         // Increment sequence for today
-        const counter = await counter_1.Counter.findOneAndUpdate({ name: "order", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
+        const counter = await counter_1.Counter.findOneAndUpdate({ name: "chat", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
         const seq = counter.sequence;
         this.internal_sequence = seq;
         // Random 5-character alphanumeric
         const randomPart = (0, util_1.generateRandom)(8, "00").toUpperCase();
         const datePart = today.replace(/-/g, "");
-        const chat_id = `ORD-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
+        const chat_id = `CHT-${datePart}-${randomPart}-${String(seq).padStart(4, "0")}`;
         this.chat_id = chat_id;
     }
     next();

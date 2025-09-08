@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   cancelOrder,
+  confirmOrder,
   createNewOrder,
   getAllOrders,
   getSingleOrder,
@@ -11,7 +12,7 @@ import {
   initiatePayment,
   verifyPayment,
 } from "../controllers/order.payments.controllers";
-import { appAuth, isWorker } from "../middlewares/auth";
+import { appAuth } from "../middlewares/auth";
 import { validateOrder } from "../middlewares/order";
 import { removeSensitiveFields } from "../utils/util";
 
@@ -29,14 +30,6 @@ router.put(
   updateOrder
 );
 router.patch(
-  "/:id/status",
-  appAuth,
-  // isWorker,
-  removeSensitiveFields,
-  validateOrder,
-  updateOrderStatus
-);
-router.patch(
   "/:id",
   appAuth,
   // isWorker,
@@ -44,6 +37,24 @@ router.patch(
   validateOrder,
   updateOrder
 );
+
+router.put(
+  "/:id/confirm-delivery",
+  appAuth,
+  // isWorker,
+  removeSensitiveFields,
+  validateOrder,
+  confirmOrder
+);
+router.patch(
+  "/:id/status",
+  appAuth,
+  // isWorker,
+  removeSensitiveFields,
+  validateOrder,
+  updateOrderStatus
+);
+
 
 router.put(
   "/:id/cancel-order",

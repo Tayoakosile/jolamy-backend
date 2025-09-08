@@ -8,7 +8,8 @@ import { logActivity } from "../utils/activityLog";
 import { errorResponse, successResponse } from "../utils/response";
 import { checkIfDocumentExistsById, customReqResHandler } from "../utils/util";
 
-export const getAllTransactions = async (_req: AuthRequest, res: Response) => {
+export const getAllTransactions = async (req: Request, res: Response) => {
+  const _req  = req as AuthRequest;
   const user = _req.user;
 
   if (user?.user_role !== "admin") {

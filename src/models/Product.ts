@@ -12,6 +12,7 @@ interface Pricing {
 }
 
 interface Variant extends Document {
+  attributes: { key: string; value: string }[]; // e.g., [{key: "color", value: "red"}, {key: "size", value: "M"}]
   available_weight: string; // e.g., '500g', '1kg'
   name: string;
   inventory_alert_threshold: number;
@@ -38,7 +39,7 @@ export interface IProduct extends Document {
   name: string;
   product_id: string;
   internal_sequence: number;
-  inventory: [];
+
   reference_id?: string; // optional external ID or reference
   description?: string;
   available_weight: { type: String; required: true };
@@ -69,7 +70,12 @@ export interface IProduct extends Document {
 
 const VariantSchema = new Schema<Variant>({
   name: { type: String, required: true },
-
+  attributes: [
+    {
+      key: { type: String, required: true },
+      value: { type: String, required: true },
+    },
+  ],
   inventory_alert_threshold: { type: Number, required: true },
   units_per_box: { type: Number, required: true },
   total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
@@ -106,18 +112,7 @@ const ProductSchema = new Schema<IProduct>(
     archived_by: { type: Schema.Types.ObjectId, ref: "User" }, // reference to the admin who archived the product
     variants: [VariantSchema],
     logs: [{ type: Schema.Types.ObjectId, ref: "Log" }],
-    inventory: [
-      {
-        variant: {
-          type: String,
-          required: true,
-        },
-        in_stock: { type: Number, required: true },
-        total_sold: { type: Number, default: 0 },
-        min_threshold: { type: Number, default: 0 },
-        sold_this_month: { type: Number, default: 0 },
-      },
-    ],
+
     orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     created_by: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },

@@ -1,8 +1,10 @@
 import { Document, Types } from "mongoose";
+import { IUser } from "./type";
 
 export interface ProductVariant {
   id: Types.ObjectId;
   quantity: number;
+  name: string;
 }
 
 export interface ProductItem {
@@ -52,6 +54,7 @@ export interface IShippingDetails {
 }
 export interface IDeliveryDetails {
   label: DeliverySteps;
+  is_confirmed: boolean;
   date: Date;
   description: string;
   updated_by: {
@@ -60,11 +63,17 @@ export interface IDeliveryDetails {
   };
 }
 export interface IOrder extends Document {
-  user_id: { type: Types.ObjectId; ref: "User"; required: true };
+  user_id: IUser;
   assigned_to?: {
     office: Types.ObjectId;
     office_worker: Types.ObjectId;
     worker_handling_order: Types.ObjectId;
+  };
+  confirmation: {
+    is_confirmed: Boolean;
+    confirmed_at: Date;
+    auto_confirmed_at?: Date;
+    method: "user" | "auto";
   };
   order_number?: string;
   date?: Date;
@@ -84,7 +93,10 @@ export interface IOrder extends Document {
   grand_total?: number;
 
   total_quantity?: number;
-  estimated_delivery_date?: Date;
+  estimated_delivery_date: {
+    start: Date;
+    end: Date;
+  };
   actual_delivery_date?: Date;
   priority_level: "normal" | "urgent";
   discount_amount?: number;

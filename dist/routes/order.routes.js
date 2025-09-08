@@ -13,12 +13,15 @@ router.get("/:id", auth_1.appAuth, order_1.validateOrder, Order_controllers_1.ge
 router.put("/:id", auth_1.appAuth, 
 // isWorker,
 util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.updateOrder);
-router.patch("/:id/status", auth_1.appAuth, 
-// isWorker,
-util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.updateOrderStatus);
 router.patch("/:id", auth_1.appAuth, 
 // isWorker,
 util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.updateOrder);
+router.put("/:id/confirm-delivery", auth_1.appAuth, 
+// isWorker,
+util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.confirmOrder);
+router.patch("/:id/status", auth_1.appAuth, 
+// isWorker,
+util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.updateOrderStatus);
 router.put("/:id/cancel-order", auth_1.appAuth, 
 // isWorker,
 util_1.removeSensitiveFields, order_1.validateOrder, Order_controllers_1.cancelOrder);

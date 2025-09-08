@@ -34,7 +34,8 @@ const getTotalCashflow = (data, period, type, name) => {
         }), "amount"),
     };
 };
-const getOffices = (_req, res) => {
+const getOffices = async (req, res) => {
+    const _req = req;
     const user = _req.user;
     const request = async () => {
         if (user?.user_role === "admin") {
@@ -70,9 +71,10 @@ const getOffices = (_req, res) => {
     (0, util_1.customReqResHandler)(res, request);
 };
 exports.getOffices = getOffices;
-const getSingleOffice = async (_req, res) => {
+const getSingleOffice = async (req, res) => {
+    const _req = req;
     const id = _req.params.id;
-    console.log('id :', id);
+    console.log("id :", id);
     const request = async () => {
         const single_office = await (0, util_1.checkIfDocumentExistsById)(id, "office_id", res, Office_1.default, ["created_by", "logs", "orders"]);
         const log = await (0, activityLog_1.logActivity)({
@@ -152,7 +154,8 @@ exports.getSingleOffice = getSingleOffice;
  * @param {AuthRequest} req
  * @param {Response} res
  */
-const createNewOffices = (req, res) => {
+const createNewOffices = async (_req, res) => {
+    const req = _req;
     const request = async () => {
         const existingOffice = await Office_1.default.exists({})
             .where("name")
@@ -201,7 +204,8 @@ const createNewOffices = (req, res) => {
     });
 };
 exports.createNewOffices = createNewOffices;
-const updateOffice = async (req, res) => {
+const updateOffice = async (_req, res) => {
+    const req = _req;
     const id = req.params.id;
     await (0, util_1.checkIfDocumentExistsById)(id, "_id", res, Office_1.default);
     const request = async () => {

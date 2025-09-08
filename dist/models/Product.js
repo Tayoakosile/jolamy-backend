@@ -50,6 +50,12 @@ const util_1 = require("../utils/util");
 // );
 const VariantSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
+    attributes: [
+        {
+            key: { type: String, required: true },
+            value: { type: String, required: true },
+        },
+    ],
     inventory_alert_threshold: { type: Number, required: true },
     units_per_box: { type: Number, required: true },
     total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
@@ -82,18 +88,6 @@ const ProductSchema = new mongoose_1.Schema({
     archived_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" }, // reference to the admin who archived the product
     variants: [VariantSchema],
     logs: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Log" }],
-    inventory: [
-        {
-            variant: {
-                type: String,
-                required: true,
-            },
-            in_stock: { type: Number, required: true },
-            total_sold: { type: Number, default: 0 },
-            min_threshold: { type: Number, default: 0 },
-            sold_this_month: { type: Number, default: 0 },
-        },
-    ],
     orders: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Order" }],
     created_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
 }, { timestamps: { ...util_1.timestamp } });

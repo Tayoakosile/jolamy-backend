@@ -1,7 +1,6 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
-import { Counter } from "./counter";
+import mongoose, { Document, Schema, Types } from "mongoose";
 import { generateRandom, timestamp } from "../utils/util";
-import { timeStamp } from "console";
+import { Counter } from "./counter";
 
 export interface ITransaction extends Document {
   transaction_id: string;
@@ -101,7 +100,7 @@ TransactionSchema.pre(
 
       // Increment sequence for today
       const counter = await Counter.findOneAndUpdate(
-        { name: "order", date: today },
+        { name: "transaction", date: today },
         { $inc: { sequence: 1 } },
         { new: true, upsert: true }
       );

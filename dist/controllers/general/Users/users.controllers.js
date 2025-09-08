@@ -18,8 +18,9 @@ const getPendingUsers = async (_req, res) => {
     return res.status(200).json({ users });
 };
 exports.getPendingUsers = getPendingUsers;
-const getAllUsers = async (_req, res) => {
+const getAllUsers = async (req, res) => {
     // Get all users not admin
+    const _req = req;
     const orderStatus = _req.query?.status;
     const period = "week";
     const user = _req.user;
@@ -27,7 +28,6 @@ const getAllUsers = async (_req, res) => {
     const orderStatusContained = orderStatus
         ? ["pending_for_documents", "submitted_for_review", "pending_for_approval"]
         : ["approved"];
-    console.log("orderStatusContained :", orderStatusContained);
     try {
         if (user?.is_admin) {
             const users = await User_1.default.find({
@@ -71,14 +71,26 @@ const getAllUsers = async (_req, res) => {
     }
 };
 exports.getAllUsers = getAllUsers;
-const getSingleUser = async (_req, res) => {
+const getSingleUser = async (req, res) => {
     // Get all users not admin
+    const _req = req;
     const period = "week";
     try {
-        const userInfo = _req.user;
         const param = _req.params.id;
         const user = await (0, util_1.checkIfDocumentExistsById)(param, "user_id", res, User_1.default, ["logs", "orders", "transaction_history", "approved_by"]);
         const user_id = user && new mongoose_1.Types.ObjectId(user?._id);
+        const boxes_in_stock = {
+            // {
+            //   currentTotal: number;
+            //   previousTotal: number;
+            //   percentageChange: number;
+            //   trend: "increase" | "decrease" | "no-change";
+            // }
+            currentTotal: `${user?.total_boxes_in_stock} Boxes` || 0,
+            previousTotal: 0,
+            percentageChange: 0,
+            trend: "no-change",
+        };
         const order = await (0, trend_util_1.getTrend)(Order_1.default, {
             period,
             filter: { user_id },
@@ -99,14 +111,18 @@ const getSingleUser = async (_req, res) => {
             filter: { user_id },
             sumField: "amount",
         });
-        const transaction = await (0, trend_util_1.getTrend)(Transaction_1.default, {
+        const transactions = await (0, trend_util_1.getTrend)(Transaction_1.default, {
             period,
             filter: { user_id },
-            sumField: "amount",
+            sumField: "total",
         });
         (0, response_1.successResponse)(res, 200, "User fetched successfully", {
             user,
             stats: [
+                {
+                    title: "Boxes in Stock",
+                    ...boxes_in_stock,
+                },
                 {
                     title: "Total Orders",
                     ...order,
@@ -127,7 +143,7 @@ const getSingleUser = async (_req, res) => {
                 {
                     title: "Total Transactions",
                     type: "currency",
-                    ...transaction,
+                    ...transactions,
                 },
             ],
         });

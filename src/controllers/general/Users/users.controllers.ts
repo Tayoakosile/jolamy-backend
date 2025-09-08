@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import User from "../../../models/User";
 import { AuthRequest } from "../../../types/type";
 import { successResponse } from "../../../utils/response";
@@ -14,8 +14,9 @@ export const getPendingUsers = async (_req: AuthRequest, res: Response) => {
   const users = await User.find({ status: "pending" });
   return res.status(200).json({ users });
 };
-export const getAllUsers = async (_req: AuthRequest, res: Response) => {
+export const getAllUsers = async (req: Request, res: Response) => {
   // Get all users not admin
+  const _req = req as AuthRequest;
   const orderStatus = _req.query?.status;
 
   const period = "week";
@@ -25,7 +26,6 @@ export const getAllUsers = async (_req: AuthRequest, res: Response) => {
   const orderStatusContained = orderStatus
     ? ["pending_for_documents", "submitted_for_review", "pending_for_approval"]
     : ["approved"];
-  console.log("orderStatusContained :", orderStatusContained);
 
   try {
     if (user?.is_admin) {
@@ -71,12 +71,12 @@ export const getAllUsers = async (_req: AuthRequest, res: Response) => {
     return res.status(500).json({ error: "Error fetching users" });
   }
 };
-export const getSingleUser = async (_req: AuthRequest, res: Response) => {
+export const getSingleUser = async (req: Request, res: Response) => {
   // Get all users not admin
+  const _req = req as AuthRequest;
   const period = "week";
 
   try {
-    const userInfo = _req.user;
     const param = _req.params.id;
     const user = await checkIfDocumentExistsById(
       param as string,
@@ -87,6 +87,18 @@ export const getSingleUser = async (_req: AuthRequest, res: Response) => {
     );
 
     const user_id = user && new Types.ObjectId(user?._id);
+    const boxes_in_stock = {
+      // {
+      //   currentTotal: number;
+      //   previousTotal: number;
+      //   percentageChange: number;
+      //   trend: "increase" | "decrease" | "no-change";
+      // }
+      currentTotal: `${user?.total_boxes_in_stock} Boxes` || 0,
+      previousTotal: 0,
+      percentageChange: 0,
+      trend: "no-change" as "increase" | "decrease" | "no-change",
+    };
     const order = await getTrend(Order, {
       period,
       filter: { user_id },
@@ -109,15 +121,19 @@ export const getSingleUser = async (_req: AuthRequest, res: Response) => {
       filter: { user_id },
       sumField: "amount",
     });
-    const transaction = await getTrend(Transaction, {
+    const transactions = await getTrend(Transaction, {
       period,
       filter: { user_id },
-      sumField: "amount",
+      sumField: "total",
     });
 
     successResponse(res, 200, "User fetched successfully", {
       user,
       stats: [
+        {
+          title: "Boxes in Stock",
+          ...boxes_in_stock,
+        },
         {
           title: "Total Orders",
           ...order,
@@ -138,7 +154,7 @@ export const getSingleUser = async (_req: AuthRequest, res: Response) => {
         {
           title: "Total Transactions",
           type: "currency",
-          ...transaction,
+          ...transactions,
         },
       ],
     });

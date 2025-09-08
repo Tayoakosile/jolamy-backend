@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Response } from "express";
+import { Request, Response } from "express";
 import _ from "lodash";
 import { Types } from "mongoose";
 import Offices, { IOffice } from "../../models/Admin/Office";
@@ -11,7 +11,7 @@ import { errorResponse } from "../../utils/response";
 import { getTrend } from "../../utils/trend.util";
 import {
   checkIfDocumentExistsById,
-  customReqResHandler
+  customReqResHandler,
 } from "../../utils/util";
 
 const getTotalCashflow = (
@@ -48,7 +48,8 @@ const getTotalCashflow = (
   };
 };
 
-export const getOffices = (_req: AuthRequest, res: Response) => {
+export const getOffices = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   const user = _req.user;
   const request = async () => {
     if (user?.user_role === "admin") {
@@ -90,9 +91,10 @@ export const getOffices = (_req: AuthRequest, res: Response) => {
   customReqResHandler(res, request);
 };
 
-export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
+export const getSingleOffice = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   const id = _req.params.id;
-  console.log('id :', id);
+  console.log("id :", id);
 
   const request = async () => {
     const single_office = await checkIfDocumentExistsById<IOffice>(
@@ -100,10 +102,8 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
       "office_id",
       res,
       Offices,
-      ["created_by", "logs","orders"]
+      ["created_by", "logs", "orders"]
     );
-
-
 
     const log = await logActivity({
       req: _req,
@@ -197,7 +197,8 @@ export const getSingleOffice = async (_req: AuthRequest, res: Response) => {
  * @param {AuthRequest} req
  * @param {Response} res
  */
-export const createNewOffices = (req: AuthRequest, res: Response) => {
+export const createNewOffices = async (_req: Request, res: Response) => {
+  const req = _req as AuthRequest;
   const request = async () => {
     const existingOffice = await Offices.exists({})
       .where("name")
@@ -253,7 +254,8 @@ export const createNewOffices = (req: AuthRequest, res: Response) => {
   );
 };
 
-export const updateOffice = async (req: AuthRequest, res: Response) => {
+export const updateOffice = async (_req: Request, res: Response) => {
+  const req = _req as AuthRequest;
   const id = req.params.id;
   await checkIfDocumentExistsById<IOffice>(id, "_id", res, Offices);
 

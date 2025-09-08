@@ -17,10 +17,10 @@ const ProductItemSchema = new mongoose_1.Schema({
     ],
 });
 const ShippingSchema = new mongoose_1.Schema({
-    recipient_name: { type: String, required: true },
+    recipient_name: { type: String },
     phone: { type: String, required: true },
     address: { type: String, required: true },
-    city: { type: String, required: true },
+    city: { type: String },
     state: { type: String, required: true },
     country: { type: String, required: true },
     postal_code: { type: String },
@@ -47,6 +47,7 @@ const DeliveryStepSchema = new mongoose_1.Schema({
         ],
     },
     description: { type: String },
+    is_confirmed: { type: Boolean, default: false },
     date: { type: Date },
     updated_by: {
         type: { type: String },
@@ -77,6 +78,12 @@ const OrderSchema = new mongoose_1.Schema({
         enum: ["normal", "urgent"],
         default: "normal",
     },
+    confirmation: {
+        is_confirmed: { type: Boolean, default: false }, // final confirmation
+        confirmed_at: { type: Date, default: null },
+        auto_confirmed_at: { type: Date, default: null }, // when system should auto confirm
+        method: { type: String, enum: ["user", "system"], default: "system" }, // who confirmed
+    },
     order_number: { type: String },
     date: { type: Date, default: Date.now },
     delivery_fee: { type: Number },
@@ -98,6 +105,7 @@ const OrderSchema = new mongoose_1.Schema({
             "pending",
             "initiated",
             "paid",
+            "manual_paid",
             "cancelled",
             "reversed",
             "abandoned",
@@ -135,8 +143,10 @@ const OrderSchema = new mongoose_1.Schema({
     total_amount: { type: Number, default: 0 },
     grand_total: { type: Number, default: 0 }, // total_amount + delivery_fee
     total_quantity: { type: Number, default: 0 },
-    order_confirmed: { type: Boolean, default: false },
-    estimated_delivery_date: { type: Date },
+    estimated_delivery_date: {
+        start: { type: Date },
+        end: { type: Date },
+    },
     actual_delivery_date: { type: Date },
     discount_amount: { type: Number, default: 0 },
     tax_amount: { type: Number, default: 0 },

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Response } from "express";
+import { Request, Response } from "express";
 import Order from "../models/Order";
 
 import User from "../models/User";
@@ -14,7 +14,8 @@ import Transaction from "../models/Transaction";
 import Offices from "../models/Admin/Office";
 import { IOrder } from "../types/order.type";
 
-export const initiatePayment = async (_req: AuthRequest, res: Response) => {
+export const initiatePayment = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   try {
     const user = _req.user as IUser;
     const order = _req.order as IOrder;
@@ -104,10 +105,12 @@ export const initiatePaymentWithPaystack = async (order_id: string) => {
   );
 };
 
-export const verifyPayment = async (_req: AuthRequest, res: Response) => {
+export const verifyPayment = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   try {
     const user = _req.user as IUser;
     const order = _req.order as IOrder;
+
     if (order.payment_status !== "initiated") {
       res.status(400).json({
         message: "Payment has not been initiated for this order",
@@ -177,7 +180,7 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
           transaction_id: transaction?.transaction_id,
         },
       });
-      // Log that order was asssinged to this office
+      // Log that order was assinged to this office
       const officeLog = await logActivity({
         req: _req,
         user_id: user?._id,
@@ -212,6 +215,10 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
           delivery_status: "processing",
           status: "processing",
           payment_method: "Paystack",
+          estimated_delivery_date: {
+            start: new Date(new Date().setDate(new Date().getDate() + 21)),
+            end: new Date(new Date().setDate(new Date().getDate() + 28)),
+          },
           payment_reference: response.data?.data?.reference,
           $push: {
             logs: {
@@ -256,9 +263,6 @@ export const verifyPayment = async (_req: AuthRequest, res: Response) => {
           logs: {
             $each: [log.id, officeLog.id],
           },
-        },
-        $inc: {
-          total_boxes_in_stock: Number(order?.total_quantity || 0),
         },
       });
 

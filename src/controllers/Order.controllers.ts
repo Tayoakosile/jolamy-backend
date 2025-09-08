@@ -12,6 +12,9 @@ import { getTrend } from "../utils/trend.util";
 import { customReqResHandler, generateRandom } from "../utils/util";
 import OfficeWorker from "../models/Admin/OfficeWorker";
 import Offices from "../models/Admin/Office";
+import dayjs from "dayjs";
+import { IOrder } from "../types/order.type";
+import StockLog from "../models/StockLog";
 
 export const getAllOrders = (_req: Request, res: Response) => {
   const user = (_req as any).user;
@@ -19,7 +22,7 @@ export const getAllOrders = (_req: Request, res: Response) => {
 
   const request = async () => {
     if (user?.user_role === "admin") {
-      const allOrders = await Order.find({});
+      const allOrders = await Order.find({}).sort({ created_at: -1 });
 
       const allOrdersStat = await getTrend(Order, {
         period: "week",
@@ -82,7 +85,8 @@ export const getAllOrders = (_req: Request, res: Response) => {
     statusCode: 200,
   });
 };
-export const getSingleOrder = async (_req: AuthRequest, res: Response) => {
+export const getSingleOrder = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   const order = _req?.order;
 
   const orderDetails = await Order.findById(order && order._id)
@@ -101,13 +105,19 @@ export const getSingleOrder = async (_req: AuthRequest, res: Response) => {
     });
 
   successResponse(res, 200, "Order retrieved successfully", {
-    order: orderDetails,
+    order: {
+      ...orderDetails?.toObject(),
+      is_delivered: order?.delivery_steps?.some((step) =>
+        step.label.includes("delivered")
+      ),
+    },
   });
 
   // }
 };
 
-export const createNewOrder = (_req: AuthRequest, res: Response) => {
+export const createNewOrder = (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   const user = _req.user;
   const id = user?._id;
   const body = _req.body;
@@ -225,14 +235,23 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
 
     const order = await Order.create({
       products: Products,
-      shipping: {
-        recipient_name: `${user?.first_name} ${user?.last_name}`,
-        phone: user?.phone_number,
-        note_from_user: body.note_from_user || "",
-        ...user?.address?.distributors_address,
-        delivery_type: "delivery",
-        ...body?.shipping,
-      },
+      shipping: user?.address?.distributors_address?.address
+        ? {
+            recipient_name: `${user?.first_name} ${user?.last_name}`,
+            phone: user?.phone_number,
+            note_from_user: body.note_from_user || "",
+            ...user?.address?.distributors_address,
+            delivery_type: "delivery",
+            ...body?.shipping,
+          }
+        : {
+            recipient_name: `${user?.first_name} ${user?.last_name}`,
+            phone: user?.phone_number,
+            note_from_user: body.note_from_user || "",
+            ...user?.address?.business_address,
+            delivery_type: "delivery",
+            ...body?.shipping,
+          },
       role: user?.user_role,
       tracking_number: `JOL-${generateRandom(12)}`,
       total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
@@ -330,7 +349,8 @@ export const createNewOrder = (_req: AuthRequest, res: Response) => {
     }
   );
 };
-export const updateOrder = async (_req: AuthRequest, res: Response) => {
+export const updateOrder = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   const body = _req.body;
   const user = _req.user;
   const orderID = _req.params?.id;
@@ -402,11 +422,14 @@ export const updateOrder = async (_req: AuthRequest, res: Response) => {
   );
 };
 
-export const updateOrderStatus = async (_req: AuthRequest, res: Response) => {
+export const updateOrderStatus = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   const body = _req.body;
 
   const user = _req.user;
   const worker = _req.worker;
+  const delivery_status = body?.delivery_status;
+
   if (!body) {
     errorResponse(res, 400, "Body is required", {
       message: `Body is required `,
@@ -415,34 +438,10 @@ export const updateOrderStatus = async (_req: AuthRequest, res: Response) => {
   }
 
   const order = _req.order;
-  const isOrderStatusAlreadyIn = order?.delivery_steps_logs.find(
-    (step) => step.label === body.delivery_status
-  );
-  if (isOrderStatusAlreadyIn) {
-    successResponse(res, 200, "Order status updated successfully");
-    return;
-  }
 
-  await logActivity({
-    req: _req,
-    user_id: new Types.ObjectId(worker?.id || user?._id),
-    action: "UPDATE_ORDER_STATUS",
-    sender: new Types.ObjectId(worker?.id || user?._id),
-    receiver: order?._id as Types.ObjectId,
-    description: `Order status updated to ${body.delivery_status} by ${
-      worker?.id ? "worker" : "admin"
-    } ${worker?.first_name || user?.first_name} ${
-      worker?.last_name || user?.last_name
-    }`,
-    metadata: {
-      order_id: order?._id as Types.ObjectId,
-      user_id: worker?.id || user?._id,
-      new_status: body.delivery_status,
-      updated_by: worker?.id ? "worker" : "admin",
-      sender: user?.first_name + " " + user?.last_name,
-      receiver: user?.first_name + " " + user?.last_name,
-    },
-  });
+  const isOrderStatusAlreadyIn = order?.delivery_steps_logs.find(
+    (step) => step.label === delivery_status
+  );
 
   const delivery_steps = {
     label: body.delivery_status,
@@ -459,22 +458,101 @@ export const updateOrderStatus = async (_req: AuthRequest, res: Response) => {
       office: worker?.office_id || null,
     },
   };
-  await Order.findByIdAndUpdate(order?._id, {
-    delivery_status: body.delivery_status,
-    assigned_to: {
-      worker_handling_order:
-        order?.assigned_to?.worker_handling_order || worker?.worker_id || null,
-    },
-    status: body?.status
-      ? body?.status
-      : body?.delivery_status === "delivered"
-      ? "delivered"
-      : "processing",
-    $push: {
-      delivery_steps,
-      delivery_steps_logs: delivery_steps,
+
+  const log = await logActivity({
+    req: _req,
+    user_id: worker?.id || user?._id,
+    action: "UPDATE_ORDER_STATUS",
+    sender: worker?.id || user?._id,
+    receiver: order?._id as Types.ObjectId,
+    description: `Order status updated to ${delivery_status} by ${
+      worker?.id ? "worker" : "admin"
+    } ${worker?.first_name || user?.first_name} ${
+      worker?.last_name || user?.last_name
+    }`,
+    metadata: {
+      order_id: order?._id as Types.ObjectId,
+      user_id: worker?.id || user?._id,
+      new_status: delivery_status,
+      updated_by: worker?.id ? "worker" : "admin",
+      sender: user?.first_name + " " + user?.last_name,
+      receiver: user?.first_name + " " + user?.last_name,
     },
   });
+
+  if (isOrderStatusAlreadyIn) {
+    await Order.findByIdAndUpdate(order?._id, {
+      estimated_delivery_date: body.estimated_delivery_date,
+      delivery_status: body.delivery_status,
+      assigned_to: {
+        worker_handling_order:
+          order?.assigned_to?.worker_handling_order ||
+          worker?.worker_id ||
+          null,
+      },
+      status: body?.status
+        ? body?.status
+        : body?.delivery_status === "delivered"
+        ? "delivered"
+        : "processing",
+      // $push: {
+      //   delivery_steps,
+      //   delivery_steps_logs: delivery_steps,
+      // },
+    });
+  } else {
+    if (user?.is_admin && delivery_status?.includes("order_delivered")) {
+      console.log(" :", order?.user_id);
+
+      // return;
+      const stocklog = await StockLog.create({
+        order: order?._id,
+        user_id: order?.user_id?._id,
+        previous_stock: order?.user_id?.total_boxes_in_stock || 0,
+        new_stock:
+          Number(order?.total_quantity) +
+          Number(order?.user_id?.total_boxes_in_stock || 0),
+        quantity: order?.total_quantity,
+        type: "delivery",
+        updated_by: user?._id,
+        delivered_at: new Date(),
+        reason: "Order delivered successfully",
+      });
+      await User.findByIdAndUpdate(order?.user_id?._id, {
+        $inc: {
+          total_boxes_in_stock: Number(order?.total_quantity || 0),
+        },
+        $push: {
+          stock_logs: stocklog._id,
+        },
+      });
+      return;
+    }
+    await Order.findByIdAndUpdate(order?._id, {
+      estimated_delivery_date: body.estimated_delivery_date,
+      delivery_status: delivery_status,
+      assigned_to: {
+        worker_handling_order:
+          order?.assigned_to?.worker_handling_order ||
+          worker?.worker_id ||
+          null,
+      },
+      confirmation: {
+        auto_confirmed_at: delivery_status?.includes("delivered")
+          ? dayjs().add(2, "days").toDate()
+          : null,
+      },
+      status: body?.status
+        ? body?.status
+        : delivery_status.includes("delivered")
+        ? "delivered"
+        : "processing",
+      $push: {
+        delivery_steps,
+        delivery_steps_logs: delivery_steps,
+      },
+    });
+  }
   if (worker?.worker_id) {
     await OfficeWorker.findByIdAndUpdate(worker?.id, {
       $push: {
@@ -486,11 +564,46 @@ export const updateOrderStatus = async (_req: AuthRequest, res: Response) => {
         logs: order?._id,
       },
     });
-    return successResponse(res, 200, "Order status updated successfully", {
-      message: " Order status updated successfully by worker",
-    });
   }
-  const request = async () => {};
+  successResponse(res, 200, "Order status updated successfully", {
+    message: " Order status updated successfully by worker",
+  });
+  return;
 };
 
-export const cancelOrder = async (_req: AuthRequest, res: Response) => {};
+export const cancelOrder = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
+};
+
+export const confirmOrder = async (_req: Request, res: Response) => {
+  try {
+    const req = _req as AuthRequest;
+    const { id } = req.params;
+    const order = req.order as IOrder;
+
+    // Only allow confirm if delivered
+    if (
+      !order?.delivery_steps[
+        order?.delivery_steps?.length - 1
+      ]?.label?.includes("order_delivered")
+    ) {
+      return res.status(400).send("Order not yet delivered");
+    }
+
+    await Order.findByIdAndUpdate(order._id, {
+      status: "completed",
+      confirmation: {
+        is_confirmed: true,
+        confirmed_at: new Date(),
+        method: "user",
+      },
+    });
+
+    successResponse(res, 200, "Order confirmed successfully", {
+      order,
+    });
+    return;
+  } catch (error) {
+    console.log("error :", error);
+  }
+};

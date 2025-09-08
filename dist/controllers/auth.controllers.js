@@ -103,12 +103,19 @@ const updateAccountOnSignUp = async (req, res) => {
         }
         await User_1.default.findOneAndUpdate({ email: user?.email }, {
             ...req.body,
-            status: req?.body?.files
-                ? "awaiting_registration_fee_payment"
-                : Object.keys(req?.body?.address ?? {}).length > 0
-                    ? "pending_for_documents"
-                    : user.status,
-            //
+            status: req.body?.user_role?.includes("agent")
+                ? "approved"
+                : req?.body?.files
+                    ? "awaiting_registration_fee_payment"
+                    : Object.keys(req?.body?.address ?? {}).length > 0
+                        ? "pending_for_documents"
+                        : user.status,
+            approved_at: req.body?.user_role?.includes("agent")
+                ? new Date()
+                : user?.approved_at,
+            approved_by: req.body?.user_role?.includes("agent")
+                ? user?._id
+                : user?.approved_by,
         });
         (0, response_1.successResponse)(res, 200, "Account Updated Successfully");
     }
@@ -420,13 +427,12 @@ const getUserProfile = async (_req, res) => {
             (0, response_1.errorResponse)(res, 400, "User not found ");
             return;
         }
-        const totalBoxesInStock = await (0, trend_util_1.getTrend)(Order_1.default, {
-            period: "week",
-            filter: {
-                user_id: user ? user._id : worker ? worker._id : null,
-                status: "delivered",
-            },
-        });
+        const totalBoxesInStock = {
+            currentTotal: user?.total_boxes_in_stock,
+            previousTotal: 0,
+            percentageChange: 100,
+            trend: "increase",
+        };
         const totalPendingOrders = await (0, trend_util_1.getTrend)(Order_1.default, {
             period: "week",
             filter: {
@@ -434,11 +440,22 @@ const getUserProfile = async (_req, res) => {
                 status: "pending",
             },
         });
+        const totalOrders = await (0, trend_util_1.getTrend)(Order_1.default, {
+            period: "week",
+            filter: {
+                user_id: user ? user._id : worker ? worker._id : null,
+                delivery_status: "delivered",
+            },
+        });
         if (user?.is_distributor) {
             totalBoxesInStock;
             (0, response_1.successResponse)(res, 200, `${user ? "User's" : "Worker's"} profile retrieved successfully`, {
                 ...user.toObject(),
                 stats: [
+                    {
+                        title: "Total Orders Delivered",
+                        ...totalOrders,
+                    },
                     {
                         title: "Total Boxes in Stock",
                         ...totalBoxesInStock,
@@ -449,6 +466,43 @@ const getUserProfile = async (_req, res) => {
                         previousTotal: 0,
                         percentageChange: 0,
                         trend: "no-change",
+                    },
+                    {
+                        title: "Total Earnings",
+                        currentTotal: 0,
+                        previousTotal: 0,
+                        percentageChange: 0,
+                        trend: "no-change",
+                        type: "currency",
+                    },
+                    {
+                        title: "Total Bonus This Week",
+                        currentTotal: 0,
+                        previousTotal: 0,
+                        percentageChange: 0,
+                        trend: "no-change",
+                        type: "currency",
+                    },
+                    {
+                        title: "Pending Orders",
+                        ...totalPendingOrders,
+                    },
+                ],
+            });
+            return;
+        }
+        if (user?.user_role === "sales_agent") {
+            totalBoxesInStock;
+            (0, response_1.successResponse)(res, 200, `${user ? "User's" : "Worker's"} profile retrieved successfully`, {
+                ...user?.toObject(),
+                stats: [
+                    {
+                        title: "Total Orders Delivered",
+                        ...totalOrders,
+                    },
+                    {
+                        title: "Total Boxes in Stock",
+                        ...totalBoxesInStock,
                     },
                     {
                         title: "Total Earnings",

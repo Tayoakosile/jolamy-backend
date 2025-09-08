@@ -43,14 +43,14 @@ const userSchema = new Schema<IUser>(
         files: { type: [] },
       },
       warehouse_photos: {
-        interior: {type:[]},
-        exterior: {type:[]},
+        interior: { type: [] },
+        exterior: { type: [] },
       },
     },
     password: { type: String },
     internal_sequence: { type: Number, default: 0 },
     forgot_password_expires: { type: String },
-    has_accepted_distributor_terms: { type: Boolean, default: false },
+    has_accepted_terms: { type: Boolean, default: false },
     forgot_password_token: { type: String },
     last_order_date: Date,
     user_role: {
@@ -61,6 +61,7 @@ const userSchema = new Schema<IUser>(
     stats: Schema.Types.Mixed,
     outstanding_boxes: { type: Number, default: 0 },
     total_boxes_in_stock: { type: Number, default: 0 },
+    stock_logs: [{ type: Schema.Types.ObjectId, ref: "StockLog" }],
     orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: Schema.Types.ObjectId, ref: "Product" }],
     bonus: [{ type: Schema.Types.ObjectId, ref: "Bonus" }],
@@ -123,11 +124,14 @@ userSchema.virtual("is_factory_worker").get(function (this: IUser) {
   return (this.is_factory_worker = this.user_role === "factory_worker");
 });
 
-userSchema.pre("save", async function (this: import("mongoose").Document & IUser, next) {
-  if (!this.isModified("password")) return next();
-  this.password = await encrypt(this.password);
-  next();
-});
+userSchema.pre(
+  "save",
+  async function (this: import("mongoose").Document & IUser, next) {
+    if (!this.isModified("password")) return next();
+    this.password = await encrypt(this.password);
+    next();
+  }
+);
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ) {
@@ -164,14 +168,17 @@ userSchema.pre(
   }
 );
 
-userSchema.pre("save", function (this: import("mongoose").Document & IUser, next) {
-  if (this.email) {
-    this.email = this.email.trim().toLowerCase();
+userSchema.pre(
+  "save",
+  function (this: import("mongoose").Document & IUser, next) {
+    if (this.email) {
+      this.email = this.email.trim().toLowerCase();
+    }
+    if (this.username) {
+      this.username = this.username.trim().toLowerCase();
+    }
+    next();
   }
-  if (this.username) {
-    this.username = this.username.trim().toLowerCase();
-  }
-  next();
-});
+);
 
 export default model<IUser>("User", userSchema);

@@ -13,6 +13,7 @@ export const getPendingUsers = async (req: Request, res: Response) => {
   return res.status(200).json({ users });
 };
 
+
 export const approveUser = async (_req: Request, res: Response) => {
 
   try {
@@ -90,8 +91,9 @@ export const approveUser = async (_req: Request, res: Response) => {
   }
 };
 
-export const rejectUser = async (req: AuthRequest, res: Response) => {
+export const rejectUser = async (_req: Request, res: Response) => {
   try {
+const req = _req as AuthRequest
     const user_id = req.params?.user_id;
     const adminId = req.user?._id;
     const user = (await checkIfDocumentExistsById<IUser>(

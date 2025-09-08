@@ -48,7 +48,7 @@ const userSchema = new mongoose_1.Schema({
     password: { type: String },
     internal_sequence: { type: Number, default: 0 },
     forgot_password_expires: { type: String },
-    has_accepted_distributor_terms: { type: Boolean, default: false },
+    has_accepted_terms: { type: Boolean, default: false },
     forgot_password_token: { type: String },
     last_order_date: Date,
     user_role: {
@@ -59,6 +59,7 @@ const userSchema = new mongoose_1.Schema({
     stats: mongoose_1.Schema.Types.Mixed,
     outstanding_boxes: { type: Number, default: 0 },
     total_boxes_in_stock: { type: Number, default: 0 },
+    stock_logs: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "StockLog" }],
     orders: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Product" }],
     bonus: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Bonus" }],

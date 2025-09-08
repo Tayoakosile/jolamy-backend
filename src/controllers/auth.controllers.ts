@@ -124,12 +124,19 @@ export const updateAccountOnSignUp = async (req: Request, res: Response) => {
       { email: user?.email },
       {
         ...req.body,
-        status: req?.body?.files
+        status: req.body?.user_role?.includes("agent")
+          ? "approved"
+          : req?.body?.files
           ? "awaiting_registration_fee_payment"
           : Object.keys(req?.body?.address ?? {}).length > 0
           ? "pending_for_documents"
           : user.status,
-        //
+        approved_at: req.body?.user_role?.includes("agent")
+          ? new Date()
+          : user?.approved_at,
+        approved_by: req.body?.user_role?.includes("agent")
+          ? user?._id
+          : user?.approved_by,
       }
     );
     successResponse(res, 200, "Account Updated Successfully");
@@ -532,7 +539,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
 export const getUserProfile = async (_req: Request, res: Response) => {
   try {
-    const req = _req as AuthRequest
+    const req = _req as AuthRequest;
     const userId = req.user?._id || req.worker?._id;
     const user = await User.findById(userId)
       .select("-password -__v ")
@@ -549,18 +556,24 @@ export const getUserProfile = async (_req: Request, res: Response) => {
       return;
     }
 
-    const totalBoxesInStock = await getTrend(Order, {
-      period: "week",
-      filter: {
-        user_id: user ? user._id : worker ? worker._id : null,
-        status: "delivered",
-      },
-    });
+    const totalBoxesInStock = {
+      currentTotal: user?.total_boxes_in_stock,
+      previousTotal: 0,
+      percentageChange: 100,
+      trend: "increase",
+    };
     const totalPendingOrders = await getTrend(Order, {
       period: "week",
       filter: {
         user_id: user ? user._id : worker ? worker._id : null,
         status: "pending",
+      },
+    });
+    const totalOrders = await getTrend(Order, {
+      period: "week",
+      filter: {
+        user_id: user ? user._id : worker ? worker._id : null,
+        delivery_status: "delivered",
       },
     });
 
@@ -574,6 +587,10 @@ export const getUserProfile = async (_req: Request, res: Response) => {
           ...user.toObject(),
           stats: [
             {
+              title: "Total Orders Delivered",
+              ...totalOrders,
+            },
+            {
               title: "Total Boxes in Stock",
               ...totalBoxesInStock,
             },
@@ -584,6 +601,51 @@ export const getUserProfile = async (_req: Request, res: Response) => {
               percentageChange: 0,
               trend: "no-change",
             },
+            {
+              title: "Total Earnings",
+              currentTotal: 0,
+              previousTotal: 0,
+              percentageChange: 0,
+              trend: "no-change",
+              type: "currency",
+            },
+
+            {
+              title: "Total Bonus This Week",
+              currentTotal: 0,
+              previousTotal: 0,
+              percentageChange: 0,
+              trend: "no-change",
+              type: "currency",
+            },
+
+            {
+              title: "Pending Orders",
+              ...totalPendingOrders,
+            },
+          ],
+        }
+      );
+      return;
+    }
+    if (user?.user_role === "sales_agent") {
+      totalBoxesInStock;
+      successResponse(
+        res,
+        200,
+        `${user ? "User's" : "Worker's"} profile retrieved successfully`,
+        {
+          ...user?.toObject(),
+          stats: [
+            {
+              title: "Total Orders Delivered",
+              ...totalOrders,
+            },
+            {
+              title: "Total Boxes in Stock",
+              ...totalBoxesInStock,
+            },
+
             {
               title: "Total Earnings",
               currentTotal: 0,
@@ -631,3 +693,4 @@ export const getUserProfile = async (_req: Request, res: Response) => {
     );
   }
 };
+

@@ -10,7 +10,8 @@ const User_1 = __importDefault(require("../../models/User"));
 const activityLog_1 = require("../../utils/activityLog");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
-const addNewProducts = (_req, res) => {
+const addNewProducts = async (req, res) => {
+    const _req = req;
     const user = _req.user;
     // if (!_req.files || _req.files.length === 0)  {
     //   errorResponse(res, 400, "No files uploaded. Please upload product images.");
@@ -62,7 +63,8 @@ const addNewProducts = (_req, res) => {
     (0, util_1.customReqResHandler)(res, request);
 };
 exports.addNewProducts = addNewProducts;
-const getProducts = (_req, res) => {
+const getProducts = (req, res) => {
+    const _req = req;
     const request = async () => {
         const isUserAdmin = _req.user?.is_admin;
         return isUserAdmin
@@ -72,7 +74,8 @@ const getProducts = (_req, res) => {
     (0, util_1.customReqResHandler)(res, request);
 };
 exports.getProducts = getProducts;
-const getSingleProducts = async (_req, res) => {
+const getSingleProducts = async (req, res) => {
+    const _req = req;
     const id = _req.params.id;
     await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);
     const request = async () => {
@@ -100,7 +103,8 @@ const getSingleProducts = async (_req, res) => {
     });
 };
 exports.getSingleProducts = getSingleProducts;
-const updateProduct = async (req, res) => {
+const updateProduct = async (_req, res) => {
+    const req = _req;
     const id = req.params.id;
     await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);
     const body = req.body;
@@ -134,7 +138,8 @@ const updateProduct = async (req, res) => {
     });
 };
 exports.updateProduct = updateProduct;
-const archiveProduct = async (req, res) => {
+const archiveProduct = async (_req, res) => {
+    const req = _req;
     const id = req.params.id;
     await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);
     const request = async () => {

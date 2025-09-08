@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cancelOrder = exports.updateOrderStatus = exports.updateOrder = exports.createNewOrder = exports.getSingleOrder = exports.getAllOrders = void 0;
+exports.confirmOrder = exports.cancelOrder = exports.updateOrderStatus = exports.updateOrder = exports.createNewOrder = exports.getSingleOrder = exports.getAllOrders = void 0;
 const mongoose_1 = require("mongoose");
 const Order_1 = __importDefault(require("../models/Order"));
 const Product_1 = require("../models/Product");
@@ -15,12 +15,14 @@ const trend_util_1 = require("../utils/trend.util");
 const util_1 = require("../utils/util");
 const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
 const Office_1 = __importDefault(require("../models/Admin/Office"));
+const dayjs_1 = __importDefault(require("dayjs"));
+const StockLog_1 = __importDefault(require("../models/StockLog"));
 const getAllOrders = (_req, res) => {
     const user = _req.user;
     const worker = _req.worker;
     const request = async () => {
         if (user?.user_role === "admin") {
-            const allOrders = await Order_1.default.find({});
+            const allOrders = await Order_1.default.find({}).sort({ created_at: -1 });
             const allOrdersStat = await (0, trend_util_1.getTrend)(Order_1.default, {
                 period: "week",
             });
@@ -80,7 +82,8 @@ const getAllOrders = (_req, res) => {
     });
 };
 exports.getAllOrders = getAllOrders;
-const getSingleOrder = async (_req, res) => {
+const getSingleOrder = async (req, res) => {
+    const _req = req;
     const order = _req?.order;
     const orderDetails = await Order_1.default.findById(order && order._id)
         .populate("products")
@@ -97,12 +100,16 @@ const getSingleOrder = async (_req, res) => {
         select: "first_name user_id last_name email phone_number user_role",
     });
     (0, response_1.successResponse)(res, 200, "Order retrieved successfully", {
-        order: orderDetails,
+        order: {
+            ...orderDetails?.toObject(),
+            is_delivered: order?.delivery_steps?.some((step) => step.label.includes("delivered")),
+        },
     });
     // }
 };
 exports.getSingleOrder = getSingleOrder;
-const createNewOrder = (_req, res) => {
+const createNewOrder = (req, res) => {
+    const _req = req;
     const user = _req.user;
     const id = user?._id;
     const body = _req.body;
@@ -188,14 +195,23 @@ const createNewOrder = (_req, res) => {
         }
         const order = await Order_1.default.create({
             products: Products,
-            shipping: {
-                recipient_name: `${user?.first_name} ${user?.last_name}`,
-                phone: user?.phone_number,
-                note_from_user: body.note_from_user || "",
-                ...user?.address?.distributors_address,
-                delivery_type: "delivery",
-                ...body?.shipping,
-            },
+            shipping: user?.address?.distributors_address?.address
+                ? {
+                    recipient_name: `${user?.first_name} ${user?.last_name}`,
+                    phone: user?.phone_number,
+                    note_from_user: body.note_from_user || "",
+                    ...user?.address?.distributors_address,
+                    delivery_type: "delivery",
+                    ...body?.shipping,
+                }
+                : {
+                    recipient_name: `${user?.first_name} ${user?.last_name}`,
+                    phone: user?.phone_number,
+                    note_from_user: body.note_from_user || "",
+                    ...user?.address?.business_address,
+                    delivery_type: "delivery",
+                    ...body?.shipping,
+                },
             role: user?.user_role,
             tracking_number: `JOL-${(0, util_1.generateRandom)(12)}`,
             total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
@@ -277,7 +293,8 @@ const createNewOrder = (_req, res) => {
     });
 };
 exports.createNewOrder = createNewOrder;
-const updateOrder = async (_req, res) => {
+const updateOrder = async (req, res) => {
+    const _req = req;
     const body = _req.body;
     const user = _req.user;
     const orderID = _req.params?.id;
@@ -332,10 +349,12 @@ const updateOrder = async (_req, res) => {
     });
 };
 exports.updateOrder = updateOrder;
-const updateOrderStatus = async (_req, res) => {
+const updateOrderStatus = async (req, res) => {
+    const _req = req;
     const body = _req.body;
     const user = _req.user;
     const worker = _req.worker;
+    const delivery_status = body?.delivery_status;
     if (!body) {
         (0, response_1.errorResponse)(res, 400, "Body is required", {
             message: `Body is required `,
@@ -343,27 +362,7 @@ const updateOrderStatus = async (_req, res) => {
         return;
     }
     const order = _req.order;
-    const isOrderStatusAlreadyIn = order?.delivery_steps_logs.find((step) => step.label === body.delivery_status);
-    if (isOrderStatusAlreadyIn) {
-        (0, response_1.successResponse)(res, 200, "Order status updated successfully");
-        return;
-    }
-    await (0, activityLog_1.logActivity)({
-        req: _req,
-        user_id: new mongoose_1.Types.ObjectId(worker?.id || user?._id),
-        action: "UPDATE_ORDER_STATUS",
-        sender: new mongoose_1.Types.ObjectId(worker?.id || user?._id),
-        receiver: order?._id,
-        description: `Order status updated to ${body.delivery_status} by ${worker?.id ? "worker" : "admin"} ${worker?.first_name || user?.first_name} ${worker?.last_name || user?.last_name}`,
-        metadata: {
-            order_id: order?._id,
-            user_id: worker?.id || user?._id,
-            new_status: body.delivery_status,
-            updated_by: worker?.id ? "worker" : "admin",
-            sender: user?.first_name + " " + user?.last_name,
-            receiver: user?.first_name + " " + user?.last_name,
-        },
-    });
+    const isOrderStatusAlreadyIn = order?.delivery_steps_logs.find((step) => step.label === delivery_status);
     const delivery_steps = {
         label: body.delivery_status,
         description: body.description || "",
@@ -379,21 +378,92 @@ const updateOrderStatus = async (_req, res) => {
             office: worker?.office_id || null,
         },
     };
-    await Order_1.default.findByIdAndUpdate(order?._id, {
-        delivery_status: body.delivery_status,
-        assigned_to: {
-            worker_handling_order: order?.assigned_to?.worker_handling_order || worker?.worker_id || null,
-        },
-        status: body?.status
-            ? body?.status
-            : body?.delivery_status === "delivered"
-                ? "delivered"
-                : "processing",
-        $push: {
-            delivery_steps,
-            delivery_steps_logs: delivery_steps,
+    const log = await (0, activityLog_1.logActivity)({
+        req: _req,
+        user_id: worker?.id || user?._id,
+        action: "UPDATE_ORDER_STATUS",
+        sender: worker?.id || user?._id,
+        receiver: order?._id,
+        description: `Order status updated to ${delivery_status} by ${worker?.id ? "worker" : "admin"} ${worker?.first_name || user?.first_name} ${worker?.last_name || user?.last_name}`,
+        metadata: {
+            order_id: order?._id,
+            user_id: worker?.id || user?._id,
+            new_status: delivery_status,
+            updated_by: worker?.id ? "worker" : "admin",
+            sender: user?.first_name + " " + user?.last_name,
+            receiver: user?.first_name + " " + user?.last_name,
         },
     });
+    if (isOrderStatusAlreadyIn) {
+        await Order_1.default.findByIdAndUpdate(order?._id, {
+            estimated_delivery_date: body.estimated_delivery_date,
+            delivery_status: body.delivery_status,
+            assigned_to: {
+                worker_handling_order: order?.assigned_to?.worker_handling_order ||
+                    worker?.worker_id ||
+                    null,
+            },
+            status: body?.status
+                ? body?.status
+                : body?.delivery_status === "delivered"
+                    ? "delivered"
+                    : "processing",
+            // $push: {
+            //   delivery_steps,
+            //   delivery_steps_logs: delivery_steps,
+            // },
+        });
+    }
+    else {
+        if (user?.is_admin && delivery_status?.includes("order_delivered")) {
+            console.log(" :", order?.user_id);
+            // return;
+            const stocklog = await StockLog_1.default.create({
+                order: order?._id,
+                user_id: order?.user_id?._id,
+                previous_stock: order?.user_id?.total_boxes_in_stock || 0,
+                new_stock: Number(order?.total_quantity) +
+                    Number(order?.user_id?.total_boxes_in_stock || 0),
+                quantity: order?.total_quantity,
+                type: "delivery",
+                updated_by: user?._id,
+                delivered_at: new Date(),
+                reason: "Order delivered successfully",
+            });
+            await User_1.default.findByIdAndUpdate(order?.user_id?._id, {
+                $inc: {
+                    total_boxes_in_stock: Number(order?.total_quantity || 0),
+                },
+                $push: {
+                    stock_logs: stocklog._id,
+                },
+            });
+            return;
+        }
+        await Order_1.default.findByIdAndUpdate(order?._id, {
+            estimated_delivery_date: body.estimated_delivery_date,
+            delivery_status: delivery_status,
+            assigned_to: {
+                worker_handling_order: order?.assigned_to?.worker_handling_order ||
+                    worker?.worker_id ||
+                    null,
+            },
+            confirmation: {
+                auto_confirmed_at: delivery_status?.includes("delivered")
+                    ? (0, dayjs_1.default)().add(2, "days").toDate()
+                    : null,
+            },
+            status: body?.status
+                ? body?.status
+                : delivery_status.includes("delivered")
+                    ? "delivered"
+                    : "processing",
+            $push: {
+                delivery_steps,
+                delivery_steps_logs: delivery_steps,
+            },
+        });
+    }
     if (worker?.worker_id) {
         await OfficeWorker_1.default.findByIdAndUpdate(worker?.id, {
             $push: {
@@ -405,12 +475,41 @@ const updateOrderStatus = async (_req, res) => {
                 logs: order?._id,
             },
         });
-        return (0, response_1.successResponse)(res, 200, "Order status updated successfully", {
-            message: " Order status updated successfully by worker",
-        });
     }
-    const request = async () => { };
+    (0, response_1.successResponse)(res, 200, "Order status updated successfully", {
+        message: " Order status updated successfully by worker",
+    });
+    return;
 };
 exports.updateOrderStatus = updateOrderStatus;
-const cancelOrder = async (_req, res) => { };
+const cancelOrder = async (req, res) => {
+    const _req = req;
+};
 exports.cancelOrder = cancelOrder;
+const confirmOrder = async (_req, res) => {
+    try {
+        const req = _req;
+        const { id } = req.params;
+        const order = req.order;
+        // Only allow confirm if delivered
+        if (!order?.delivery_steps[order?.delivery_steps?.length - 1]?.label?.includes("order_delivered")) {
+            return res.status(400).send("Order not yet delivered");
+        }
+        await Order_1.default.findByIdAndUpdate(order._id, {
+            status: "completed",
+            confirmation: {
+                is_confirmed: true,
+                confirmed_at: new Date(),
+                method: "user",
+            },
+        });
+        (0, response_1.successResponse)(res, 200, "Order confirmed successfully", {
+            order,
+        });
+        return;
+    }
+    catch (error) {
+        console.log("error :", error);
+    }
+};
+exports.confirmOrder = confirmOrder;

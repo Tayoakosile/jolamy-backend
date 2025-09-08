@@ -105,8 +105,9 @@ const approveUser = async (_req, res) => {
     }
 };
 exports.approveUser = approveUser;
-const rejectUser = async (req, res) => {
+const rejectUser = async (_req, res) => {
     try {
+        const req = _req;
         const user_id = req.params?.user_id;
         const adminId = req.user?._id;
         const user = (await (0, util_1.checkIfDocumentExistsById)(user_id, "user_id", res, User_1.default));
