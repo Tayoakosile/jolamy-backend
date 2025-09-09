@@ -96,7 +96,7 @@ const removeSensitiveFields = (req, _res, next) => {
         return;
     }
     if (!req.body) {
-        (0, response_1.errorResponse)(_res, 400, "No data provided");
+        (0, response_1.errorResponse)(_res, 400, "No data provided in request body");
         return;
     }
     const forbidden = [

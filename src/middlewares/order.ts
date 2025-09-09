@@ -1,26 +1,37 @@
 import { NextFunction, Request, Response } from "express";
 import { Types } from "mongoose";
 import Order from "../models/Order";
+import SalesAgentOrder, { ISalesAgentOrder } from '../models/SalesAgentOrders';
 import { IOrder } from "../types/order.type";
+import { AuthRequest } from "../types/type";
 import { errorResponse } from "../utils/response";
 import { checkIfDocumentExistsById } from "../utils/util";
 
 export const validateOrder = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const user = (_req as any).user;
-  const worker = (_req as any).worker;
-  const orderID = (_req as any).params?.id;
+  const _req = req as AuthRequest;
+  const user = _req.user;
+  const worker = _req.worker;
+  const orderID = _req.params?.id;
 
-  const order = await checkIfDocumentExistsById<IOrder>(
-    orderID,
-    Types.ObjectId.isValid(orderID) ? "_id" : "order_number",
-    res,
-    Order,
-    ["user_id"]
-  );
+  const order = user?.is_distributor
+    ? await checkIfDocumentExistsById<IOrder>(
+        orderID,
+        Types.ObjectId.isValid(orderID) ? "_id" : "order_number",
+        res,
+        Order,
+        ["user_id"]
+      )
+    : await checkIfDocumentExistsById<ISalesAgentOrder>(
+        orderID,
+        Types.ObjectId.isValid(orderID) ? "_id" : "order_number",
+        res,
+        SalesAgentOrder,
+        ["user_id"]
+      );
 
   const isOrderAssignedToThisWorkerOffice =
     order?.assigned_to?.office?._id?.toString() === worker?.office?.toString();
@@ -41,14 +52,7 @@ export const validateOrder = async (
       });
       return;
     }
-    // if (order?.payment_status === "paid") {
-    //   if (!worker?.worker_id?.length && user?.user_role !== "admin") {
-    //     errorResponse(res, 400, "Order cannot be updated", {
-    //       message: "Order has already been paid",
-    //     });
-    //     return;
-    //   }
-    // }
+
   }
 
   if (

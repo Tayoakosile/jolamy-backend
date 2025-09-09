@@ -6,13 +6,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateOrder = void 0;
 const mongoose_1 = require("mongoose");
 const Order_1 = __importDefault(require("../models/Order"));
+const SalesAgentOrders_1 = __importDefault(require("../models/SalesAgentOrders"));
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
-const validateOrder = async (_req, res, next) => {
+const validateOrder = async (req, res, next) => {
+    const _req = req;
     const user = _req.user;
     const worker = _req.worker;
     const orderID = _req.params?.id;
-    const order = await (0, util_1.checkIfDocumentExistsById)(orderID, mongoose_1.Types.ObjectId.isValid(orderID) ? "_id" : "order_number", res, Order_1.default, ["user_id"]);
+    const order = user?.is_distributor
+        ? await (0, util_1.checkIfDocumentExistsById)(orderID, mongoose_1.Types.ObjectId.isValid(orderID) ? "_id" : "order_number", res, Order_1.default, ["user_id"])
+        : await (0, util_1.checkIfDocumentExistsById)(orderID, mongoose_1.Types.ObjectId.isValid(orderID) ? "_id" : "order_number", res, SalesAgentOrders_1.default, ["user_id"]);
     const isOrderAssignedToThisWorkerOffice = order?.assigned_to?.office?._id?.toString() === worker?.office?.toString();
     // Ensure both IDs are strings for comparison
     const checkIfOrderBelongsToUser = user?.orders.some((singleOrder) => String(singleOrder._id) === String(order?._id));
@@ -25,14 +29,6 @@ const validateOrder = async (_req, res, next) => {
             });
             return;
         }
-        // if (order?.payment_status === "paid") {
-        //   if (!worker?.worker_id?.length && user?.user_role !== "admin") {
-        //     errorResponse(res, 400, "Order cannot be updated", {
-        //       message: "Order has already been paid",
-        //     });
-        //     return;
-        //   }
-        // }
     }
     if ((isOrderAssignedToThisWorkerOffice && worker?.worker_id) ||
         checkIfOrderBelongsToUser ||

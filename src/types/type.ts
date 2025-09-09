@@ -24,7 +24,7 @@ export type UserDocument = IUser & IOfficeWorker & Document;
 export interface IStockLog {
   type: "restock" | "deduction" | "delivery" | "adjustment";
   quantity: number;
-  user_id:  Types.ObjectId;
+  user_id: Types.ObjectId;
   previous_stock?: number;
   new_stock?: number;
   internal_sequence?: number;
@@ -40,6 +40,7 @@ export interface IUser extends IOfficeWorker {
   total_boxes_sold: number;
   name: string;
   user_id: string;
+  business_name: string;
   internal_sequence: number;
   first_name: string;
   stock_logs?: IStockLog[];

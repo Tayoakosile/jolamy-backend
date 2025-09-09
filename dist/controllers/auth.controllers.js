@@ -5,19 +5,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserProfile = exports.resetPassword = exports.forgotPassword = exports.verifySignUpDetails = exports.sendVerificationOtpToMail = exports.loginAccount = exports.updateAccountOnSignUp = exports.createAccount = void 0;
 const User_1 = __importDefault(require("../models/User"));
+const mongoose_1 = require("mongoose");
 const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
+const Order_1 = __importDefault(require("../models/Order"));
+const Otp_1 = __importDefault(require("../models/Otp"));
+const Transaction_1 = __importDefault(require("../models/Transaction"));
 const auth_service_1 = require("../services/auth.service");
 const mail_service_1 = require("../services/mail.service");
 const activityLog_1 = require("../utils/activityLog");
 const bcrypt_util_1 = require("../utils/bcrypt.util");
 const jwt_1 = require("../utils/jwt");
 const response_1 = require("../utils/response");
-const util_1 = require("../utils/util");
 const trend_util_1 = require("../utils/trend.util");
-const Order_1 = __importDefault(require("../models/Order"));
-const Otp_1 = __importDefault(require("../models/Otp"));
-const Transaction_1 = __importDefault(require("../models/Transaction"));
-const mongoose_1 = require("mongoose");
+const util_1 = require("../utils/util");
 const createAccount = async (req, res, next) => {
     if (!req.body) {
         (0, response_1.errorResponse)(res, 400, "Request body is required");

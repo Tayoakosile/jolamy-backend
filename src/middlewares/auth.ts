@@ -26,14 +26,12 @@ export const appAuth = async (
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1]?.replace(/"/g, "");
   }
-
   if (!token) {
     errorResponse(res, 401, "Not authorized, token missing", {
       message: "Not authorized, token missing",
     });
     return next();
   }
-
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
 
@@ -45,7 +43,6 @@ export const appAuth = async (
     const worker = (await OfficeWorker.findOne({
       worker_id: decoded.id,
     })) as IUser;
-
     (req as any).isWorker = Boolean(worker?.worker_id);
     (req as any).isUserAdmin = Boolean(user?.user_role == "admin");
     (req as any).isOtherUser = Boolean(
@@ -75,7 +72,6 @@ export const appAuth = async (
       return;
     }
     (req as any).user = worker ? worker : user;
-
     next();
     return;
   } catch (err) {

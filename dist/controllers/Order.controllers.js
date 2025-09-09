@@ -17,6 +17,7 @@ const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
 const Office_1 = __importDefault(require("../models/Admin/Office"));
 const dayjs_1 = __importDefault(require("dayjs"));
 const StockLog_1 = __importDefault(require("../models/StockLog"));
+const SalesAgentOrders_1 = __importDefault(require("../models/SalesAgentOrders"));
 const getAllOrders = (_req, res) => {
     const user = _req.user;
     const worker = _req.worker;
@@ -73,7 +74,9 @@ const getAllOrders = (_req, res) => {
             });
             return allOrders;
         }
-        return await Order_1.default.find({ user_id: user?._id });
+        return (await user?.is_distributor)
+            ? Order_1.default.find({ user_id: user?._id })
+            : SalesAgentOrders_1.default.find({ user_id: user?._id });
     };
     (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Orders retrieved successfully",
@@ -85,20 +88,25 @@ exports.getAllOrders = getAllOrders;
 const getSingleOrder = async (req, res) => {
     const _req = req;
     const order = _req?.order;
-    const orderDetails = await Order_1.default.findById(order && order._id)
-        .populate("products")
-        .populate("logs")
-        .populate({
-        path: "assigned_to.office",
-        model: "Office",
-        select: "name address workers",
-    })
-        .populate("transaction_id")
-        .populate("products")
-        .populate({
-        path: "user_id",
-        select: "first_name user_id last_name email phone_number user_role",
-    });
+    const orderDetails = _req?.user?.is_distributor
+        ? await Order_1.default.findById(order && order._id)
+            .populate("products")
+            .populate("logs")
+            .populate({
+            path: "assigned_to.office",
+            model: "Office",
+            select: "name address workers",
+        })
+            .populate("transaction_id")
+            .populate("products")
+            .populate({
+            path: "user_id",
+            select: "first_name user_id last_name email phone_number user_role",
+        })
+        : await SalesAgentOrders_1.default.findById(order && order._id)
+            .populate("products")
+            .populate("logs")
+            .populate("transaction_id");
     (0, response_1.successResponse)(res, 200, "Order retrieved successfully", {
         order: {
             ...orderDetails?.toObject(),
@@ -193,49 +201,77 @@ const createNewOrder = (req, res) => {
             });
             return;
         }
-        const order = await Order_1.default.create({
-            products: Products,
-            shipping: user?.address?.distributors_address?.address
-                ? {
-                    recipient_name: `${user?.first_name} ${user?.last_name}`,
-                    phone: user?.phone_number,
-                    note_from_user: body.note_from_user || "",
-                    ...user?.address?.distributors_address,
-                    delivery_type: "delivery",
-                    ...body?.shipping,
-                }
-                : {
-                    recipient_name: `${user?.first_name} ${user?.last_name}`,
-                    phone: user?.phone_number,
-                    note_from_user: body.note_from_user || "",
-                    ...user?.address?.business_address,
-                    delivery_type: "delivery",
-                    ...body?.shipping,
-                },
-            role: user?.user_role,
-            tracking_number: `JOL-${(0, util_1.generateRandom)(12)}`,
-            total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
-            delivery_steps: [
-                {
-                    label: "order_placed",
-                    date: new Date(),
-                    updated_by: {
-                        type: "system",
+        console.log("user?.is_distributor :", user?.is_distributor);
+        const order = user?.is_distributor
+            ? await Order_1.default.create({
+                products: Products,
+                shipping: user?.address?.distributors_address?.address
+                    ? {
+                        recipient_name: `${user?.first_name} ${user?.last_name}`,
+                        phone: user?.phone_number,
+                        note_from_user: body.note_from_user || "",
+                        ...user?.address?.distributors_address,
+                        delivery_type: "delivery",
+                        ...body?.shipping,
+                    }
+                    : {
+                        recipient_name: `${user?.first_name} ${user?.last_name}`,
+                        phone: user?.phone_number,
+                        note_from_user: body.note_from_user || "",
+                        ...user?.address?.business_address,
+                        delivery_type: "delivery",
+                        ...body?.shipping,
                     },
-                },
-            ],
-            delivery_steps_logs: [
-                {
-                    label: "order_placed",
-                    date: new Date(),
-                    updated_by: {
-                        type: "system",
+                role: user?.user_role,
+                tracking_number: `JOL-${(0, util_1.generateRandom)(12)}`,
+                total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
+                delivery_steps: [
+                    {
+                        label: "order_placed",
+                        date: new Date(),
+                        updated_by: {
+                            type: "system",
+                        },
                     },
-                },
-            ],
-            user_id: id,
-            total_quantity: Products.reduce((sum, item) => sum + item.total_quantity, 0),
-        });
+                ],
+                delivery_steps_logs: [
+                    {
+                        label: "order_placed",
+                        date: new Date(),
+                        updated_by: {
+                            type: "system",
+                        },
+                    },
+                ],
+                user_id: id,
+                total_quantity: Products.reduce((sum, item) => sum + item.total_quantity, 0),
+            })
+            : await SalesAgentOrders_1.default.create({
+                products: Products,
+                role: user?.user_role,
+                tracking_number: `JOL-${(0, util_1.generateRandom)(12)}`,
+                total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
+                delivery_steps: [
+                    {
+                        label: "order_placed",
+                        date: new Date(),
+                        updated_by: {
+                            type: "system",
+                        },
+                    },
+                ],
+                delivery_steps_logs: [
+                    {
+                        label: "order_placed",
+                        date: new Date(),
+                        updated_by: {
+                            type: "system",
+                        },
+                    },
+                ],
+                user_id: id,
+                total_quantity: Products.reduce((sum, item) => sum + item.total_quantity, 0),
+            });
         const transaction = await Transaction_1.default.create({
             user_id: new mongoose_1.Types.ObjectId(id),
             user_role: user?.user_role,

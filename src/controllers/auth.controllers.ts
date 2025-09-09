@@ -1,7 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import User from "../models/User";
 
+import { Types } from "mongoose";
 import OfficeWorker, { IOfficeWorker } from "../models/Admin/OfficeWorker";
+import Order from "../models/Order";
+import Otp from "../models/Otp";
+import Transaction from "../models/Transaction";
 import { signupService } from "../services/auth.service";
 import { sendEmail } from "../services/mail.service";
 import { AuthRequest, IUser } from "../types/type";
@@ -9,13 +13,8 @@ import { logActivity } from "../utils/activityLog";
 import { isMatch } from "../utils/bcrypt.util";
 import { generateToken } from "../utils/jwt";
 import { errorResponse, successResponse } from "../utils/response";
-import { generateRandom, paystackVerification } from "../utils/util";
 import { getTrend } from "../utils/trend.util";
-import Order from "../models/Order";
-import Otp from "../models/Otp";
-import Transaction from "../models/Transaction";
-import { Types } from "mongoose";
-import { nextTick } from "process";
+import { generateRandom, paystackVerification } from "../utils/util";
 
 export const createAccount = async (
   req: Request,
