@@ -52,6 +52,9 @@ const DeliveryStepSchema = new Schema<IDeliveryDetails>({
       "order_on_hold",
       "order_cancelled",
       "order_failed",
+      "order_ready_for_pickup",
+      "order_ready_to_be_collected",
+
     ],
   },
   description: { type: String },

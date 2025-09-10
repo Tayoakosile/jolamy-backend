@@ -108,6 +108,8 @@ const SalesAgentOrderSchema = new mongoose_1.Schema({
         address: { type: String },
         city: { type: String },
         state: { type: String },
+        otp: { type: String },
+        otpExpiry: { type: Date },
         country: { type: String },
         // coordinates?: {
         //   // optional for map-based pickup

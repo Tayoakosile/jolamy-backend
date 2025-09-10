@@ -64,6 +64,7 @@ const userSchema = new Schema<IUser>(
     total_boxes_in_stock: { type: Number, default: 0 },
     stock_logs: [{ type: Schema.Types.ObjectId, ref: "StockLog" }],
     orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
+    sales_agent_orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: Schema.Types.ObjectId, ref: "Product" }],
     bonus: [{ type: Schema.Types.ObjectId, ref: "Bonus" }],
     transaction_history: [{ type: Schema.Types.ObjectId, ref: "Transaction" }],

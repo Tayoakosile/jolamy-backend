@@ -13,6 +13,7 @@ import { sendEmail } from "../services/mail.service";
 import Transaction from "../models/Transaction";
 import Offices from "../models/Admin/Office";
 import { IOrder } from "../types/order.type";
+import SalesAgentOrder from "../models/SalesAgentOrders";
 
 export const initiatePayment = async (req: Request, res: Response) => {
   const _req = req as AuthRequest;
@@ -50,14 +51,23 @@ export const initiatePayment = async (req: Request, res: Response) => {
       },
     });
 
-    await Order.findOneAndUpdate(
-      { order_number: order_id },
-      {
-        payment_status: "initiated",
-        note_from_user: _req?.body?.note_from_user || "",
-        $push: { logs: log.id },
-      }
-    );
+    user?.is_distributor
+      ? await Order.findOneAndUpdate(
+          { order_number: order_id },
+          {
+            payment_status: "initiated",
+            note_from_user: _req?.body?.note_from_user || "",
+            $push: { logs: log.id },
+          }
+        )
+      : await SalesAgentOrder.findOneAndUpdate(
+          { order_number: order_id },
+          {
+            payment_status: "initiated",
+            note_from_user: _req?.body?.note_from_user || "",
+            $push: { logs: log.id },
+          }
+        );
     await User.findByIdAndUpdate(user._id, {
       $push: { logs: log.id },
     });
@@ -160,7 +170,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
         }
       );
       await Cart.findOneAndUpdate(
-        { user_id: user?.id, order_id },
+        { user: user?.id, order_id },
         {
           items: [],
         }
@@ -180,7 +190,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
           transaction_id: transaction?.transaction_id,
         },
       });
-      // Log that order was assinged to this office
+      // Log that order was assigned to this office
       const officeLog = await logActivity({
         req: _req,
         user_id: user?._id,
@@ -208,55 +218,101 @@ export const verifyPayment = async (req: Request, res: Response) => {
       // });
 
       // return;
-      await Order.findOneAndUpdate(
-        { order_number: order_id },
-        {
-          payment_status: "paid",
-          delivery_status: "processing",
-          status: "processing",
-          payment_method: "Paystack",
-          estimated_delivery_date: {
-            start: new Date(new Date().setDate(new Date().getDate() + 21)),
-            end: new Date(new Date().setDate(new Date().getDate() + 28)),
-          },
-          payment_reference: response.data?.data?.reference,
-          $push: {
-            logs: {
-              $each: [log._id, officeLog.id],
-            },
-            delivery_steps: [
-              {
-                label: "order_paid_for",
-                date: new Date(),
+      user?.is_distributor
+        ? await Order.findOneAndUpdate(
+            { order_number: order_id },
+            {
+              payment_status: "paid",
+              delivery_status: "processing",
+              status: "processing",
+              payment_method: "Paystack",
+              estimated_delivery_date: {
+                start: new Date(new Date().setDate(new Date().getDate() + 21)),
+                end: new Date(new Date().setDate(new Date().getDate() + 28)),
               },
-              {
-                label: "order_processing",
-                date: new Date(),
-              },
-            ],
-            delivery_steps_logs: [
-              {
-                label: "order_paid_for",
-                date: new Date(),
-                updated_by: {
-                  type: "system",
+              payment_reference: response.data?.data?.reference,
+              $push: {
+                logs: {
+                  $each: [log._id, officeLog.id],
                 },
+                delivery_steps: [
+                  {
+                    label: "order_paid_for",
+                    date: new Date(),
+                  },
+                  {
+                    label: "order_processing",
+                    date: new Date(),
+                  },
+                ],
+                delivery_steps_logs: [
+                  {
+                    label: "order_paid_for",
+                    date: new Date(),
+                    updated_by: {
+                      type: "system",
+                    },
+                  },
+                  {
+                    label: "order_processing",
+                    date: new Date(),
+                    updated_by: {
+                      type: "system",
+                    },
+                  },
+                ],
               },
-              {
-                label: "order_processing",
-                date: new Date(),
-                updated_by: {
-                  type: "system",
-                },
+              assigned_to: {
+                office: office_to_be_in_charge[0]?._id || null,
+                office_worker: null,
               },
-            ],
-          },
-          assigned_to: {
-            office: office_to_be_in_charge[0]?._id || null,
-            office_worker: null,
-          },
-        }
-      );
+            }
+          )
+        : await SalesAgentOrder.findOneAndUpdate(
+            { order_number: order_id },
+            {
+              payment_status: "paid",
+              delivery_status: "processing",
+              status: "processing",
+              payment_method: "Paystack",
+              estimated_delivery_date: {
+                start: new Date(new Date().setDate(new Date().getDate() + 21)),
+                end: new Date(new Date().setDate(new Date().getDate() + 28)),
+              },
+              payment_reference: response.data?.data?.reference,
+              $push: {
+                delivery_steps: [
+                  {
+                    label: "order_paid_for",
+                    date: new Date(),
+                  },
+                  {
+                    label: "order_processing",
+                    date: new Date(),
+                  },
+                ],
+                delivery_steps_logs: [
+                  {
+                    label: "order_paid_for",
+                    date: new Date(),
+                    updated_by: {
+                      type: "system",
+                    },
+                  },
+                  {
+                    label: "order_processing",
+                    date: new Date(),
+                    updated_by: {
+                      type: "system",
+                    },
+                  },
+                ],
+              },
+              assigned_to: {
+                distributor: order?.pickup?.distributor_id || null,
+              },
+            }
+          );
 
       await User.findByIdAndUpdate(user._id, {
         $push: {

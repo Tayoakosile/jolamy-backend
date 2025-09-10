@@ -62,6 +62,7 @@ const userSchema = new mongoose_1.Schema({
     total_boxes_in_stock: { type: Number, default: 0 },
     stock_logs: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "StockLog" }],
     orders: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Order" }],
+    sales_agent_orders: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Product" }],
     bonus: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Bonus" }],
     transaction_history: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Transaction" }],

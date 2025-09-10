@@ -4,8 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSingleDistributorDetails = exports.getAllDistributors = void 0;
-const response_1 = require("../../utils/response");
 const User_1 = __importDefault(require("../../models/User"));
+const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
 const getAllDistributors = async (req, res) => {
     const distributors = await User_1.default.find({
@@ -13,7 +13,9 @@ const getAllDistributors = async (req, res) => {
         status: "approved",
         is_verified: true,
         total_boxes_in_stock: { $gt: 0 },
-    }).select(" -password -internal_sequence -__v -logs -transaction_history -is_admin -is_distributor -is_sales_agent -is_supervisor -is_warehouse_manager -is_worker -status -user_role -phone_number -distributor_location  -bvn -next_of_kin -total_boxes_sold -files -cart -registration_number -documents -paid_registration_fee -last_login  -approved_at -total_commission_earned -wallet -sales_agent_location -office -assigned_sales_agent").populate({
+    })
+        .select(" -password -internal_sequence -__v -logs -transaction_history -is_admin -is_distributor -is_sales_agent -is_supervisor -is_warehouse_manager -is_worker -status -user_role -phone_number -distributor_location  -bvn -next_of_kin -total_boxes_sold -files -cart -registration_number -documents -paid_registration_fee -last_login  -approved_at -total_commission_earned -wallet -sales_agent_location -office -assigned_sales_agent")
+        .populate({
         path: "stock_logs",
         populate: {
             path: "order", // 👈 name of the field in stock_log that references Order // pick the fields you need

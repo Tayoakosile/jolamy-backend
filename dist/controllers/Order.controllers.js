@@ -18,9 +18,11 @@ const Office_1 = __importDefault(require("../models/Admin/Office"));
 const dayjs_1 = __importDefault(require("dayjs"));
 const StockLog_1 = __importDefault(require("../models/StockLog"));
 const SalesAgentOrders_1 = __importDefault(require("../models/SalesAgentOrders"));
-const getAllOrders = (_req, res) => {
+const getAllOrders = (req, res) => {
+    const _req = req;
     const user = _req.user;
     const worker = _req.worker;
+    const params = _req.query;
     const request = async () => {
         if (user?.user_role === "admin") {
             const allOrders = await Order_1.default.find({}).sort({ created_at: -1 });
@@ -74,6 +76,10 @@ const getAllOrders = (_req, res) => {
             });
             return allOrders;
         }
+        if (typeof _req?.query?.type === "string" &&
+            _req?.query?.type.includes("sales_agent")) {
+            return SalesAgentOrders_1.default.find({ assigned_to: { distributor: user?._id } });
+        }
         return (await user?.is_distributor)
             ? Order_1.default.find({ user_id: user?._id })
             : SalesAgentOrders_1.default.find({ user_id: user?._id });
@@ -88,7 +94,7 @@ exports.getAllOrders = getAllOrders;
 const getSingleOrder = async (req, res) => {
     const _req = req;
     const order = _req?.order;
-    const orderDetails = _req?.user?.is_distributor
+    const orderDetails = _req?.user?.is_distributor && !order?.order_number?.includes("SAO")
         ? await Order_1.default.findById(order && order._id)
             .populate("products")
             .populate("logs")
@@ -106,7 +112,15 @@ const getSingleOrder = async (req, res) => {
         : await SalesAgentOrders_1.default.findById(order && order._id)
             .populate("products")
             .populate("logs")
-            .populate("transaction_id");
+            .populate({
+            path: "pickup.distributor_id",
+            select: "first_name user_id last_name email phone_number user_role",
+        })
+            .populate("transaction_id")
+            .populate({
+            path: "user_id",
+            select: "first_name user_id last_name email phone_number user_role",
+        });
     (0, response_1.successResponse)(res, 200, "Order retrieved successfully", {
         order: {
             ...orderDetails?.toObject(),
@@ -363,10 +377,15 @@ const updateOrder = async (req, res) => {
                 payment_reference: body.payment_reference,
             },
         });
-        const updatedOrder = await Order_1.default.findOneAndUpdate({ order_number: orderID }, {
-            ...body,
-            $push: { logs: log._id },
-        });
+        const updatedOrder = user?.is_distributor
+            ? await Order_1.default.findOneAndUpdate({ order_number: orderID }, {
+                ...body,
+                $push: { logs: log._id },
+            })
+            : await SalesAgentOrders_1.default.findOneAndUpdate({ order_number: orderID }, {
+                ...body,
+                $push: { logs: log._id },
+            });
         await User_1.default?.findByIdAndUpdate(user?.id, {
             $push: { logs: log._id },
             last_order_date: new Date(),
@@ -391,6 +410,8 @@ const updateOrderStatus = async (req, res) => {
     const user = _req.user;
     const worker = _req.worker;
     const delivery_status = body?.delivery_status;
+    console.log('body :', body, delivery_status);
+    // return;
     if (!body) {
         (0, response_1.errorResponse)(res, 400, "Body is required", {
             message: `Body is required `,
@@ -398,8 +419,8 @@ const updateOrderStatus = async (req, res) => {
         return;
     }
     const order = _req.order;
-    const isOrderStatusAlreadyIn = order?.delivery_steps_logs.find((step) => step.label === delivery_status);
-    const delivery_steps = {
+    const isOrderStatusAlreadyIn = order?.delivery_steps.find((step) => step.label === delivery_status);
+    const delivery_step = {
         label: body.delivery_status,
         description: body.description || "",
         date: new Date(),
@@ -414,6 +435,69 @@ const updateOrderStatus = async (req, res) => {
             office: worker?.office_id || null,
         },
     };
+    if (order?.role == "sales_agent") {
+        const log = await (0, activityLog_1.logActivity)({
+            req: _req,
+            user_id: worker?.id || user?._id,
+            action: "UPDATE_ORDER_STATUS",
+            sender: worker?.id || user?._id,
+            receiver: order?._id,
+            description: `Order status updated to ${delivery_status} by ${worker?.id ? "worker" : "admin"} ${worker?.first_name || user?.first_name} ${worker?.last_name || user?.last_name}`,
+            metadata: {
+                order_id: order?._id,
+                user_id: worker?.id || user?._id,
+                new_status: delivery_status,
+                updated_by: worker?.id ? "worker" : "admin",
+                sender: user?.first_name + " " + user?.last_name,
+                receiver: user?.first_name + " " + user?.last_name,
+            },
+        });
+        const salesAgentOrder = await SalesAgentOrders_1.default.findById(order?._id);
+        if (!salesAgentOrder) {
+            (0, response_1.errorResponse)(res, 404, "Order not found", {
+                message: `Order not found `,
+            });
+            return;
+        }
+        await User_1.default.findByIdAndUpdate(salesAgentOrder.user_id, {
+            $push: {
+                logs: log._id,
+            },
+        });
+        if (isOrderStatusAlreadyIn) {
+            await SalesAgentOrders_1.default.findByIdAndUpdate(order?._id, {
+                estimated_delivery_date: body.estimated_delivery_date,
+                delivery_status: body.delivery_status,
+                status: body?.status
+                    ? body?.status
+                    : body?.delivery_status === "delivered"
+                        ? "delivered"
+                        : "processing",
+                $push: { logs: log._id },
+            });
+        }
+        else {
+            await SalesAgentOrders_1.default.findByIdAndUpdate(order?._id, {
+                estimated_delivery_date: body.estimated_delivery_date,
+                delivery_status: delivery_status,
+                status: body?.status
+                    ? body?.status
+                    : delivery_status.includes("delivered")
+                        ? "delivered"
+                        : "processing",
+                $push: {
+                    logs: log._id,
+                    delivery_steps: delivery_step,
+                    delivery_steps_logs: delivery_step,
+                },
+            });
+        }
+        (0, response_1.successResponse)(res, 200, "Order status updated successfully", {
+            message: " Order status updated successfully by worker",
+        });
+        return;
+    }
+    // TODO: update Logs
     const log = await (0, activityLog_1.logActivity)({
         req: _req,
         user_id: worker?.id || user?._id,
@@ -434,25 +518,15 @@ const updateOrderStatus = async (req, res) => {
         await Order_1.default.findByIdAndUpdate(order?._id, {
             estimated_delivery_date: body.estimated_delivery_date,
             delivery_status: body.delivery_status,
-            assigned_to: {
-                worker_handling_order: order?.assigned_to?.worker_handling_order ||
-                    worker?.worker_id ||
-                    null,
-            },
             status: body?.status
                 ? body?.status
                 : body?.delivery_status === "delivered"
                     ? "delivered"
                     : "processing",
-            // $push: {
-            //   delivery_steps,
-            //   delivery_steps_logs: delivery_steps,
-            // },
         });
     }
     else {
         if (user?.is_admin && delivery_status?.includes("order_delivered")) {
-            console.log(" :", order?.user_id);
             // return;
             const stocklog = await StockLog_1.default.create({
                 order: order?._id,
@@ -495,8 +569,8 @@ const updateOrderStatus = async (req, res) => {
                     ? "delivered"
                     : "processing",
             $push: {
-                delivery_steps,
-                delivery_steps_logs: delivery_steps,
+                delivery_steps: delivery_step,
+                delivery_steps_logs: delivery_step,
             },
         });
     }

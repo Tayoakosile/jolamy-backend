@@ -14,7 +14,7 @@ const validateOrder = async (req, res, next) => {
     const user = _req.user;
     const worker = _req.worker;
     const orderID = _req.params?.id;
-    const order = user?.is_distributor
+    const order = user?.is_distributor && !orderID?.includes("SAO")
         ? await (0, util_1.checkIfDocumentExistsById)(orderID, mongoose_1.Types.ObjectId.isValid(orderID) ? "_id" : "order_number", res, Order_1.default, ["user_id"])
         : await (0, util_1.checkIfDocumentExistsById)(orderID, mongoose_1.Types.ObjectId.isValid(orderID) ? "_id" : "order_number", res, SalesAgentOrders_1.default, ["user_id"]);
     const isOrderAssignedToThisWorkerOffice = order?.assigned_to?.office?._id?.toString() === worker?.office?.toString();
@@ -32,7 +32,8 @@ const validateOrder = async (req, res, next) => {
     }
     if ((isOrderAssignedToThisWorkerOffice && worker?.worker_id) ||
         checkIfOrderBelongsToUser ||
-        user?.user_role === "admin") {
+        user?.user_role === "admin" ||
+        order?.pickup?.distributor_id?.toString() === user?._id.toString()) {
         _req.order = order;
         next();
         return;

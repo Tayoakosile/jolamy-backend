@@ -62,7 +62,27 @@ export interface IDeliveryDetails {
     user_id: Types.ObjectId;
   };
 }
+interface Pickup {
+  distributor_id: Types.ObjectId; // Distributor chosen
+  location_name: string; // e.g., "Glorious Mart Warehouse"
+  address: string; // full address
+  city: string;
+  state: string;
+  country: string;
+  coordinates?: {
+    // optional for map-based pickup
+    lat: number;
+    lng: number;
+  };
+  date?: Date; // when agent is expected to pick up
+}
+
 export interface IOrder extends Document {
+  sales_agent_id: Types.ObjectId; // who placed the order
+  distributor_id: Types.ObjectId; // distributor supplying
+  order_total: number; // total order cost
+  pickup: Pickup; // embedded pickup schema
+  notes?: string;
   user_id: IUser;
   assigned_to?: {
     office: Types.ObjectId;

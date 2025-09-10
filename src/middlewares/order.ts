@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { Types } from "mongoose";
 import Order from "../models/Order";
-import SalesAgentOrder, { ISalesAgentOrder } from '../models/SalesAgentOrders';
+import SalesAgentOrder, { ISalesAgentOrder } from "../models/SalesAgentOrders";
 import { IOrder } from "../types/order.type";
 import { AuthRequest } from "../types/type";
 import { errorResponse } from "../utils/response";
@@ -17,21 +17,23 @@ export const validateOrder = async (
   const worker = _req.worker;
   const orderID = _req.params?.id;
 
-  const order = user?.is_distributor
-    ? await checkIfDocumentExistsById<IOrder>(
-        orderID,
-        Types.ObjectId.isValid(orderID) ? "_id" : "order_number",
-        res,
-        Order,
-        ["user_id"]
-      )
-    : await checkIfDocumentExistsById<ISalesAgentOrder>(
-        orderID,
-        Types.ObjectId.isValid(orderID) ? "_id" : "order_number",
-        res,
-        SalesAgentOrder,
-        ["user_id"]
-      );
+  const order =
+    user?.is_distributor && !orderID?.includes("SAO")
+      ? await checkIfDocumentExistsById<IOrder>(
+          orderID,
+          Types.ObjectId.isValid(orderID) ? "_id" : "order_number",
+          res,
+          Order,
+          ["user_id"]
+        )
+      : await checkIfDocumentExistsById<ISalesAgentOrder>(
+          orderID,
+          Types.ObjectId.isValid(orderID) ? "_id" : "order_number",
+          res,
+          SalesAgentOrder,
+          ["user_id"]
+        );
+
 
   const isOrderAssignedToThisWorkerOffice =
     order?.assigned_to?.office?._id?.toString() === worker?.office?.toString();
@@ -52,13 +54,13 @@ export const validateOrder = async (
       });
       return;
     }
-
   }
 
   if (
     (isOrderAssignedToThisWorkerOffice && worker?.worker_id) ||
     checkIfOrderBelongsToUser ||
-    user?.user_role === "admin"
+    user?.user_role === "admin" ||
+    order?.pickup?.distributor_id?.toString() === user?._id.toString()
   ) {
     (_req as any).order = order as IOrder;
     next();
