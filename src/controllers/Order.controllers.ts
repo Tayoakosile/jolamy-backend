@@ -13,7 +13,7 @@ import { customReqResHandler, generateRandom } from "../utils/util";
 import OfficeWorker from "../models/Admin/OfficeWorker";
 import Offices from "../models/Admin/Office";
 import dayjs from "dayjs";
-import { IOrder } from "../types/order.type";
+import { IOrder, ProductVariant } from "../types/order.type";
 import StockLog from "../models/StockLog";
 import SalesAgentOrder from "../models/SalesAgentOrders";
 
@@ -102,7 +102,7 @@ export const getSingleOrder = async (req: Request, res: Response) => {
   const order = _req?.order;
 
   const orderDetails =
-    _req?.user?.is_distributor && !order?.order_number?.includes("SAO")
+    !_req?.user?.is_sales_agent && !order?.order_number?.includes("SAO")
       ? await Order.findById(order && order._id)
           .populate("products")
           .populate("logs")
@@ -258,8 +258,6 @@ export const createNewOrder = (req: Request, res: Response) => {
       });
       return;
     }
-
-    console.log("user?.is_distributor :", user?.is_distributor);
 
     const order = user?.is_distributor
       ? await Order.create({
@@ -495,9 +493,6 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
   const user = _req.user;
   const worker = _req.worker;
   const delivery_status = body?.delivery_status;
-  console.log('body :', body,delivery_status);
-
-  // return;
 
   if (!body) {
     errorResponse(res, 400, "Body is required", {
@@ -512,8 +507,19 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     (step) => step.label === delivery_status
   );
 
+  const isOrderDelivered =
+    order?.delivery_steps[order?.delivery_steps?.length - 1].label?.includes(
+      delivery_status
+    );
+
+  if (isOrderDelivered && !user?.is_admin) {
+    successResponse(res, 400, "Order already delivered", {
+      message: `Order already delivered`,
+    });
+    return;
+  }
   const delivery_step = {
-    label: body.delivery_status,
+    label: delivery_status,
     description: body.description || "",
     date: new Date(),
     updated_by: {
@@ -527,6 +533,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       office: worker?.office_id || null,
     },
   };
+
   if (order?.role == "sales_agent") {
     const log = await logActivity({
       req: _req,
@@ -589,7 +596,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       });
     }
     successResponse(res, 200, "Order status updated successfully", {
-      message: " Order status updated successfully by worker",
+      message: " Order status updated successfully",
     });
 
     return;
@@ -628,9 +635,49 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         ? "delivered"
         : "processing",
     });
+    successResponse(res, 200, "Order status updated successfully", {
+      message: " Order status updated successfully",
+    });
   } else {
     if (user?.is_admin && delivery_status?.includes("order_delivered")) {
-      // return;
+      if (!order) return;
+      const allVariants = order.products.flatMap((p) =>
+        p.variants.map((v: ProductVariant) => ({
+          ...(typeof (v as any).toObject === "function"
+            ? (v as any).toObject()
+            : v),
+          product_id: p?.product_id,
+        }))
+      );
+
+      for (const orderedProduct of allVariants) {
+        // update products total boxes in stocks and total boxes sold when order is delivered
+        const product = (await Product.findOne({
+          _id: orderedProduct.product_id,
+          "variants._id": orderedProduct.id,
+        })) as IProduct;
+
+        if (product) {
+          if (
+            product.orders &&
+            !product.orders.includes(order._id as Types.ObjectId)
+          ) {
+            product.orders.push(order._id as Types.ObjectId);
+          }
+          for (const productVariant of product.variants) {
+            if (productVariant.total_boxes_in_stock !== null) {
+              if (productVariant.total_boxes_in_stock <= 0) {
+                productVariant.total_boxes_in_stock = 0;
+              } else {
+                productVariant.total_boxes_in_stock -= orderedProduct.quantity;
+                productVariant.total_boxes_sold += orderedProduct.quantity;
+              }
+            }
+          }
+          await product.save();
+        }
+      }
+
       const stocklog = await StockLog.create({
         order: order?._id,
         user_id: order?.user_id?._id,
@@ -644,6 +691,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         delivered_at: new Date(),
         reason: "Order delivered successfully",
       });
+
       await User.findByIdAndUpdate(order?.user_id?._id, {
         $inc: {
           total_boxes_in_stock: Number(order?.total_quantity || 0),
@@ -652,7 +700,6 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
           stock_logs: stocklog._id,
         },
       });
-      return;
     }
 
     await Order.findByIdAndUpdate(order?._id, {
@@ -709,7 +756,6 @@ export const confirmOrder = async (_req: Request, res: Response) => {
     const { id } = req.params;
     const order = req.order as IOrder;
 
-    // Only allow confirm if delivered
     if (
       !order?.delivery_steps[
         order?.delivery_steps?.length - 1

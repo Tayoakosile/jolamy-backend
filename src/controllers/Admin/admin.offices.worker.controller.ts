@@ -14,7 +14,8 @@ import {
 } from "../../utils/util";
 import { AuthRequest } from "../../types/type";
 
-export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
+export const addOfficeWorker =async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
   const officeId = _req.params.id || _req.body?.office;
 
   const body = _req.body;
@@ -118,7 +119,8 @@ export const addOfficeWorker = (_req: AuthRequest, res: Response) => {
   );
 };
 
-export const getOffices = (_req: AuthRequest, res: Response) => {
+export const getOffices = async (_req: Request, res: Response) => {
+  const req = _req as AuthRequest;
   const request = async () => {
     return await Offices.find();
   };
@@ -131,7 +133,8 @@ export const getOffices = (_req: AuthRequest, res: Response) => {
  * @param {Response} res
  */
 
-export const updateWorkerDetails = async (req: AuthRequest, res: Response) => {
+export const updateWorkerDetails = async (_req: Request, res: Response) => {
+  const req = _req as AuthRequest;
   const id = req.params.worker_id;
   const office_id = req.params.id;
   // if password or email is included then a mail has to be sent with the updated password

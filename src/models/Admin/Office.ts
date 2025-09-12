@@ -15,10 +15,11 @@ export interface IOffice extends Document {
   orders: Types.ObjectId[];
   logs: Types.ObjectId[];
   is_active: boolean;
+  can_update_orders: boolean;
   wallet?: {
     balance: number;
     last_funded_by?: Types.ObjectId; // User who last funded the wallet
-    lastFundedAmount?: number; // Last funded amount
+    last_funded_amount?: number; // Last funded amount
     logs?: Types.ObjectId[]; // Logs related to wallet transactions
   };
 }
@@ -32,6 +33,7 @@ const officeSchema = new Schema<IOffice>(
     created_by: { type: Schema.Types.ObjectId, ref: "User", required: true },
     orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     is_active: { type: Boolean, default: true },
+    can_update_orders: { type: Boolean, default: false },
     transactions: [
       {
         type: Schema.Types.ObjectId,
@@ -43,7 +45,7 @@ const officeSchema = new Schema<IOffice>(
     wallet: {
       balance: { type: Number, default: 0 },
       last_funded_by: { type: Schema.Types.ObjectId, ref: "User" },
-      lastFundedAmount: { type: Number },
+      last_funded_amount: { type: Number },
       logs: [{ type: Schema.Types.ObjectId, ref: "Log" }],
     },
   },

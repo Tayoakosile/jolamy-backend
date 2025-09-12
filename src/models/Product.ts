@@ -12,13 +12,16 @@ interface Pricing {
 }
 
 interface Variant extends Document {
+  sku: string;
+  barcode: string;
   attributes: { key: string; value: string }[]; // e.g., [{key: "color", value: "red"}, {key: "size", value: "M"}]
   available_weight: string; // e.g., '500g', '1kg'
   name: string;
   inventory_alert_threshold: number;
   units_per_box: number;
   total_boxes_in_stock: number | null; // null means unlimited
-  unit_type: string; // e.g., "bag", "sachet"
+  total_boxes_sold: number | null; // null means unlimited
+  unit_type: string;
 
   distributor_pricing: {
     distributor_price_per_box: number;
@@ -34,12 +37,16 @@ interface Variant extends Document {
     next_order_min_qty: number;
   };
 }
-
+const OptionSchema = new Schema({
+  name: { type: String, required: true }, // e.g., "Size"
+  values: [{ type: String, required: true }], // e.g., ["Small", "Large", "XL"]
+});
 export interface IProduct extends Document {
   name: string;
-  product_id: string;
   internal_sequence: number;
-
+  product_id: string;
+  sku: string;
+  options: { name: string; values: string[] }[];
   reference_id?: string; // optional external ID or reference
   description?: string;
   available_weight: { type: String; required: true };
@@ -76,9 +83,12 @@ const VariantSchema = new Schema<Variant>({
       value: { type: String, required: true },
     },
   ],
+  sku: { type: String, unique: true, sparse: true },
+  barcode: { type: String },
   inventory_alert_threshold: { type: Number, required: true },
   units_per_box: { type: Number, required: true },
   total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
+  total_boxes_sold: { type: Number }, // null means unlimited
   unit_type: { type: String, required: true },
 
   distributor_pricing: {
@@ -101,6 +111,7 @@ const ProductSchema = new Schema<IProduct>(
     name: { type: String, required: true },
     description: String,
     category: String,
+    options: [OptionSchema],
     reference_id: String,
     product_id: String,
     product_images: { type: Array, required: true },

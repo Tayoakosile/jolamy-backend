@@ -25,7 +25,7 @@ const checkIfDocumentExistsById = async (id, itemKey, res, Model, populateFields
             [itemKey]: id,
         }).populate(populateFields);
         if (!populatedDocument) {
-            (0, response_1.errorResponse)(res, errorCode || 404, "Document not found", {
+            (0, response_1.errorResponse)(res, errorCode || 404, "Document not found in page", {
                 message: "Document not found",
             });
             return;
@@ -103,7 +103,7 @@ const removeSensitiveFields = (req, _res, next) => {
         "payment_status",
         "estimated_date",
         "estimatedDate",
-        // "delivery_status",
+        "delivery_status",
         "refund_status",
         "order_number",
         "order_id",

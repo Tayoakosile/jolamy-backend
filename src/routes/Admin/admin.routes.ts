@@ -31,6 +31,7 @@ import {
 
 import { appAuth, isAdmin } from "../../middlewares/auth";
 import { removeSensitiveFields } from "../../utils/util";
+import { getAllInventory } from "../../controllers/Admin/admin.inventory.controller";
 
 const router = Router();
 
@@ -120,6 +121,8 @@ router.patch("/products/:id/archive", appAuth, isAdmin, archiveProduct);
 
 // users
 router.get("/pending-users", appAuth, isAdmin, getPendingUsers);
+router.get("/inventory", appAuth, isAdmin, getAllInventory);
+
 
 // users
 

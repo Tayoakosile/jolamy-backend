@@ -13,7 +13,8 @@ const activityLog_1 = require("../../utils/activityLog");
 const bcrypt_util_1 = require("../../utils/bcrypt.util");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
-const addOfficeWorker = (_req, res) => {
+const addOfficeWorker = async (req, res) => {
+    const _req = req;
     const officeId = _req.params.id || _req.body?.office;
     const body = _req.body;
     if (!body?.email || !body?.username || !body?.password) {
@@ -92,7 +93,8 @@ const addOfficeWorker = (_req, res) => {
     }, mailOptions);
 };
 exports.addOfficeWorker = addOfficeWorker;
-const getOffices = (_req, res) => {
+const getOffices = async (_req, res) => {
+    const req = _req;
     const request = async () => {
         return await Office_1.default.find();
     };
@@ -105,7 +107,8 @@ exports.getOffices = getOffices;
  * @param {AuthRequest} req
  * @param {Response} res
  */
-const updateWorkerDetails = async (req, res) => {
+const updateWorkerDetails = async (_req, res) => {
+    const req = _req;
     const id = req.params.worker_id;
     const office_id = req.params.id;
     // if password or email is included then a mail has to be sent with the updated password

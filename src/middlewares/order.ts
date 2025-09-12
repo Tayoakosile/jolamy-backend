@@ -18,10 +18,10 @@ export const validateOrder = async (
   const orderID = _req.params?.id;
 
   const order =
-    user?.is_distributor && !orderID?.includes("SAO")
+    !user?.is_sales_agent && !orderID?.includes("SAO")
       ? await checkIfDocumentExistsById<IOrder>(
           orderID,
-          Types.ObjectId.isValid(orderID) ? "_id" : "order_number",
+          "order_number",
           res,
           Order,
           ["user_id"]
@@ -33,7 +33,6 @@ export const validateOrder = async (
           SalesAgentOrder,
           ["user_id"]
         );
-
 
   const isOrderAssignedToThisWorkerOffice =
     order?.assigned_to?.office?._id?.toString() === worker?.office?.toString();
@@ -56,16 +55,20 @@ export const validateOrder = async (
     }
   }
 
+  console.log('user?.user_role === "admin" :', user?.user_role === "admin");
+
   if (
     (isOrderAssignedToThisWorkerOffice && worker?.worker_id) ||
     checkIfOrderBelongsToUser ||
     user?.user_role === "admin" ||
-    order?.pickup?.distributor_id?.toString() === user?._id.toString()
+    (order?.role?.includes("sales_agent") &&
+      order?.pickup?.distributor_id?.toString() === user?._id.toString())
   ) {
     (_req as any).order = order as IOrder;
     next();
     return;
   }
+
   errorResponse(res, 404, "Order not found", {
     message: `Order not found or does not belong to this ${
       worker?.worker_id ? "Office" : "user"

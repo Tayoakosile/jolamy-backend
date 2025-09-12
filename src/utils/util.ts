@@ -30,7 +30,7 @@ export const checkIfDocumentExistsById = async <T extends Document>(
     } as any).populate(populateFields);
 
     if (!populatedDocument) {
-      errorResponse(res, errorCode || 404, "Document not found", {
+      errorResponse(res, errorCode || 404, "Document not found in page", {
         message: "Document not found",
       });
       return;

@@ -182,6 +182,29 @@ const createNewOffices = async (_req, res) => {
                 user_id: `${req.user?._id}`,
             },
         });
+        if (req.body.wallet?.balance && req.body.wallet?.balance > 0) {
+            const logs = await (0, activityLog_1.logActivity)({
+                req,
+                user_id: new mongoose_1.Types.ObjectId(req.user?._id),
+                sender: new mongoose_1.Types.ObjectId(req.user?._id),
+                receiver: newOffice._id,
+                action: "FUND_OFFICE_WALLET",
+                description: `Office wallet funded with amount ${req.body.wallet.balance}`,
+                metadata: {
+                    ...newOffice,
+                    amount: req.body.wallet.balance,
+                    user_id: `${req.user?._id}`,
+                },
+            });
+            newOffice.wallet = {
+                ...newOffice.wallet,
+                balance: req.body.wallet.balance,
+                last_funded_by: new mongoose_1.Types.ObjectId(req.user?._id),
+                lastFundedAmount: req.body.wallet.balance,
+                logs: [logs._id],
+            };
+            newOffice.logs.push(logs._id);
+        }
         newOffice.logs = Array.isArray(newOffice.logs)
             ? [...newOffice.logs, log._id]
             : [log._id];

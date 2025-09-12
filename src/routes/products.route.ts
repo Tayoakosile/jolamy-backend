@@ -8,6 +8,7 @@ import { getProducts } from "../controllers/Admin/admin.products.controller";
 
 const router = Router();
 
+
 router.get("/", appAuth, getProducts);
 router.get("/:id", appAuth, getSingleProductForNotAdmin);
 export default router;

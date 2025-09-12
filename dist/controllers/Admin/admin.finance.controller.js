@@ -11,7 +11,7 @@ const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
 const CashFlow_1 = __importDefault(require("../../models/CashFlow"));
 const mongoose_1 = require("mongoose");
-const getAllCashFlow = (_req, res) => {
+const getAllCashFlow = async (req, res) => {
     const request = async () => {
         return await CashFlow_1.default.find();
     };
@@ -22,7 +22,8 @@ const getAllCashFlow = (_req, res) => {
     });
 };
 exports.getAllCashFlow = getAllCashFlow;
-const getSingleCashFlow = async (_req, res) => {
+const getSingleCashFlow = async (req, res) => {
+    const _req = req;
     const id = _req.params.id;
     const cash_flow = await (0, util_1.checkIfDocumentExistsById)(id, "office_id", res, Office_1.default, ["created_by", "logs"]);
     const request = async () => {
@@ -54,7 +55,8 @@ exports.getSingleCashFlow = getSingleCashFlow;
  * @param {AuthRequest} req
  * @param {Response} res
  */
-const createNewOffices = (req, res) => {
+const createNewOffices = async (_req, res) => {
+    const req = _req;
     const request = async () => {
         const existingOffice = await Office_1.default.exists({})
             .where("name")
@@ -101,7 +103,8 @@ const createNewOffices = (req, res) => {
     });
 };
 exports.createNewOffices = createNewOffices;
-const updateOffice = async (req, res) => {
+const updateOffice = async (_req, res) => {
+    const req = _req;
     const id = req.params.id;
     await (0, util_1.checkIfDocumentExistsById)(id, "office_id", res, Office_1.default);
     const request = async () => {
@@ -132,7 +135,8 @@ const updateOffice = async (req, res) => {
     });
 };
 exports.updateOffice = updateOffice;
-const adminFundWallet = async (req, res) => {
+const adminFundWallet = async (_req, res) => {
+    const req = _req;
     const officeId = req.params.id;
     const request = async () => {
         const office = await (0, util_1.checkIfDocumentExistsById)(officeId, "office_id", res, Office_1.default);
@@ -151,7 +155,6 @@ const adminFundWallet = async (req, res) => {
             office.wallet = { balance: 0 };
         }
         office.wallet.balance += amount;
-        await office.save();
         // Log the funding activity
         const log = await (0, activityLog_1.logActivity)({
             req,
@@ -166,6 +169,31 @@ const adminFundWallet = async (req, res) => {
         });
         office.logs = Array.isArray(office.logs)
             ? [...office.logs, log._id]
+            : [log._id];
+        const cashflow = await CashFlow_1.default.create({
+            type: "inflow",
+            office_id: office._id,
+            amount,
+            description: `Office wallet funded: ${office.name} with amount ${amount}`,
+            attachments: req.body.attachments || [],
+            office: office._id,
+            notes: req.body.notes || "",
+            reference: `FUND-${office.office_id}-${Date.now()}`,
+            status: "completed",
+            created_by: req.user?._id,
+            metadata: {
+                funded_by: req.user?._id,
+                office_id: office._id,
+                office_name: office.name,
+            },
+        });
+        office.transactions = Array.isArray(office.transactions)
+            ? [...office.transactions, cashflow._id]
+            : [cashflow._id];
+        office.wallet.last_funded_by = req.user?._id;
+        office.wallet.last_funded_amount = amount;
+        office.wallet.logs = Array.isArray(office.wallet.logs)
+            ? [...office.wallet.logs, log._id]
             : [log._id];
         await office.save();
         await User_1.default.findByIdAndUpdate(req.user?._id, {

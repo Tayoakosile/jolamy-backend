@@ -137,7 +137,7 @@ const verifyPayment = async (req, res) => {
         // &&responseFromPaystack?.metadata?.cart_id == order_id?.toString()
         ) {
             const office_to_be_in_charge = await Office_1.default.aggregate([
-                { $match: { is_active: true } },
+                { $match: { is_active: true, can_update_orders: true } },
                 { $addFields: { orderCount: { $size: "$orders" } } },
                 { $sort: { orderCount: 1 } }, // smallest first
                 { $limit: 1 },

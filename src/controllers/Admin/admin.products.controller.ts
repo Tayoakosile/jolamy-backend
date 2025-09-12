@@ -90,19 +90,24 @@ export const getProducts = (req: Request, res: Response) => {
 export const getSingleProducts = async (req: Request, res: Response) => {
   const _req = req as AuthRequest;
   const id = _req.params.id;
-  await checkIfDocumentExistsById(id, "product_id", res, Product);
   const request = async () => {
-    const product = await Product.findOne({ product_id: id, is_active: true });
+    const product = await checkIfDocumentExistsById(
+      id,
+      "product_id",
+      res,
+      Product,
+      ['orders']
+    );
 
     const logs = await logActivity({
       req: _req,
       user_id: new Types.ObjectId(_req.user?._id),
       action: "GET_PRODUCT",
       sender: new Types.ObjectId(_req.user?._id),
-      receiver: new Types.ObjectId(id),
+      receiver: product?._id as Types.ObjectId,
       description: `Product fetched: ${id}`,
       metadata: {
-        product_id: id,
+        product_id: product?._id,
         user_id: _req.user?._id,
       },
     });

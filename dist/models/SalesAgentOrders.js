@@ -56,7 +56,7 @@ const SalesAgentOrderSchema = new mongoose_1.Schema({
         is_confirmed: { type: Boolean, default: false }, // final confirmation
         confirmed_at: { type: Date, default: null },
         auto_confirmed_at: { type: Date, default: null }, // when system should auto confirm
-        method: { type: String, enum: ["user", "system"], default: "" }, // who confirmed
+        method: { type: String, enum: ["user", "system", ""], default: "" }, // who confirmed
     },
     order_number: { type: String },
     date: { type: Date, default: Date.now },

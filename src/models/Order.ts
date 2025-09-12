@@ -7,7 +7,7 @@ import {
   IShippingDetails,
 } from "../types/order.type";
 
-const ProductItemSchema = new Schema({
+const  ProductItemSchema = new Schema({
   product_id: { type: Types.ObjectId, ref: "Product", required: true },
   variants: [
     {

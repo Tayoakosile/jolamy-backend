@@ -35,7 +35,7 @@ const financeSchema = new Schema<IFinance>(
     office_id: { type: Schema.Types.ObjectId, ref: "Office", required: true },
     payment_method: { type: String, trim: true },
     attachments: { type: [] },
-    category: { type: String, required: true },
+    category: { type: String, },
     description: { type: String },
     notes: { type: String },
     status: { type: String },

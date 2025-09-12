@@ -37,6 +37,10 @@ exports.Product = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const counter_1 = require("./counter");
 const util_1 = require("../utils/util");
+const OptionSchema = new mongoose_1.Schema({
+    name: { type: String, required: true }, // e.g., "Size"
+    values: [{ type: String, required: true }], // e.g., ["Small", "Large", "XL"]
+});
 // const PricingSchema = new Schema<Pricing>(
 //   {
 //     distributor_price_per_box: { type: Number, required: true },
@@ -56,9 +60,12 @@ const VariantSchema = new mongoose_1.Schema({
             value: { type: String, required: true },
         },
     ],
+    sku: { type: String, unique: true, sparse: true },
+    barcode: { type: String },
     inventory_alert_threshold: { type: Number, required: true },
     units_per_box: { type: Number, required: true },
     total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
+    total_boxes_sold: { type: Number }, // null means unlimited
     unit_type: { type: String, required: true },
     distributor_pricing: {
         price_per_box: { type: Number, required: true },
@@ -77,6 +84,7 @@ const ProductSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     description: String,
     category: String,
+    options: [OptionSchema],
     reference_id: String,
     product_id: String,
     product_images: { type: Array, required: true },

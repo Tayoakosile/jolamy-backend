@@ -77,18 +77,17 @@ exports.getProducts = getProducts;
 const getSingleProducts = async (req, res) => {
     const _req = req;
     const id = _req.params.id;
-    await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);
     const request = async () => {
-        const product = await Product_1.Product.findOne({ product_id: id, is_active: true });
+        const product = await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product, ['orders']);
         const logs = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
             action: "GET_PRODUCT",
             sender: new mongoose_1.Types.ObjectId(_req.user?._id),
-            receiver: new mongoose_1.Types.ObjectId(id),
+            receiver: product?._id,
             description: `Product fetched: ${id}`,
             metadata: {
-                product_id: id,
+                product_id: product?._id,
                 user_id: _req.user?._id,
             },
         });

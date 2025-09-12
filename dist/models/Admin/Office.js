@@ -11,6 +11,7 @@ const officeSchema = new mongoose_1.Schema({
     created_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
     orders: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Order" }],
     is_active: { type: Boolean, default: true },
+    can_update_orders: { type: Boolean, default: false },
     transactions: [
         {
             type: mongoose_1.Schema.Types.ObjectId,
@@ -22,7 +23,7 @@ const officeSchema = new mongoose_1.Schema({
     wallet: {
         balance: { type: Number, default: 0 },
         last_funded_by: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
-        lastFundedAmount: { type: Number },
+        last_funded_amount: { type: Number },
         logs: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Log" }],
     },
 }, {

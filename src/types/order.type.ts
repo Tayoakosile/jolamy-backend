@@ -8,6 +8,7 @@ export interface ProductVariant {
 }
 
 export interface ProductItem {
+  product_id:string;
   variants: ProductVariant[];
 }
 
