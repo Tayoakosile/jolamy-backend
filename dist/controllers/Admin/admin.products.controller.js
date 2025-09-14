@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.archiveProduct = exports.updateProduct = exports.getSingleProducts = exports.getProducts = exports.addNewProducts = void 0;
+exports.archiveProduct = exports.updateProductOptions = exports.updateProduct = exports.getSingleProducts = exports.getProducts = exports.addNewProducts = void 0;
 const mongoose_1 = require("mongoose");
 const Product_1 = require("../../models/Product");
 const User_1 = __importDefault(require("../../models/User"));
@@ -18,6 +18,8 @@ const addNewProducts = async (req, res) => {
     // return;
     // }
     const body = _req.body;
+    const updatedVariants = (0, util_1.generateVariants)(body.options ?? []);
+    // return;
     const request = async () => {
         const existingProduct = await Product_1.Product.findOne({
             $or: [
@@ -36,7 +38,6 @@ const addNewProducts = async (req, res) => {
         }
         const product = await Product_1.Product.create({
             ..._req.body,
-            // product_images: urls,
             created_by: _req.user?._id,
             is_active: true,
         });
@@ -58,7 +59,7 @@ const addNewProducts = async (req, res) => {
         await Product_1.Product.findByIdAndUpdate(user?._id, {
             $push: { logs: log.id },
         });
-        return { message: "Product added successfully" };
+        return { message: "Product added successfully", product };
     };
     (0, util_1.customReqResHandler)(res, request);
 };
@@ -78,7 +79,7 @@ const getSingleProducts = async (req, res) => {
     const _req = req;
     const id = _req.params.id;
     const request = async () => {
-        const product = await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product, ['orders']);
+        const product = await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product, ["orders"]);
         const logs = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
@@ -122,9 +123,7 @@ const updateProduct = async (_req, res) => {
         });
         await Product_1.Product.findByIdAndUpdate(id, {
             ...body,
-            logs: {
-                $push: log.id,
-            },
+            $push: { logs: log.id },
         }, { new: true });
         await User_1.default.findByIdAndUpdate(req.user?._id, {
             $push: { logs: log.id },
@@ -137,6 +136,65 @@ const updateProduct = async (_req, res) => {
     });
 };
 exports.updateProduct = updateProduct;
+const updateProductOptions = async (_req, res) => {
+    const req = _req;
+    const id = req.params.id;
+    const product = await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);
+    const body = req.body;
+    if (!product)
+        return;
+    if (!body?.options || body?.options?.length < 1) {
+        (0, response_1.errorResponse)(res, 400, "Options are required");
+        return;
+    }
+    const isProductOptionInDbBefore = product.options
+        ?.map((option) => {
+        const exists = body.options.find((o) => o.name?.toLowerCase() === option.name?.toLowerCase());
+        if (exists) {
+            return true;
+        }
+        return false;
+    })
+        .some((val) => val === true);
+    if (isProductOptionInDbBefore) {
+        (0, response_1.errorResponse)(res, 400, "This option already exists");
+        return;
+    }
+    const request = async () => {
+        const log = await (0, activityLog_1.logActivity)({
+            req,
+            user_id: new mongoose_1.Types.ObjectId(req.user?._id),
+            action: "UPDATE_PRODUCT_OPTIONS",
+            sender: new mongoose_1.Types.ObjectId(req.user?._id),
+            // receiver: new Types.ObjectId(id),
+            description: `Product options updated: ${body.name}`,
+            metadata: {
+                product_id: id,
+                user_id: req.user?._id,
+            },
+        });
+        const updatedProduct = await Product_1.Product.findOneAndUpdate({ product_id: id }, {
+            options: product?.options?.length >= 1
+                ? [...product.options, ...body?.options]
+                : body?.options,
+            variants: [
+                product?.options?.length >= 1
+                    ? (0, util_1.generateVariants)(body.options ?? [])
+                    : [...product.variants, ...(0, util_1.generateVariants)(body.options ?? [])],
+            ],
+            $push: { logs: log.id },
+        }, { new: true });
+        await User_1.default.findByIdAndUpdate(req.user?._id, {
+            $push: { logs: log.id },
+        });
+        return updatedProduct;
+    };
+    (0, util_1.customReqResHandler)(res, request, undefined, {
+        successMessage: "Product updated successfully",
+        statusCode: 200,
+    });
+};
+exports.updateProductOptions = updateProductOptions;
 const archiveProduct = async (_req, res) => {
     const req = _req;
     const id = req.params.id;
@@ -157,7 +215,7 @@ const archiveProduct = async (_req, res) => {
         await User_1.default.findByIdAndUpdate(req.user?._id, {
             $push: { logs: log.id },
         });
-        return await Product_1.Product.findByIdAndUpdate(id, { is_active: false, is_archived: true, logs: { $push: log.id } }, { new: true });
+        return await Product_1.Product.findByIdAndUpdate(id, { is_active: false, is_archived: true, $push: { logs: log.id } }, { new: true });
     };
     (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Product archived successfully",

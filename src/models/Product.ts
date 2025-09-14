@@ -2,18 +2,10 @@ import mongoose, { Schema, Document } from "mongoose";
 import { Counter } from "./counter";
 import { generateRandom, timestamp } from "../utils/util";
 
-interface Pricing {
-  distributor_price_per_box: number;
-  profit_per_box: number;
-  first_time_min_order_qty: number;
-  next_order_min_qty?: number; // for sales agent
-  sales_agent_price_per_unit?: number;
-  bonus_per_box?: number;
-}
-
 interface Variant extends Document {
   sku: string;
   barcode: string;
+  is_active: boolean;
   attributes: { key: string; value: string }[]; // e.g., [{key: "color", value: "red"}, {key: "size", value: "M"}]
   available_weight: string; // e.g., '500g', '1kg'
   name: string;
@@ -37,19 +29,23 @@ interface Variant extends Document {
     next_order_min_qty: number;
   };
 }
-const OptionSchema = new Schema({
-  name: { type: String, required: true }, // e.g., "Size"
-  values: [{ type: String, required: true }], // e.g., ["Small", "Large", "XL"]
-});
+
 export interface IProduct extends Document {
   name: string;
+  price: number;
+  total_boxes_in_stock: number;
+  total_boxes_sold: number;
+  min_order_quantity: number;
+  inventory_alert_threshold: number;
+  max_order_quantity: number;
+
   internal_sequence: number;
   product_id: string;
   sku: string;
   options: { name: string; values: string[] }[];
   reference_id?: string; // optional external ID or reference
   description?: string;
-  available_weight: { type: String; required: true };
+
   orders: mongoose.Types.ObjectId[]; // references to orders
   category?: string;
   quantity?: number;
@@ -63,77 +59,75 @@ export interface IProduct extends Document {
   created_by: mongoose.Types.ObjectId;
 }
 
-// const PricingSchema = new Schema<Pricing>(
-//   {
-//     distributor_price_per_box: { type: Number, required: true },
-//     profit_per_box: { type: Number, required: true },
-//     first_time_min_order_qty: { type: Number, required: true },
-//     next_order_min_qty: { type: Number }, // optional for sales agent
-//     sales_agent_price_per_unit: { type: Number },
-//     bonus_per_box: { type: Number },
-//   },
-//   { _id: false }
-// );
+const OptionSchema = new Schema({
+  name: { type: String }, // e.g., "Size"
+  values: [{ type: String }], // e.g., ["Small", "Large", "XL"]
+});
 
 const VariantSchema = new Schema<Variant>({
-  name: { type: String, required: true },
+  name: { type: String },
   attributes: [
     {
-      key: { type: String, required: true },
-      value: { type: String, required: true },
+      key: { type: String },
+      value: { type: String },
     },
   ],
   sku: { type: String, unique: true, sparse: true },
   barcode: { type: String },
-  inventory_alert_threshold: { type: Number, required: true },
-  units_per_box: { type: Number, required: true },
+  is_active: { type: Boolean, default: true },
+  inventory_alert_threshold: { type: Number, default: 50 },
+  units_per_box: { type: Number, default: 0 },
   total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
-  total_boxes_sold: { type: Number }, // null means unlimited
-  unit_type: { type: String, required: true },
-
+  total_boxes_sold: { type: Number, default: 0 }, // null means unlimited
+  unit_type: { type: String, default: "box" }, // e.g., 'kg', 'litre', 'unit'
   distributor_pricing: {
-    price_per_box: { type: Number, required: true },
-    profit_per_box: { type: Number, required: true },
+    price_per_box: { type: Number, default: 0 },
+    profit_per_box: { type: Number, default: 0 },
     first_time_min_order_qty: { type: Number, default: 150 },
   },
 
   sales_agent_pricing: {
-    price_per_unit: { type: Number },
-    price_per_box: { type: Number },
-    bonus_per_box: { type: Number, required: true },
-    first_time_min_order_qty: { type: Number },
-    //   next_order_min_qty: { type: Number, required: true },
+    price_per_unit: { type: Number, default: 0 },
+    price_per_box: { type: Number, default: 0 },
+    bonus_per_box: { type: Number, default: 0 },
+    first_time_min_order_qty: { type: Number, default: 0 },
   },
 });
 
 const ProductSchema = new Schema<IProduct>(
   {
     name: { type: String, required: true },
+    min_order_quantity: { type: Number, default: 150 },
+    max_order_quantity: { type: Number, default: 10000 },
+    inventory_alert_threshold: { type: Number, default: 50 },
+    sku: { type: String, unique: true, sparse: true },
     description: String,
     category: String,
     options: [OptionSchema],
     reference_id: String,
+    price: { type: Number, required: true },
     product_id: String,
-    product_images: { type: Array, required: true },
+    total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
+    total_boxes_sold: { type: Number, default: 0 }, // null means unlimited
+    product_images: { type: Array },
     internal_sequence: { type: Number, unique: true, immutable: true },
-    available_weight: [{ type: String, required: true }], // e.g., '500g', '1kg'
     is_active: { type: Boolean, default: true },
     is_archived: { type: Boolean, default: false }, // added for archiving products
     archived_at: { type: Date }, // optional field to track when the product was archived
     archived_by: { type: Schema.Types.ObjectId, ref: "User" }, // reference to the admin who archived the product
     variants: [VariantSchema],
     logs: [{ type: Schema.Types.ObjectId, ref: "Log" }],
-
     orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     created_by: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: { ...timestamp } }
 );
+
 ProductSchema.pre(
   "save",
   async function (this: import("mongoose").Document & IProduct, next) {
     if (this.isNew) {
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      const today = new Date().toISOString().split("T")[0];
 
       // Increment sequence for today
       const counter = await Counter.findOneAndUpdate(

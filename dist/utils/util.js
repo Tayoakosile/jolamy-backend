@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.paystackVerification = exports.transactions = exports.statusMap = exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
 exports.generateEntityNumber = generateEntityNumber;
 exports.customIDGenerator = customIDGenerator;
+exports.generateVariants = generateVariants;
 // utils/checkIfExists.ts
 const axios_1 = __importDefault(require("axios"));
 const randomatic_1 = __importDefault(require("randomatic"));
@@ -277,3 +278,22 @@ const paystackVerification = async (reference) => {
     });
 };
 exports.paystackVerification = paystackVerification;
+function generateVariants(options) {
+    if (!options.length)
+        return [];
+    const cartesian = (arr) => arr.reduce((acc, val) => acc.flatMap((x) => val.map((y) => [...x, y])), [[]]);
+    const valuesArrays = options.map((opt) => opt.values);
+    const combos = cartesian(valuesArrays);
+    // build variants with "name" and "attributes"
+    return combos.map((combo) => {
+        const attributes = combo.map((value, idx) => ({
+            optionName: options[idx].name,
+            value,
+        }));
+        const name = combo.join(" / "); // 👉 Small / Red
+        return {
+            name,
+            attributes,
+        };
+    });
+}

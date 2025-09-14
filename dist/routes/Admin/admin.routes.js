@@ -39,6 +39,7 @@ router.post("/products", auth_1.appAuth, auth_1.isAdmin,
 admin_products_controller_1.addNewProducts);
 router.get("/products/:id", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.getSingleProducts);
 router.put("/products/:id", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.updateProduct);
+router.put("/products/:id/options", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.updateProductOptions);
 router.patch("/products/:id", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.updateProduct);
 router.patch("/products/:id/archive", auth_1.appAuth, auth_1.isAdmin, admin_products_controller_1.archiveProduct);
 // users

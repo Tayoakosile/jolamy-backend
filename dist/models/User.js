@@ -8,7 +8,7 @@ const counter_1 = require("./counter");
 const userSchema = new mongoose_1.Schema({
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
-    business_name: { type: String, required: true },
+    business_name: { type: String, },
     user_id: { type: String, unique: true },
     username: String,
     date_joined: { type: Date, default: Date.now() },

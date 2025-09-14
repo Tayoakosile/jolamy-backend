@@ -361,3 +361,33 @@ export const paystackVerification = async (reference: string) => {
     }
   );
 };
+
+type Option = { name: string; values: string[] };
+
+export function generateVariants(options: Option[]) {
+  if (!options.length) return [];
+
+  const cartesian = (arr: string[][]): string[][] =>
+    arr.reduce(
+      (acc, val) => acc.flatMap((x) => val.map((y) => [...x, y])),
+      [[]] as string[][]
+    );
+
+  const valuesArrays = options.map((opt) => opt.values);
+  const combos = cartesian(valuesArrays);
+
+  // build variants with "name" and "attributes"
+  return combos.map((combo) => {
+    const attributes = combo.map((value, idx) => ({
+      optionName: options[idx].name,
+      value,
+    }));
+
+    const name = combo.join(" / "); // 👉 Small / Red
+
+    return {
+      name,
+      attributes,
+    };
+  });
+}

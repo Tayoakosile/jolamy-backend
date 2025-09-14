@@ -38,58 +38,53 @@ const mongoose_1 = __importStar(require("mongoose"));
 const counter_1 = require("./counter");
 const util_1 = require("../utils/util");
 const OptionSchema = new mongoose_1.Schema({
-    name: { type: String, required: true }, // e.g., "Size"
-    values: [{ type: String, required: true }], // e.g., ["Small", "Large", "XL"]
+    name: { type: String }, // e.g., "Size"
+    values: [{ type: String }], // e.g., ["Small", "Large", "XL"]
 });
-// const PricingSchema = new Schema<Pricing>(
-//   {
-//     distributor_price_per_box: { type: Number, required: true },
-//     profit_per_box: { type: Number, required: true },
-//     first_time_min_order_qty: { type: Number, required: true },
-//     next_order_min_qty: { type: Number }, // optional for sales agent
-//     sales_agent_price_per_unit: { type: Number },
-//     bonus_per_box: { type: Number },
-//   },
-//   { _id: false }
-// );
 const VariantSchema = new mongoose_1.Schema({
-    name: { type: String, required: true },
+    name: { type: String },
     attributes: [
         {
-            key: { type: String, required: true },
-            value: { type: String, required: true },
+            key: { type: String },
+            value: { type: String },
         },
     ],
     sku: { type: String, unique: true, sparse: true },
     barcode: { type: String },
-    inventory_alert_threshold: { type: Number, required: true },
-    units_per_box: { type: Number, required: true },
+    is_active: { type: Boolean, default: true },
+    inventory_alert_threshold: { type: Number, default: 50 },
+    units_per_box: { type: Number, default: 0 },
     total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
-    total_boxes_sold: { type: Number }, // null means unlimited
-    unit_type: { type: String, required: true },
+    total_boxes_sold: { type: Number, default: 0 }, // null means unlimited
+    unit_type: { type: String, default: "box" }, // e.g., 'kg', 'litre', 'unit'
     distributor_pricing: {
-        price_per_box: { type: Number, required: true },
-        profit_per_box: { type: Number, required: true },
+        price_per_box: { type: Number, default: 0 },
+        profit_per_box: { type: Number, default: 0 },
         first_time_min_order_qty: { type: Number, default: 150 },
     },
     sales_agent_pricing: {
-        price_per_unit: { type: Number },
-        price_per_box: { type: Number },
-        bonus_per_box: { type: Number, required: true },
-        first_time_min_order_qty: { type: Number },
-        //   next_order_min_qty: { type: Number, required: true },
+        price_per_unit: { type: Number, default: 0 },
+        price_per_box: { type: Number, default: 0 },
+        bonus_per_box: { type: Number, default: 0 },
+        first_time_min_order_qty: { type: Number, default: 0 },
     },
 });
 const ProductSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
+    min_order_quantity: { type: Number, default: 150 },
+    max_order_quantity: { type: Number, default: 10000 },
+    inventory_alert_threshold: { type: Number, default: 50 },
+    sku: { type: String, unique: true, sparse: true },
     description: String,
     category: String,
     options: [OptionSchema],
     reference_id: String,
+    price: { type: Number, required: true },
     product_id: String,
-    product_images: { type: Array, required: true },
+    total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
+    total_boxes_sold: { type: Number, default: 0 }, // null means unlimited
+    product_images: { type: Array },
     internal_sequence: { type: Number, unique: true, immutable: true },
-    available_weight: [{ type: String, required: true }], // e.g., '500g', '1kg'
     is_active: { type: Boolean, default: true },
     is_archived: { type: Boolean, default: false }, // added for archiving products
     archived_at: { type: Date }, // optional field to track when the product was archived
@@ -101,7 +96,7 @@ const ProductSchema = new mongoose_1.Schema({
 }, { timestamps: { ...util_1.timestamp } });
 ProductSchema.pre("save", async function (next) {
     if (this.isNew) {
-        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        const today = new Date().toISOString().split("T")[0];
         // Increment sequence for today
         const counter = await counter_1.Counter.findOneAndUpdate({ name: "product", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
         const seq = counter.sequence;

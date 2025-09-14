@@ -8,6 +8,7 @@ import { errorResponse } from "../../utils/response";
 import {
   checkIfDocumentExistsById,
   customReqResHandler,
+  generateVariants,
 } from "../../utils/util";
 
 export const addNewProducts = async (req: Request, res: Response) => {
@@ -20,6 +21,9 @@ export const addNewProducts = async (req: Request, res: Response) => {
   // }
 
   const body = _req.body;
+  const updatedVariants = generateVariants(body.options ?? []);
+
+  // return;
 
   const request = async () => {
     const existingProduct = await Product.findOne({
@@ -45,7 +49,6 @@ export const addNewProducts = async (req: Request, res: Response) => {
     }
     const product = await Product.create({
       ..._req.body,
-      // product_images: urls,
       created_by: _req.user?._id,
       is_active: true,
     });
@@ -69,7 +72,7 @@ export const addNewProducts = async (req: Request, res: Response) => {
       $push: { logs: log.id },
     });
 
-    return { message: "Product added successfully" };
+    return { message: "Product added successfully", product };
   };
 
   customReqResHandler(res, request);
@@ -96,7 +99,7 @@ export const getSingleProducts = async (req: Request, res: Response) => {
       "product_id",
       res,
       Product,
-      ['orders']
+      ["orders"]
     );
 
     const logs = await logActivity({
@@ -147,9 +150,7 @@ export const updateProduct = async (_req: Request, res: Response) => {
       id,
       {
         ...body,
-        logs: {
-          $push: log.id,
-        },
+        $push: { logs: log.id },
       },
       { new: true }
     );
@@ -158,6 +159,81 @@ export const updateProduct = async (_req: Request, res: Response) => {
     });
     return;
   };
+  customReqResHandler(res, request, undefined, {
+    successMessage: "Product updated successfully",
+    statusCode: 200,
+  });
+};
+
+export const updateProductOptions = async (_req: Request, res: Response) => {
+  const req = _req as AuthRequest;
+  const id = req.params.id;
+  const product = await checkIfDocumentExistsById(
+    id,
+    "product_id",
+    res,
+    Product
+  );
+  const body = req.body;
+  if (!product) return;
+
+  if (!body?.options || body?.options?.length < 1) {
+    errorResponse(res, 400, "Options are required");
+    return;
+  }
+  const isProductOptionInDbBefore = product.options
+    ?.map((option) => {
+      const exists = body.options.find(
+        (o: any) => o.name?.toLowerCase() === option.name?.toLowerCase()
+      );
+      if (exists) {
+        return true;
+      }
+      return false;
+    })
+    .some((val) => val === true);
+
+  if (isProductOptionInDbBefore) {
+    errorResponse(res, 400, "This option already exists");
+    return;
+  }
+
+  const request = async () => {
+    const log = await logActivity({
+      req,
+      user_id: new Types.ObjectId(req.user?._id),
+      action: "UPDATE_PRODUCT_OPTIONS",
+      sender: new Types.ObjectId(req.user?._id),
+      // receiver: new Types.ObjectId(id),
+      description: `Product options updated: ${body.name}`,
+      metadata: {
+        product_id: id,
+        user_id: req.user?._id,
+      },
+    });
+    const updatedProduct = await Product.findOneAndUpdate(
+      { product_id: id },
+      {
+        options:
+          product?.options?.length >= 1
+            ? [...product.options, ...body?.options]
+            : body?.options,
+        variants: [
+          product?.options?.length >= 1
+            ? generateVariants(body.options ?? [])
+            : [...product.variants, ...generateVariants(body.options ?? [])],
+        ],
+        $push: { logs: log.id },
+      },
+      { new: true }
+    );
+
+    await User.findByIdAndUpdate(req.user?._id, {
+      $push: { logs: log.id },
+    });
+    return updatedProduct;
+  };
+
   customReqResHandler(res, request, undefined, {
     successMessage: "Product updated successfully",
     statusCode: 200,
@@ -186,7 +262,7 @@ export const archiveProduct = async (_req: Request, res: Response) => {
     });
     return await Product.findByIdAndUpdate(
       id,
-      { is_active: false, is_archived: true, logs: { $push: log.id } },
+      { is_active: false, is_archived: true, $push: { logs: log.id } },
       { new: true }
     );
   };

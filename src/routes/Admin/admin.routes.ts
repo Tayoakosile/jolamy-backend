@@ -27,6 +27,7 @@ import {
   getProducts,
   getSingleProducts,
   updateProduct,
+  updateProductOptions,
 } from "../../controllers/Admin/admin.products.controller";
 
 import { appAuth, isAdmin } from "../../middlewares/auth";
@@ -112,6 +113,7 @@ router.post(
 );
 router.get("/products/:id", appAuth, isAdmin, getSingleProducts);
 router.put("/products/:id", appAuth, isAdmin, updateProduct);
+router.put("/products/:id/options", appAuth, isAdmin, updateProductOptions);
 router.patch("/products/:id", appAuth, isAdmin, updateProduct);
 router.patch("/products/:id/archive", appAuth, isAdmin, archiveProduct);
 // users
