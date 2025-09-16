@@ -3,7 +3,6 @@
 import { Router } from "express";
 import {
   approveUser,
-  getPendingUsers,
   rejectUser,
 } from "../../controllers/Admin/admin.controller";
 import {
@@ -30,9 +29,10 @@ import {
   updateProductOptions,
 } from "../../controllers/Admin/admin.products.controller";
 
+import { getAllInventory } from "../../controllers/Admin/admin.inventory.controller";
 import { appAuth, isAdmin } from "../../middlewares/auth";
 import { removeSensitiveFields } from "../../utils/util";
-import { getAllInventory } from "../../controllers/Admin/admin.inventory.controller";
+import { getPendingUsers } from "../../controllers/general/Users/users.controllers";
 
 const router = Router();
 
@@ -51,7 +51,7 @@ router.post(
   createNewOffices
 );
 router.get("/offices", appAuth, isAdmin, getOffices);
-router.get("/offices/:id", appAuth,  getSingleOffice);
+router.get("/offices/:id", appAuth, getSingleOffice);
 router.put(
   "/offices/:id",
   appAuth,
@@ -114,17 +114,18 @@ router.post(
 router.get("/products/:id", appAuth, isAdmin, getSingleProducts);
 router.put("/products/:id", appAuth, isAdmin, updateProduct);
 router.put("/products/:id/options", appAuth, isAdmin, updateProductOptions);
+router.patch("/products/:id/options", appAuth, isAdmin, updateProductOptions);
+// router.patch("/products/:id/options", appAuth, isAdmin, patchProductOptions);
+// router.patch("/products/:id/options", appAuth, isAdmin, patchProductOptions);
 router.patch("/products/:id", appAuth, isAdmin, updateProduct);
 router.patch("/products/:id/archive", appAuth, isAdmin, archiveProduct);
 // users
 
 // stats
 
-
 // users
 router.get("/pending-users", appAuth, isAdmin, getPendingUsers);
 router.get("/inventory", appAuth, isAdmin, getAllInventory);
-
 
 // users
 

@@ -36,19 +36,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rejectUser = exports.approveUser = exports.getPendingUsers = void 0;
+exports.rejectUser = exports.approveUser = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const User_1 = __importDefault(require("../../models/User"));
 const mail_service_1 = require("../../services/mail.service");
 const activityLog_1 = require("../../utils/activityLog");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
-const getPendingUsers = async (req, res) => {
-    const _req = req;
-    const users = await User_1.default.find({ status: "pending" });
-    return res.status(200).json({ users });
-};
-exports.getPendingUsers = getPendingUsers;
 const approveUser = async (_req, res) => {
     try {
         const req = _req;

@@ -32,8 +32,8 @@ const addToCart = (req, res) => {
                 user: user_id,
                 items: [
                     {
+                        ..._req.body?.variants,
                         product: product._id,
-                        variants: [..._req.body?.variants],
                     },
                 ],
             }));
@@ -59,6 +59,15 @@ const addToCart = (req, res) => {
             return { message: "Product added to cart successfully" };
         }
         // check if product already exists in items
+        cart.items = cart.items.map((item) => {
+            if (item.product.toString() === _req?.body?.product_id.toString()) {
+                return {
+                    ...item,
+                    quantity: _req?.body?.quantity,
+                };
+            }
+            return item;
+        });
         const existingItem = cart.items.find((item) => item.product.toString() === _req?.body?.product_id.toString());
         if (existingItem) {
             // loop through each variant
@@ -94,15 +103,30 @@ exports.addToCart = addToCart;
 const getCarts = (req, res) => {
     const _req = req;
     const user_id = _req?.user?._id;
+    const user = _req?.user;
     const request = async () => {
         const allCarts = await Cart_1.Cart.findOne({ user: user_id }).populate({
             path: "items.product",
             select: "-created_by  -orders -is_archived -logs -inventory",
         });
-        const carts = allCarts
-            ?.toObject()
-            ?.items?.filter((item) => item.variants.length >= 1);
-        const updatedCart = carts?.map((item) => {
+        const updatedCart = allCarts?.toObject()?.items?.map((item) => {
+            if (!item.product)
+                return null;
+            const price = user?.is_distributor
+                ? Number(item?.quantity) *
+                    Number(item?.product?.distributor_price_per_box)
+                : Number(item?.quantity) *
+                    Number(item?.product?.sales_agent_price_per_box) || 0;
+            if (!item.variants || item.variants.length === 0)
+                return {
+                    ...item?.product,
+                    quantity: item?.quantity,
+                    total_price: price,
+                    variant_id: null,
+                    original_product_id: item.product?._id,
+                    variant_name: "",
+                    is_variants_available: item.product?.variants && item.product?.variants.length > 0,
+                };
             return item.variants.map((originalVariant) => {
                 const variant = item.product.variants.find((productVariant) => productVariant._id.toString() === originalVariant._id.toString());
                 const { variants, ...rest } = item.product;
@@ -135,7 +159,8 @@ const getCarts = (req, res) => {
         await User_1.default.findByIdAndUpdate(_req.user?._id, {
             $push: { logs: logs.id },
         });
-        return { cart: carts, checkout: updatedCart };
+        // return { cart: allCarts };
+        return { cart: allCarts, checkout: updatedCart };
     };
     (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Cart retrieved successfully",

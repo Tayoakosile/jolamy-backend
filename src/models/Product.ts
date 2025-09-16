@@ -32,7 +32,8 @@ interface Variant extends Document {
 
 export interface IProduct extends Document {
   name: string;
-  price: number;
+  sales_agent_price_per_box: number;
+  distributor_price_per_box: number;
   total_boxes_in_stock: number;
   total_boxes_sold: number;
   min_order_quantity: number;
@@ -65,7 +66,7 @@ const OptionSchema = new Schema({
 });
 
 const VariantSchema = new Schema<Variant>({
-  name: { type: String },
+  name: { type: String, required: true }, // e.g., "Red - M"
   attributes: [
     {
       key: { type: String },
@@ -105,7 +106,8 @@ const ProductSchema = new Schema<IProduct>(
     category: String,
     options: [OptionSchema],
     reference_id: String,
-    price: { type: Number, required: true },
+    sales_agent_price_per_box: { type: Number, required: true },
+    distributor_price_per_box: { type: Number, required: true },
     product_id: String,
     total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
     total_boxes_sold: { type: Number, default: 0 }, // null means unlimited
@@ -138,7 +140,6 @@ ProductSchema.pre(
 
       const seq = counter.sequence;
       this.internal_sequence = seq;
-
       // Random 5-character alphanumeric
       const randomPart = generateRandom(8, "00").toUpperCase();
       const datePart = today.replace(/-/g, "");

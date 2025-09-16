@@ -11,10 +11,11 @@ const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
 const trend_util_1 = require("../utils/trend.util");
 const util_1 = require("../utils/util");
-const getAllFinance = (req, res) => {
+const getAllFinance = (_req, res) => {
+    const req = _req;
     // Only admin and worker can access this route
     if (req.isOtherUser) {
-        (0, response_1.errorResponse)(res, 401, "Not authorized, worker/admin access only", {
+        (0, response_1.errorResponse)(res, 403, "Not authorized, worker/admin access only", {
             message: "Not authorized, worker/admin access only",
         });
         return;
@@ -89,12 +90,13 @@ const getAllFinance = (req, res) => {
     });
 };
 exports.getAllFinance = getAllFinance;
-const createNewFinance = (req, res) => {
+const createNewFinance = (_req, res) => {
+    const req = _req;
     const user = req?.worker;
     const isOtherUser = req.isOtherUser;
     const isWorker = req.isWorker;
     if (isWorker && isOtherUser) {
-        (0, response_1.errorResponse)(res, 401, "Not authorized, worker/admin access only", {
+        (0, response_1.errorResponse)(res, 403, "Not authorized, worker/admin access only", {
             message: "Not authorized, worker/admin access only",
         });
         return;
@@ -221,7 +223,8 @@ const updateFinance = (req, res) => {
     });
 };
 exports.updateFinance = updateFinance;
-const getSingleFinance = (req, res) => {
+const getSingleFinance = (_req, res) => {
+    const req = _req;
     const user = req.worker;
     const request = async () => {
         const financeId = req.params.id;

@@ -22,10 +22,14 @@ export const getAllOrders = (req: Request, res: Response) => {
   const user = _req.user;
   const worker = _req.worker;
   const params = _req.query;
+  console.log('worker :', worker);
 
   const request = async () => {
     if (user?.user_role === "admin") {
-      const allOrders = await Order.find({}).sort({ created_at: -1 });
+
+      const allOrders = await Order.find({})
+        .sort({ created_at: -1 })
+        .populate("products.product_id");
 
       const allOrdersStat = await getTrend(Order, {
         period: "week",
@@ -83,11 +87,11 @@ export const getAllOrders = (req: Request, res: Response) => {
       typeof _req?.query?.type === "string" &&
       _req?.query?.type.includes("sales_agent")
     ) {
+
+
       return SalesAgentOrder.find({ assigned_to: { distributor: user?._id } });
     }
-    return (await user?.is_distributor)
-      ? Order.find({ user_id: user?._id })
-      : SalesAgentOrder.find({ user_id: user?._id });
+    return Order.find({ user_id: user?._id });
   };
 
   customReqResHandler(res, request, undefined, {
@@ -148,25 +152,30 @@ export const createNewOrder = (req: Request, res: Response) => {
   const id = user?._id;
   const body = _req.body;
   const product_items = body.products;
+  const quantity_ordered = body.quantity;
 
   const request = async () => {
-    const getProductPricing = async (productFromPostAPi: IProduct) => {
-      const productResFromDb = productFromPostAPi?.variants
-        ? await Product.findOne({
-            _id: productFromPostAPi.id,
-            "variants._id": {
-              $in: productFromPostAPi?.variants?.map(
-                (variant: any) => variant.id
-              ),
-            },
-          }).select(
-            "name category reference_id _id  available_weight is_active is_archived  variants"
-          )
-        : await Product.findOne({
-            _id: productFromPostAPi.id,
-          }).select(
-            "name category reference_id  available_weight is_active is_archived  variants"
-          );
+    const getProductPricing = async (
+      productFromPostAPi: IProduct,
+      quantity_ordered: number
+    ) => {
+      const fieldsToSelect =
+        "name category reference_id _id distributor_price_per_box sales_agent_price_per_box available_weight is_active is_archived  variants";
+      const productResFromDb =
+        productFromPostAPi?.variants?.length >= 1
+          ? await Product.findOne({
+              _id: productFromPostAPi.id,
+              "variants._id": {
+                $in: productFromPostAPi?.variants?.map(
+                  (variant: any) => variant.id
+                ),
+              },
+            })
+          : // .select(fieldsToSelect)
+            await Product.findOne({
+              _id: productFromPostAPi.id,
+            });
+      // .select(fieldsToSelect);
 
       // if a product is is_active is false or is_archived is true, return error
       if (
@@ -236,20 +245,25 @@ export const createNewOrder = (req: Request, res: Response) => {
         }
       );
 
-      const productInfo = productResFromDb ? productResFromDb.toObject() : null;
+      const productInfo = productResFromDb.toObject();
+      const isProductVariantEmpty = productInfo?.variants.length === 0;
       return {
         product_id: productInfo?._id,
         name: productInfo?.name || "Unknown Product",
+        quantity: quantity_ordered || 0,
         variants: theVariant,
-        total: theVariant.reduce((sum, item) => sum + item.total_amount, 0),
-        total_quantity: theVariant.reduce(
-          (sum, item) => sum + item.quantity,
-          0
-        ),
+        total: isProductVariantEmpty
+          ? productFromPostAPi?.quantity * productInfo.distributor_price_per_box
+          : theVariant.reduce((sum, item) => sum + item.total_amount, 0),
+        total_quantity: isProductVariantEmpty
+          ? productFromPostAPi?.quantity
+          : theVariant.reduce((sum, item) => sum + item.quantity, 0),
       };
     };
     const Products = await Promise.all(
-      product_items.map(async (product: IProduct) => getProductPricing(product))
+      product_items.map(async (product: IProduct) =>
+        getProductPricing(product, quantity_ordered)
+      )
     );
 
     if (Products.length === 0 || Products.some((p) => !p)) {

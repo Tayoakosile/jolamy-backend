@@ -161,7 +161,7 @@ export const removeSensitiveFields = (
     "payment_status",
     "estimated_date",
     "estimatedDate",
-    "delivery_status",
+    // "delivery_status",
     "refund_status",
     "order_number",
     "order_id",
@@ -375,13 +375,18 @@ export function generateVariants(options: Option[]) {
 
   const valuesArrays = options.map((opt) => opt.values);
   const combos = cartesian(valuesArrays);
+  console.log('combos :', combos);
+
+
 
   // build variants with "name" and "attributes"
   return combos.map((combo) => {
     const attributes = combo.map((value, idx) => ({
-      optionName: options[idx].name,
+      key: options[idx].name,
       value,
     }));
+    console.log('attributes :', attributes);
+
 
     const name = combo.join(" / "); // 👉 Small / Red
 

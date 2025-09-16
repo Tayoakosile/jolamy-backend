@@ -55,16 +55,19 @@ export const upload = multer({
       "image/png",
       "image/webp",
       "image/gif",
+      "image/heic",
       "application/pdf",
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       ".docx",
       ".webp",
     ];
     console.log('cb :', cb);
 
+    console.log('file.mimetype :', file.mimetype);
+
     if (!allowedTypes.includes(file.mimetype)) {
-      return cb(
-        new Error("Invalid file type. Only JPEG, PNG, and PDF are allowed.")
-      );
+
+      return;
     }
     cb(null, true);
   },

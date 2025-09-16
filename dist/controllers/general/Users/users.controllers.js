@@ -14,8 +14,19 @@ const Order_1 = __importDefault(require("../../../models/Order"));
 const Transaction_1 = __importDefault(require("../../../models/Transaction"));
 const trend_util_1 = require("../../../utils/trend.util");
 const getPendingUsers = async (_req, res) => {
-    const users = await User_1.default.find({ status: "pending" });
-    return res.status(200).json({ users });
+    const users = await User_1.default.find({
+        status: {
+            $in: [
+                "inactive",
+                "pending_for_documents",
+                "awaiting_registration_fee_payment",
+                "submitted_for_review",
+                "pending_for_approval",
+            ],
+        },
+    });
+    (0, response_1.successResponse)(res, 200, "Pending Users fetched successfully", { users });
+    return;
 };
 exports.getPendingUsers = getPendingUsers;
 const getAllUsers = async (req, res) => {

@@ -8,10 +8,11 @@ import { errorResponse } from "../utils/response";
 import { getTrend } from "../utils/trend.util";
 import { checkIfDocumentExistsById, customReqResHandler } from "../utils/util";
 
-export const getAllFinance = (req: AuthRequest, res: Response) => {
+export const getAllFinance = (_req: Request, res: Response) => {
+  const req = _req as AuthRequest;
   // Only admin and worker can access this route
   if (req.isOtherUser) {
-    errorResponse(res, 401, "Not authorized, worker/admin access only", {
+    errorResponse(res, 403, "Not authorized, worker/admin access only", {
       message: "Not authorized, worker/admin access only",
     });
     return;
@@ -90,13 +91,14 @@ export const getAllFinance = (req: AuthRequest, res: Response) => {
   });
 };
 
-export const createNewFinance = (req: AuthRequest, res: Response) => {
+export const createNewFinance = (_req: Request, res: Response) => {
+  const req = _req as AuthRequest;
   const user = req?.worker;
   const isOtherUser = req.isOtherUser;
   const isWorker = req.isWorker;
 
   if (isWorker && isOtherUser) {
-    errorResponse(res, 401, "Not authorized, worker/admin access only", {
+    errorResponse(res, 403, "Not authorized, worker/admin access only", {
       message: "Not authorized, worker/admin access only",
     });
     return;
@@ -250,7 +252,8 @@ export const updateFinance = (req: Request, res: Response) => {
   });
 };
 
-export const getSingleFinance = (req: AuthRequest, res: Response) => {
+export const getSingleFinance = (_req: Request, res: Response) => {
+  const req = _req as AuthRequest;
   const user = (req as any).worker as any;
   const request = async () => {
     const financeId = req.params.id;

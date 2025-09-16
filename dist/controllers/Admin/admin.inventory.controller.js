@@ -5,11 +5,30 @@ const Product_1 = require("../../models/Product");
 // Get all products
 const getAllInventory = async (req, res) => {
     try {
-        const products = await Product_1.Product.find();
+        const products = await Product_1.Product.find().populate("orders");
         res.json(products);
         const productsForInventory = products?.map((product) => {
             return {
                 product_name: product.name,
+                product_stock: product.total_boxes_in_stock,
+                distributor_pricing: product.distributor_price_per_box,
+                sales_agent_pricing: product.sales_agent_price_per_box,
+                status: product.total_boxes_in_stock === 0
+                    ? "out_of_stock"
+                    : product.total_boxes_in_stock <= product.inventory_alert_threshold
+                        ? "low_stock"
+                        : "in_stock",
+                unit_sold_last_30_days: 0,
+                unit_sold_last_60_days: 0,
+                unit_sold_last_90_days: 0,
+                total_units_sold: product.total_boxes_sold || 0,
+                total_revenue_generated: 0,
+                product_id: product._id,
+                sku: product?.sku,
+                variants: product.variants,
+                created_at: product.created_at,
+                updated_at: product.updated_at,
+                // Add more fields as necessary
             };
         });
         console.log("productsForInventory :", productsForInventory);

@@ -11,8 +11,20 @@ import Transaction from "../../../models/Transaction";
 import { getTrend } from "../../../utils/trend.util";
 
 export const getPendingUsers = async (_req: AuthRequest, res: Response) => {
-  const users = await User.find({ status: "pending" });
-  return res.status(200).json({ users });
+  const users = await User.find({
+    status: {
+      $in: [
+        "inactive",
+        "pending_for_documents",
+        "awaiting_registration_fee_payment",
+        "submitted_for_review",
+        "pending_for_approval",
+      ],
+    },
+  });
+
+  successResponse(res, 200, "Pending Users fetched successfully", { users });
+  return;
 };
 export const getAllUsers = async (req: Request, res: Response) => {
   // Get all users not admin

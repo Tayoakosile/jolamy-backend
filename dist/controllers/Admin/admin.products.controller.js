@@ -3,13 +3,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.archiveProduct = exports.updateProductOptions = exports.updateProduct = exports.getSingleProducts = exports.getProducts = exports.addNewProducts = void 0;
+exports.archiveProduct = exports.patchProductOptions = exports.updateProductOptions = exports.updateProduct = exports.getSingleProducts = exports.getProducts = exports.addNewProducts = void 0;
 const mongoose_1 = require("mongoose");
 const Product_1 = require("../../models/Product");
 const User_1 = __importDefault(require("../../models/User"));
 const activityLog_1 = require("../../utils/activityLog");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
+function updateProductOptionsFunc(existingOptions, formerOptions, newOptions) {
+    existingOptions.forEach((existingOption) => {
+        const formerOption = formerOptions.find((opt) => opt.name.toLowerCase() === existingOption.name.toLowerCase());
+        console.log("formerOption :", formerOption);
+    });
+}
 const addNewProducts = async (req, res) => {
     const _req = req;
     const user = _req.user;
@@ -166,22 +172,31 @@ const updateProductOptions = async (_req, res) => {
             user_id: new mongoose_1.Types.ObjectId(req.user?._id),
             action: "UPDATE_PRODUCT_OPTIONS",
             sender: new mongoose_1.Types.ObjectId(req.user?._id),
-            // receiver: new Types.ObjectId(id),
             description: `Product options updated: ${body.name}`,
             metadata: {
                 product_id: id,
                 user_id: req.user?._id,
             },
         });
+        const product_options = product.options;
+        const productOptionLength = product?.options?.length;
+        const updated_product_options = productOptionLength >= 1
+            ? [...product.options, ...body?.options]
+            : body?.options;
+        product.options =
+            updated_product_options;
+        product.variants = (0, util_1.generateVariants)(updated_product_options ?? []);
+        product?.save();
+        return;
         const updatedProduct = await Product_1.Product.findOneAndUpdate({ product_id: id }, {
-            options: product?.options?.length >= 1
+            options: productOptionLength >= 1
                 ? [...product.options, ...body?.options]
                 : body?.options,
-            variants: [
-                product?.options?.length >= 1
-                    ? (0, util_1.generateVariants)(body.options ?? [])
-                    : [...product.variants, ...(0, util_1.generateVariants)(body.options ?? [])],
-            ],
+            variants: (0, util_1.generateVariants)(body.options ?? []),
+            // variants:
+            //   productOptionLength <= 0
+            //     ? generateVariants(body.options ?? [])
+            //     : [...product.variants, ...generateVariants(body.options ?? [])],
             $push: { logs: log.id },
         }, { new: true });
         await User_1.default.findByIdAndUpdate(req.user?._id, {
@@ -195,6 +210,51 @@ const updateProductOptions = async (_req, res) => {
     });
 };
 exports.updateProductOptions = updateProductOptions;
+const patchProductOptions = async (_req, res) => {
+    const req = _req;
+    const id = req.params.id;
+    // const options = req.body;
+    const former_options = req.body?.former_options;
+    const new_options = req.body?.new_options;
+    const product = await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);
+    console.log("product?.options :", product?.options);
+    const body = req.body;
+    if (!product)
+        return;
+    // search for options that are in product.options and former_options then update the value to the value in new_options
+    const updated_former_options = body.former_options.flatMap((opt) => opt.values.map((value) => ({
+        name: opt.name,
+        value,
+    })));
+    updated_former_options.map(async (opt, index) => {
+        // console.log("opt :", opt);
+        console.log("new_options :", new_options, index);
+        // return;
+        const productUpdate = await Product_1.Product.updateOne({
+            _id: product?._id,
+            "options.name": opt?.name,
+            "options.values": opt?.value,
+        }, {
+            $set: {
+                "options.$[opt].name": new_options[index]?.name,
+                "options.$[opt].values": new_options[index]?.values,
+                // overwrite the whole array
+            },
+        }, {
+            arrayFilters: [{ "opt.name": opt?.name }],
+        });
+        console.log("productUpdate :", productUpdate);
+    });
+    console.log("updated_former_options :", updated_former_options);
+    if (!body?.options || body?.options?.length < 1) {
+        (0, response_1.errorResponse)(res, 400, "Options are required");
+        return;
+    }
+    const request = async () => {
+        // await Product.findOneAndUpdate({})
+    };
+};
+exports.patchProductOptions = patchProductOptions;
 const archiveProduct = async (_req, res) => {
     const req = _req;
     const id = req.params.id;

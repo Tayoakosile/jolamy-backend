@@ -27,7 +27,7 @@ export const appAuth = async (
     token = authHeader.split(" ")[1]?.replace(/"/g, "");
   }
   if (!token) {
-    errorResponse(res, 401, "Not authorized, token missing", {
+    errorResponse(res, 403, "Not authorized, token missing", {
       message: "Not authorized, token missing",
     });
     return next();
@@ -98,7 +98,7 @@ export const appAuthForInactiveUsers = async (
   }
 
   if (!token) {
-    errorResponse(res, 401, "Not authorized, token missing", {
+    errorResponse(res, 403, "Not authorized, token missing", {
       message: "Not authorized, token missing",
     });
     return next();

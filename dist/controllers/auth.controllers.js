@@ -25,7 +25,7 @@ const createAccount = async (req, res, next) => {
     }
     if (req.body.user_role === "admin") {
         (0, response_1.errorResponse)(res, 400, "Admin role cannot be created via this endpoint");
-        return;
+        // return;
     }
     if (!req.body.email || !req.body.password) {
         (0, response_1.errorResponse)(res, 400, "Email and password are required");

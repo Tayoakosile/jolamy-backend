@@ -7,8 +7,10 @@ import {
   IShippingDetails,
 } from "../types/order.type";
 
-const  ProductItemSchema = new Schema({
+const ProductItemSchema = new Schema({
   product_id: { type: Types.ObjectId, ref: "Product", required: true },
+  name: { type: String },
+  quantity: { type: Number },
   variants: [
     {
       id: { type: Types.ObjectId, required: true },
@@ -54,7 +56,6 @@ const DeliveryStepSchema = new Schema<IDeliveryDetails>({
       "order_failed",
       "order_ready_for_pickup",
       "order_ready_to_be_collected",
-
     ],
   },
   description: { type: String },

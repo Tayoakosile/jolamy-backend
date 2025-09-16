@@ -17,7 +17,7 @@ const appAuth = async (req, res, next) => {
         token = authHeader.split(" ")[1]?.replace(/"/g, "");
     }
     if (!token) {
-        (0, response_1.errorResponse)(res, 401, "Not authorized, token missing", {
+        (0, response_1.errorResponse)(res, 403, "Not authorized, token missing", {
             message: "Not authorized, token missing",
         });
         return next();
@@ -76,7 +76,7 @@ const appAuthForInactiveUsers = async (req, res, next) => {
         token = authHeader.split(" ")[1]?.replace(/"/g, "");
     }
     if (!token) {
-        (0, response_1.errorResponse)(res, 401, "Not authorized, token missing", {
+        (0, response_1.errorResponse)(res, 403, "Not authorized, token missing", {
             message: "Not authorized, token missing",
         });
         return next();

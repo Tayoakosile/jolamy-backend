@@ -33,7 +33,7 @@ const userSchema = new mongoose_1.Schema({
     inventory_obligations_accepted: { type: Boolean, default: false },
     status: {
         type: String,
-        default: "pending_for_documents",
+        default: "inactive",
     },
     files: {
         proof_of_identity: {

@@ -42,7 +42,7 @@ const OptionSchema = new mongoose_1.Schema({
     values: [{ type: String }], // e.g., ["Small", "Large", "XL"]
 });
 const VariantSchema = new mongoose_1.Schema({
-    name: { type: String },
+    name: { type: String, required: true }, // e.g., "Red - M"
     attributes: [
         {
             key: { type: String },
@@ -79,7 +79,8 @@ const ProductSchema = new mongoose_1.Schema({
     category: String,
     options: [OptionSchema],
     reference_id: String,
-    price: { type: Number, required: true },
+    sales_agent_price_per_box: { type: Number, required: true },
+    distributor_price_per_box: { type: Number, required: true },
     product_id: String,
     total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
     total_boxes_sold: { type: Number, default: 0 }, // null means unlimited

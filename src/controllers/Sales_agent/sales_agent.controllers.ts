@@ -3,7 +3,6 @@ import User from "../../models/User";
 import { AuthRequest } from "../../types/type";
 import { successResponse } from "../../utils/response";
 import { checkIfDocumentExistsById } from "../../utils/util";
-import SalesAgentOrder from "../../models/SalesAgentOrders";
 
 export const getAllDistributors = async (req: Request, res: Response) => {
   const distributors = await User.find({
