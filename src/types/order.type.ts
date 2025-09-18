@@ -8,7 +8,7 @@ export interface ProductVariant {
 }
 
 export interface ProductItem {
-  product_id:string;
+  product_id: string;
   variants: ProductVariant[];
 }
 
@@ -89,7 +89,9 @@ export interface IOrder extends Document {
     office: Types.ObjectId;
     office_worker: Types.ObjectId;
     worker_handling_order: Types.ObjectId;
+    distributor: IUser;
   };
+
   confirmation: {
     is_confirmed: Boolean;
     confirmed_at: Date;

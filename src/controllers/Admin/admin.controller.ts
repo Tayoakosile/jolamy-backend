@@ -1,3 +1,4 @@
+import { JwtPayload } from "jsonwebtoken";
 import { Request, Response } from "express";
 import mongoose, { Types } from "mongoose";
 import User from "../../models/User";
@@ -7,12 +8,9 @@ import { logActivity } from "../../utils/activityLog";
 import { errorResponse, successResponse } from "../../utils/response";
 import { checkIfDocumentExistsById } from "../../utils/util";
 
-
-
 export const approveUser = async (_req: Request, res: Response) => {
-
   try {
-    const req = _req as AuthRequest
+    const req = _req as AuthRequest;
     const user_id = req.params?.user_id;
     const adminId = req.user?._id;
 
@@ -39,6 +37,7 @@ export const approveUser = async (_req: Request, res: Response) => {
       {
         status: "approved",
         approved_at: new Date(),
+        $inc: { token_version: 1 },
         admin_notes: req.body?.admin_notes || "No notes provided",
         approved_by: new mongoose.Types.ObjectId(adminId),
         logs: Array.isArray(user.logs) ? [...user.logs, log._id] : [log._id],
@@ -48,6 +47,7 @@ export const approveUser = async (_req: Request, res: Response) => {
         new: true,
       }
     );
+
     sendEmail(
       user.email,
       "Account Approved",
@@ -88,7 +88,7 @@ export const approveUser = async (_req: Request, res: Response) => {
 
 export const rejectUser = async (_req: Request, res: Response) => {
   try {
-const req = _req as AuthRequest
+    const req = _req as AuthRequest;
     const user_id = req.params?.user_id;
     const adminId = req.user?._id;
     const user = (await checkIfDocumentExistsById<IUser>(

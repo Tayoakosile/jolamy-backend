@@ -11,6 +11,7 @@ const admin_inventory_controller_1 = require("../../controllers/Admin/admin.inve
 const auth_1 = require("../../middlewares/auth");
 const util_1 = require("../../utils/util");
 const users_controllers_1 = require("../../controllers/general/Users/users.controllers");
+const bonus_controllers_1 = require("../../controllers/bonus.controllers");
 const router = (0, express_1.Router)();
 // users
 router.post("/approve/:user_id", auth_1.appAuth, auth_1.isAdmin, admin_controller_1.approveUser);
@@ -51,5 +52,6 @@ router.patch("/products/:id/archive", auth_1.appAuth, auth_1.isAdmin, admin_prod
 // users
 router.get("/pending-users", auth_1.appAuth, auth_1.isAdmin, users_controllers_1.getPendingUsers);
 router.get("/inventory", auth_1.appAuth, auth_1.isAdmin, admin_inventory_controller_1.getAllInventory);
+router.get("/bonus", auth_1.appAuth, auth_1.isAdmin, bonus_controllers_1.runBonuses);
 // users
 exports.default = router;

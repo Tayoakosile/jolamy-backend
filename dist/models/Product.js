@@ -80,12 +80,14 @@ const ProductSchema = new mongoose_1.Schema({
     options: [OptionSchema],
     reference_id: String,
     sales_agent_price_per_box: { type: Number, required: true },
+    sales_agent_bonus_per_box: { type: Number, required: true },
     distributor_price_per_box: { type: Number, required: true },
+    distributor_bonus_per_box: { type: Number, required: true },
     product_id: String,
     total_boxes_in_stock: { type: Number, default: null }, // null means unlimited
     total_boxes_sold: { type: Number, default: 0 }, // null means unlimited
     product_images: { type: Array },
-    internal_sequence: { type: Number, unique: true, immutable: true },
+    internal_sequence: { type: Number, immutable: true },
     is_active: { type: Boolean, default: true },
     is_archived: { type: Boolean, default: false }, // added for archiving products
     archived_at: { type: Date }, // optional field to track when the product was archived
@@ -99,7 +101,7 @@ ProductSchema.pre("save", async function (next) {
     if (this.isNew) {
         const today = new Date().toISOString().split("T")[0];
         // Increment sequence for today
-        const counter = await counter_1.Counter.findOneAndUpdate({ name: "product", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
+        const counter = await counter_1.Counter.findOneAndUpdate({ name: "bonus", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
         const seq = counter.sequence;
         this.internal_sequence = seq;
         // Random 5-character alphanumeric

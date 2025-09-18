@@ -18,6 +18,7 @@ const jwt_1 = require("../utils/jwt");
 const response_1 = require("../utils/response");
 const trend_util_1 = require("../utils/trend.util");
 const util_1 = require("../utils/util");
+const SalesAgentOrders_1 = __importDefault(require("../models/SalesAgentOrders"));
 const createAccount = async (req, res, next) => {
     if (!req.body) {
         (0, response_1.errorResponse)(res, 400, "Request body is required");
@@ -26,6 +27,7 @@ const createAccount = async (req, res, next) => {
     if (req.body.user_role === "admin") {
         (0, response_1.errorResponse)(res, 400, "Admin role cannot be created via this endpoint");
         // return;
+        // TODO NO FORGET ADD. AM.  oo
     }
     if (!req.body.email || !req.body.password) {
         (0, response_1.errorResponse)(res, 400, "Email and password are required");
@@ -109,7 +111,7 @@ const updateAccountOnSignUp = async (req, res) => {
                     ? "awaiting_registration_fee_payment"
                     : Object.keys(req?.body?.address ?? {}).length > 0
                         ? "pending_for_documents"
-                        : user.status,
+                        : user?.status,
             approved_at: req.body?.user_role?.includes("agent")
                 ? new Date()
                 : user?.approved_at,
@@ -177,9 +179,9 @@ const loginAccount = async (req, res, next) => {
             });
             return;
         }
-        const user = (await User_1.default.findOne({
-            $or: [{ email }, { username: email }],
-        }));
+        const user = (await User_1.default.findOneAndUpdate({
+            $or: [{ email }, { username: email, token_version: 0 }],
+        }, { token_version: 0 }, { new: true }));
         if (!user) {
             (0, response_1.errorResponse)(res, 400, "User not found with this email", {
                 message: "User not found with this email",
@@ -195,6 +197,7 @@ const loginAccount = async (req, res, next) => {
             await (0, exports.sendVerificationOtpToMail)(req, res, next, user?.email);
             (0, response_1.errorResponse)(res, 400, "Email not verified", {
                 message: "Please verify your email before logging in.",
+                email: user?.email,
                 error,
             });
             return;
@@ -418,10 +421,17 @@ const getUserProfile = async (_req, res) => {
         const userId = req.user?._id || req.worker?._id;
         const user = await User_1.default.findById(userId)
             .select("-password -__v ")
-            .populate("orders")
             .populate("transaction_history")
             .populate("change_request")
             .populate("bonus");
+        user?.populate({
+            path: "orders",
+            model: user?.user_role?.includes("sales_agent") ? SalesAgentOrders_1.default : Order_1.default,
+            populate: {
+                path: "products.product_id",
+                select: "name price images",
+            },
+        });
         const worker = await OfficeWorker_1.default.findById(userId).select("-password -__v -_id");
         if (!user && !worker) {
             (0, response_1.errorResponse)(res, 400, "User not found ");
@@ -528,7 +538,14 @@ const getUserProfile = async (_req, res) => {
             });
             return;
         }
-        (0, response_1.successResponse)(res, 200, `${user ? "User's" : "Worker's"} profile retrieved successfully`, user || worker);
+        (0, response_1.successResponse)(res, 200, `${user ? "User's" : "Worker's"} profile retrieved successfully`, user
+            ? {
+                ...user.toObject(),
+                is_admin: user?.user_role?.includes("admin"),
+                is_distributor: user?.user_role?.includes("distributor"),
+                is_sales_agent: user?.user_role?.includes("sales_agent"),
+            }
+            : worker);
         return;
     }
     catch (error) {

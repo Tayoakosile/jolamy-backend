@@ -21,12 +21,10 @@ export const getAllOrders = (req: Request, res: Response) => {
   const _req = req as AuthRequest;
   const user = _req.user;
   const worker = _req.worker;
-  const params = _req.query;
-  console.log('worker :', worker);
+  const param = _req.query.type;
 
   const request = async () => {
     if (user?.user_role === "admin") {
-
       const allOrders = await Order.find({})
         .sort({ created_at: -1 })
         .populate("products.product_id");
@@ -83,15 +81,20 @@ export const getAllOrders = (req: Request, res: Response) => {
 
       return allOrders;
     }
-    if (
-      typeof _req?.query?.type === "string" &&
-      _req?.query?.type.includes("sales_agent")
-    ) {
 
-
-      return SalesAgentOrder.find({ assigned_to: { distributor: user?._id } });
+    if (typeof param === "string" && param.includes("sales_agent")) {
+      const salesOrders = await SalesAgentOrder.find({
+        "assigned_to.distributor": user?._id,
+      }).populate("products.product_id");
+      return { orders: salesOrders };
     }
-    return Order.find({ user_id: user?._id });
+    if (user?.is_sales_agent) {
+      const salesOrders = await SalesAgentOrder.find({ user_id: user?._id }).populate(
+        "products.product_id"
+      );
+      return { orders: salesOrders };
+    }
+    return Order.find({ user_id: user?._id }).populate("products.product_id");
   };
 
   customReqResHandler(res, request, undefined, {
@@ -116,13 +119,14 @@ export const getSingleOrder = async (req: Request, res: Response) => {
             select: "name address workers",
           })
           .populate("transaction_id")
-          .populate("products")
+          .populate("products.product_id")
           .populate({
             path: "user_id",
             select: "first_name user_id last_name email phone_number user_role",
           })
       : await SalesAgentOrder.findById(order && order._id)
           .populate("products")
+          .populate("products.product_id")
           .populate("logs")
           .populate({
             path: "pickup.distributor_id",
@@ -159,8 +163,8 @@ export const createNewOrder = (req: Request, res: Response) => {
       productFromPostAPi: IProduct,
       quantity_ordered: number
     ) => {
-      const fieldsToSelect =
-        "name category reference_id _id distributor_price_per_box sales_agent_price_per_box available_weight is_active is_archived  variants";
+      // const fieldsToSelect =
+      //   "name category reference_id _id distributor_price_per_box sales_agent_price_per_box available_weight is_active is_archived  variants";
       const productResFromDb =
         productFromPostAPi?.variants?.length >= 1
           ? await Product.findOne({
@@ -252,7 +256,7 @@ export const createNewOrder = (req: Request, res: Response) => {
         name: productInfo?.name || "Unknown Product",
         quantity: quantity_ordered || 0,
         variants: theVariant,
-        total: isProductVariantEmpty
+        total_amount: isProductVariantEmpty
           ? productFromPostAPi?.quantity * productInfo.distributor_price_per_box
           : theVariant.reduce((sum, item) => sum + item.total_amount, 0),
         total_quantity: isProductVariantEmpty
@@ -272,6 +276,10 @@ export const createNewOrder = (req: Request, res: Response) => {
       });
       return;
     }
+
+    console.log("Products :", Products);
+
+    // return;
 
     const order = user?.is_distributor
       ? await Order.create({
@@ -295,7 +303,10 @@ export const createNewOrder = (req: Request, res: Response) => {
               },
           role: user?.user_role,
           tracking_number: `JOL-${generateRandom(12)}`,
-          total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
+          total_amount: Products.reduce(
+            (sum, item) => sum + item?.total_amount,
+            0
+          ),
           delivery_steps: [
             {
               label: "order_placed",
@@ -324,7 +335,10 @@ export const createNewOrder = (req: Request, res: Response) => {
           products: Products,
           role: user?.user_role,
           tracking_number: `JOL-${generateRandom(12)}`,
-          total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
+          total_amount: Products.reduce(
+            (sum, item) => sum + item?.total_amount,
+            0
+          ),
           delivery_steps: [
             {
               label: "order_placed",

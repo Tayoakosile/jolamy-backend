@@ -10,7 +10,9 @@ import Order from "../../../models/Order";
 import Transaction from "../../../models/Transaction";
 import { getTrend } from "../../../utils/trend.util";
 
-export const getPendingUsers = async (_req: AuthRequest, res: Response) => {
+export const getPendingUsers =  async (_req: Request, res: Response) => {
+  // Get all users not admin
+  const req = _req as AuthRequest;
   const users = await User.find({
     status: {
       $in: [

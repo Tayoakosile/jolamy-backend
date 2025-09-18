@@ -63,6 +63,7 @@ const approveUser = async (_req, res) => {
         const updatedUser = await User_1.default.findByIdAndUpdate(user._id, {
             status: "approved",
             approved_at: new Date(),
+            $inc: { token_version: 1 },
             admin_notes: req.body?.admin_notes || "No notes provided",
             approved_by: new mongoose_1.default.Types.ObjectId(adminId),
             logs: Array.isArray(user.logs) ? [...user.logs, log._id] : [log._id],

@@ -10,12 +10,16 @@ import orderRoutes from "./routes/order.routes";
 import transactionRoutes from "./routes/transactions.routes";
 import productRoutes from "./routes/products.route";
 import cartRoutes from "./routes/carts.route";
+import bankRoutes from "./routes/banks.route";
 import salesAgentRoute from "./routes/sales_agent/sales_agent.route";
 import uploadRoutes from "./routes/upload.routes";
 import userRoutes from "./routes/user.routes";
 import officeRoutes from "./routes/office.routes";
 import { appAuth } from "./middlewares/auth";
 import { getStats } from "./controllers/stats.controller";
+import './jobs/birthday.cron';
+import './jobs/bonus.cron';
+import { getBanks } from "./controllers/banks.controllers";
 
 const app = express();
 
@@ -36,7 +40,9 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/carts", cartRoutes);
 app.use("/api/sales_agent", salesAgentRoute);
-app.get("/api/stats", appAuth, getStats);
+app.use("/api/stats", appAuth, getStats);
+app.use("/api/banks", bankRoutes);
+// app.get("/api/banks", appAuth, getBanks);
 
 const PORT = process.env.PORT || 5000;
 

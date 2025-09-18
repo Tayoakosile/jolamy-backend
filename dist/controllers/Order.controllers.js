@@ -22,8 +22,7 @@ const getAllOrders = (req, res) => {
     const _req = req;
     const user = _req.user;
     const worker = _req.worker;
-    const params = _req.query;
-    console.log('worker :', worker);
+    const param = _req.query.type;
     const request = async () => {
         if (user?.user_role === "admin") {
             const allOrders = await Order_1.default.find({})
@@ -79,11 +78,17 @@ const getAllOrders = (req, res) => {
             });
             return allOrders;
         }
-        if (typeof _req?.query?.type === "string" &&
-            _req?.query?.type.includes("sales_agent")) {
-            return SalesAgentOrders_1.default.find({ assigned_to: { distributor: user?._id } });
+        if (typeof param === "string" && param.includes("sales_agent")) {
+            const salesOrders = await SalesAgentOrders_1.default.find({
+                "assigned_to.distributor": user?._id,
+            }).populate("products.product_id");
+            return { orders: salesOrders };
         }
-        return Order_1.default.find({ user_id: user?._id });
+        if (user?.is_sales_agent) {
+            const salesOrders = await SalesAgentOrders_1.default.find({ user_id: user?._id }).populate("products.product_id");
+            return { orders: salesOrders };
+        }
+        return Order_1.default.find({ user_id: user?._id }).populate("products.product_id");
     };
     (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Orders retrieved successfully",
@@ -105,13 +110,14 @@ const getSingleOrder = async (req, res) => {
             select: "name address workers",
         })
             .populate("transaction_id")
-            .populate("products")
+            .populate("products.product_id")
             .populate({
             path: "user_id",
             select: "first_name user_id last_name email phone_number user_role",
         })
         : await SalesAgentOrders_1.default.findById(order && order._id)
             .populate("products")
+            .populate("products.product_id")
             .populate("logs")
             .populate({
             path: "pickup.distributor_id",
@@ -140,7 +146,8 @@ const createNewOrder = (req, res) => {
     const quantity_ordered = body.quantity;
     const request = async () => {
         const getProductPricing = async (productFromPostAPi, quantity_ordered) => {
-            const fieldsToSelect = "name category reference_id _id distributor_price_per_box sales_agent_price_per_box available_weight is_active is_archived  variants";
+            // const fieldsToSelect =
+            //   "name category reference_id _id distributor_price_per_box sales_agent_price_per_box available_weight is_active is_archived  variants";
             const productResFromDb = productFromPostAPi?.variants?.length >= 1
                 ? await Product_1.Product.findOne({
                     _id: productFromPostAPi.id,
@@ -211,7 +218,7 @@ const createNewOrder = (req, res) => {
                 name: productInfo?.name || "Unknown Product",
                 quantity: quantity_ordered || 0,
                 variants: theVariant,
-                total: isProductVariantEmpty
+                total_amount: isProductVariantEmpty
                     ? productFromPostAPi?.quantity * productInfo.distributor_price_per_box
                     : theVariant.reduce((sum, item) => sum + item.total_amount, 0),
                 total_quantity: isProductVariantEmpty
@@ -226,6 +233,8 @@ const createNewOrder = (req, res) => {
             });
             return;
         }
+        console.log("Products :", Products);
+        // return;
         const order = user?.is_distributor
             ? await Order_1.default.create({
                 products: Products,
@@ -248,7 +257,7 @@ const createNewOrder = (req, res) => {
                     },
                 role: user?.user_role,
                 tracking_number: `JOL-${(0, util_1.generateRandom)(12)}`,
-                total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
+                total_amount: Products.reduce((sum, item) => sum + item?.total_amount, 0),
                 delivery_steps: [
                     {
                         label: "order_placed",
@@ -274,7 +283,7 @@ const createNewOrder = (req, res) => {
                 products: Products,
                 role: user?.user_role,
                 tracking_number: `JOL-${(0, util_1.generateRandom)(12)}`,
-                total_amount: Products.reduce((sum, item) => sum + item?.total, 0),
+                total_amount: Products.reduce((sum, item) => sum + item?.total_amount, 0),
                 delivery_steps: [
                     {
                         label: "order_placed",

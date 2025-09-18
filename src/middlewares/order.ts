@@ -55,7 +55,7 @@ export const validateOrder = async (
     }
   }
 
-  console.log('user?.user_role === "admin" :', user?.user_role === "admin");
+  console.log(" order:", order);
 
   if (
     (isOrderAssignedToThisWorkerOffice && worker?.worker_id) ||

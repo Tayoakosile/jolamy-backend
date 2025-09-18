@@ -15,12 +15,15 @@ const order_routes_1 = __importDefault(require("./routes/order.routes"));
 const transactions_routes_1 = __importDefault(require("./routes/transactions.routes"));
 const products_route_1 = __importDefault(require("./routes/products.route"));
 const carts_route_1 = __importDefault(require("./routes/carts.route"));
+const banks_route_1 = __importDefault(require("./routes/banks.route"));
 const sales_agent_route_1 = __importDefault(require("./routes/sales_agent/sales_agent.route"));
 const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
 const office_routes_1 = __importDefault(require("./routes/office.routes"));
 const auth_1 = require("./middlewares/auth");
 const stats_controller_1 = require("./controllers/stats.controller");
+require("./jobs/birthday.cron");
+require("./jobs/bonus.cron");
 const app = (0, express_1.default)();
 // Middleware
 app.use((0, cors_1.default)());
@@ -38,7 +41,9 @@ app.use("/api/transactions", transactions_routes_1.default);
 app.use("/api/products", products_route_1.default);
 app.use("/api/carts", carts_route_1.default);
 app.use("/api/sales_agent", sales_agent_route_1.default);
-app.get("/api/stats", auth_1.appAuth, stats_controller_1.getStats);
+app.use("/api/stats", auth_1.appAuth, stats_controller_1.getStats);
+app.use("/api/banks", banks_route_1.default);
+// app.get("/api/banks", appAuth, getBanks);
 const PORT = process.env.PORT || 5000;
 (0, db_1.default)(() => {
     app.listen(PORT, () => {

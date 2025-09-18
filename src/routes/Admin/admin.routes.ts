@@ -33,6 +33,7 @@ import { getAllInventory } from "../../controllers/Admin/admin.inventory.control
 import { appAuth, isAdmin } from "../../middlewares/auth";
 import { removeSensitiveFields } from "../../utils/util";
 import { getPendingUsers } from "../../controllers/general/Users/users.controllers";
+import { runBonuses } from "../../controllers/bonus.controllers";
 
 const router = Router();
 
@@ -126,6 +127,7 @@ router.patch("/products/:id/archive", appAuth, isAdmin, archiveProduct);
 // users
 router.get("/pending-users", appAuth, isAdmin, getPendingUsers);
 router.get("/inventory", appAuth, isAdmin, getAllInventory);
+router.get("/bonus", appAuth, isAdmin, runBonuses);
 
 // users
 

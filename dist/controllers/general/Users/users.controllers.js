@@ -14,6 +14,8 @@ const Order_1 = __importDefault(require("../../../models/Order"));
 const Transaction_1 = __importDefault(require("../../../models/Transaction"));
 const trend_util_1 = require("../../../utils/trend.util");
 const getPendingUsers = async (_req, res) => {
+    // Get all users not admin
+    const req = _req;
     const users = await User_1.default.find({
         status: {
             $in: [

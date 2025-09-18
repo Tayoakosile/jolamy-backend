@@ -15,6 +15,7 @@ import { generateToken } from "../utils/jwt";
 import { errorResponse, successResponse } from "../utils/response";
 import { getTrend } from "../utils/trend.util";
 import { generateRandom, paystackVerification } from "../utils/util";
+import SalesAgentOrder from "../models/SalesAgentOrders";
 
 export const createAccount = async (
   req: Request,
@@ -29,6 +30,7 @@ export const createAccount = async (
   if (req.body.user_role === "admin") {
     errorResponse(res, 400, "Admin role cannot be created via this endpoint");
     // return;
+    // TODO NO FORGET ADD. AM.  oo
   }
   if (!req.body.email || !req.body.password) {
     errorResponse(res, 400, "Email and password are required");
@@ -106,7 +108,6 @@ export const updateAccountOnSignUp = async (req: Request, res: Response) => {
           { email: user?.email },
           {
             status: "submitted_for_review",
-
             paid_registration_fee: true,
             $push: {
               logs: log._id,
@@ -129,7 +130,7 @@ export const updateAccountOnSignUp = async (req: Request, res: Response) => {
           ? "awaiting_registration_fee_payment"
           : Object.keys(req?.body?.address ?? {}).length > 0
           ? "pending_for_documents"
-          : user.status,
+          : user?.status,
         approved_at: req.body?.user_role?.includes("agent")
           ? new Date()
           : user?.approved_at,
@@ -215,9 +216,13 @@ export const loginAccount = async (
       });
       return;
     }
-    const user = (await User.findOne({
-      $or: [{ email }, { username: email }],
-    })) as IUser;
+    const user = (await User.findOneAndUpdate(
+      {
+        $or: [{ email }, { username: email, token_version: 0 }],
+      },
+      { token_version: 0 },
+      { new: true }
+    )) as IUser;
 
     if (!user) {
       errorResponse(res, 400, "User not found with this email", {
@@ -239,6 +244,7 @@ export const loginAccount = async (
       );
       errorResponse(res, 400, "Email not verified", {
         message: "Please verify your email before logging in.",
+        email: user?.email,
         error,
       });
       return;
@@ -542,10 +548,18 @@ export const getUserProfile = async (_req: Request, res: Response) => {
     const userId = req.user?._id || req.worker?._id;
     const user = await User.findById(userId)
       .select("-password -__v ")
-      .populate("orders")
       .populate("transaction_history")
       .populate("change_request")
       .populate("bonus");
+
+    user?.populate({
+      path: "orders",
+      model: user?.user_role?.includes("sales_agent") ? SalesAgentOrder : Order,
+      populate: {
+        path: "products.product_id",
+        select: "name price images",
+      },
+    });
     const worker = await OfficeWorker.findById(userId).select(
       "-password -__v -_id"
     );
@@ -677,7 +691,14 @@ export const getUserProfile = async (_req: Request, res: Response) => {
       res,
       200,
       `${user ? "User's" : "Worker's"} profile retrieved successfully`,
-      user || worker
+      user
+        ? {
+            ...user.toObject(),
+            is_admin: user?.user_role?.includes("admin"),
+            is_distributor: user?.user_role?.includes("distributor"),
+            is_sales_agent: user?.user_role?.includes("sales_agent"),
+          }
+        : worker
     );
 
     return;
@@ -692,4 +713,3 @@ export const getUserProfile = async (_req: Request, res: Response) => {
     );
   }
 };
-

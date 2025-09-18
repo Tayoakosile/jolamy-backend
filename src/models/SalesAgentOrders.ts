@@ -2,6 +2,7 @@ import { model, Schema, Types } from "mongoose";
 import { IDeliveryDetails, IOrder } from "../types/order.type";
 import { generateRandom, timestamp } from "../utils/util";
 import { Counter } from "./counter";
+import { IUser } from "../types/type";
 
 interface Pickup {
   distributor_id: Types.ObjectId; // Distributor chosen
@@ -20,7 +21,9 @@ interface Pickup {
 
 export interface ISalesAgentOrder extends IOrder {
   sales_agent_id: Types.ObjectId; // who placed the order
+  dob: string;
   distributor_id: Types.ObjectId; // distributor supplying
+
   order_total: number; // total order cost
   pickup: Pickup; // embedded pickup schema
   notes?: string; // optional order note

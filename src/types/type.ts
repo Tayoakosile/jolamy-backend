@@ -36,8 +36,10 @@ export interface IStockLog {
 }
 export interface IUser extends IOfficeWorker {
   _id: Types.ObjectId;
+  token_version: number;
   total_boxes_ordered: number;
   total_boxes_sold: number;
+  celebrations: string[];
   name: string;
   user_id: string;
   business_name: string;

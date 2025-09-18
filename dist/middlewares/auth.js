@@ -29,6 +29,10 @@ const appAuth = async (req, res, next) => {
             return next();
         }
         const user = (await User_1.default.findOne({ user_id: decoded.id }));
+        if (user.token_version >= 1) {
+            (0, response_1.errorResponse)(res, 401, "Invalid token", { message: "Invalid token" });
+            return next();
+        }
         const worker = (await OfficeWorker_1.default.findOne({
             worker_id: decoded.id,
         }));
@@ -71,7 +75,6 @@ exports.appAuth = appAuth;
 const appAuthForInactiveUsers = async (req, res, next) => {
     let token;
     const authHeader = req.headers.authorization;
-    // const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
         token = authHeader.split(" ")[1]?.replace(/"/g, "");
     }
@@ -87,10 +90,18 @@ const appAuthForInactiveUsers = async (req, res, next) => {
             (0, response_1.errorResponse)(res, 401, "Invalid token", { message: "Invalid token" });
             return next();
         }
-        const user = (await User_1.default.findOne({ user_id: decoded.id }));
+        const user = (await User_1.default.findOne({ user_id: decoded.id })
+            .populate("orders")
+            .populate("transaction_history")
+            .populate("change_request")
+            .populate("bonus"));
         const worker = (await OfficeWorker_1.default.findOne({
             worker_id: decoded.id,
         }));
+        if (user.token_version >= 1) {
+            (0, response_1.errorResponse)(res, 401, "Invalid token", { message: "Invalid token" });
+            return next();
+        }
         req.isWorker = Boolean(worker?.worker_id);
         req.isUserAdmin = Boolean(user?.user_role == "admin");
         req.isOtherUser = Boolean(user?.user_role !== "admin" && !worker?.worker_id);

@@ -7,6 +7,8 @@ const ProductItemSchema = new mongoose_1.Schema({
     product_id: { type: mongoose_1.Types.ObjectId, ref: "Product", required: true },
     name: { type: String },
     quantity: { type: Number },
+    total_quantity: { type: Number },
+    total_amount: { type: Number },
     variants: [
         {
             id: { type: mongoose_1.Types.ObjectId, required: true },
