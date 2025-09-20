@@ -55,7 +55,7 @@ export const validateOrder = async (
     }
   }
 
-  console.log(" order:", order);
+
 
   if (
     (isOrderAssignedToThisWorkerOffice && worker?.worker_id) ||

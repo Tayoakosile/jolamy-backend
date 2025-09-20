@@ -79,6 +79,8 @@ interface Pickup {
 }
 
 export interface IOrder extends Document {
+  collection_otp: string;
+  collection_otp_expiry: Date;
   sales_agent_id: Types.ObjectId; // who placed the order
   distributor_id: Types.ObjectId; // distributor supplying
   order_total: number; // total order cost
@@ -91,7 +93,6 @@ export interface IOrder extends Document {
     worker_handling_order: Types.ObjectId;
     distributor: IUser;
   };
-
   confirmation: {
     is_confirmed: Boolean;
     confirmed_at: Date;
@@ -114,7 +115,6 @@ export interface IOrder extends Document {
   transaction_id?: Types.ObjectId;
   total_amount?: number;
   grand_total?: number;
-
   total_quantity?: number;
   estimated_delivery_date: {
     start: Date;

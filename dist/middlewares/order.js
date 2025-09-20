@@ -30,7 +30,6 @@ const validateOrder = async (req, res, next) => {
             return;
         }
     }
-    console.log(" order:", order);
     if ((isOrderAssignedToThisWorkerOffice && worker?.worker_id) ||
         checkIfOrderBelongsToUser ||
         user?.user_role === "admin" ||

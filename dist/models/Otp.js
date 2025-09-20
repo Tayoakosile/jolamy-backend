@@ -36,10 +36,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const OtpSchema = new mongoose_1.Schema({
     email: { type: String, required: true, lowercase: true, trim: true },
+    user: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
     code: { type: String, required: true },
     type: {
         type: String,
-        enum: ["email_verification", "forgot_password"],
+        enum: ["email_verification", "forgot_password", "order_collection"],
         default: "email",
     },
     created_at: { type: Date, default: Date.now, expires: 600 }, // expires after 10 minutes

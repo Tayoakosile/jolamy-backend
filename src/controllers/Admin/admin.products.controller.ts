@@ -228,14 +228,14 @@ export const updateProductOptions = async (_req: Request, res: Response) => {
       },
     });
 
-    const product_options = product.options
+    const product_options = product.options;
     const productOptionLength = product?.options?.length;
-    const updated_product_options = productOptionLength >= 1
-    ? [...product.options, ...body?.options]
-    : body?.options;
+    const updated_product_options =
+      productOptionLength >= 1
+        ? [...product.options, ...body?.options]
+        : body?.options;
 
-    product.options =
-    updated_product_options
+    product.options = updated_product_options;
 
     product.variants = generateVariants(updated_product_options ?? []);
     product?.save();
@@ -283,7 +283,6 @@ export const patchProductOptions = async (_req: Request, res: Response) => {
     res,
     Product
   );
-  console.log("product?.options :", product?.options);
 
   const body = req.body;
   if (!product) return;

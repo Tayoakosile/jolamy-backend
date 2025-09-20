@@ -2,7 +2,12 @@ import { Request, Response } from "express";
 import User from "../../models/User";
 import { AuthRequest } from "../../types/type";
 import { successResponse } from "../../utils/response";
-import { checkIfDocumentExistsById } from "../../utils/util";
+import { getIO } from "../../utils/socket";
+import { checkIfDocumentExistsById, generateRandom } from "../../utils/util";
+import SalesAgentOrder from "../../models/SalesAgentOrders";
+import dayjs from "dayjs";
+import Otp from "../../models/Otp";
+import { sendEmail } from "../../services/mail.service";
 
 export const getAllDistributors = async (req: Request, res: Response) => {
   const distributors = await User.find({
@@ -26,6 +31,7 @@ export const getAllDistributors = async (req: Request, res: Response) => {
     distributors: distributors || [],
   });
 };
+
 export const getSingleDistributorDetails = async (
   req: Request,
   res: Response
@@ -52,3 +58,60 @@ export const getSingleDistributorDetails = async (
   });
 };
 
+export const startOrderCollectionProcess = async (
+  _req: Request,
+  res: Response
+) => {
+  const req = _req as AuthRequest;
+  const order = req.order;
+
+  const salesAgentDetails = await User.findById(order?.user_id).select(
+    "name email phone_number user_id"
+  );
+
+  const otp = generateRandom(6, "0");
+  const otpRecord = await Otp.findOne({
+    email: salesAgentDetails?.email,
+    type: "order_collection",
+    // expires_at: { $gt: new Date() },
+  });
+
+  console.log("otpRecord :", otpRecord, salesAgentDetails?.email);
+
+  const otpContainer = async (code: string) => {
+    getIO()
+      .to(`${order?.assigned_to?.distributor}`)
+      .emit("start_order_collection_process", {
+        type: "otp",
+        order_id: order?._id,
+      });
+
+    getIO()
+      .to(`${order?.user_id?._id}`)
+      .emit("start_order_collection_process", {
+        type: "otp",
+        otp: code,
+        order_id: order?._id,
+      });
+
+    await sendEmail(
+      salesAgentDetails?.email as string,
+      "Order Collection OTP",
+      `Your OTP for collecting order ${order?.internal_sequence} is: ${code}. It will expire in 10 minutes.`
+    );
+    return otp;
+  };
+
+  if (otpRecord) {
+    otpContainer(otpRecord.code);
+    return;
+  }
+
+  await Otp.create({
+    email: salesAgentDetails?.email,
+    code: otp,
+    type: "order_collection",
+    expires_at: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
+  });
+  otpContainer(otp);
+};

@@ -16,6 +16,8 @@ import dayjs from "dayjs";
 import { IOrder, ProductVariant } from "../types/order.type";
 import StockLog from "../models/StockLog";
 import SalesAgentOrder from "../models/SalesAgentOrders";
+import Otp from "../models/Otp";
+import { getIO } from "../utils/socket";
 
 export const getAllOrders = (req: Request, res: Response) => {
   const _req = req as AuthRequest;
@@ -89,9 +91,9 @@ export const getAllOrders = (req: Request, res: Response) => {
       return { orders: salesOrders };
     }
     if (user?.is_sales_agent) {
-      const salesOrders = await SalesAgentOrder.find({ user_id: user?._id }).populate(
-        "products.product_id"
-      );
+      const salesOrders = await SalesAgentOrder.find({
+        user_id: user?._id,
+      }).populate("products.product_id");
       return { orders: salesOrders };
     }
     return Order.find({ user_id: user?._id }).populate("products.product_id");
@@ -137,6 +139,28 @@ export const getSingleOrder = async (req: Request, res: Response) => {
             path: "user_id",
             select: "first_name user_id last_name email phone_number user_role",
           });
+
+  if (orderDetails?.order_number?.includes("SAO")) {
+    const otpRecord = await Otp.findOne({
+      email: orderDetails.user_id?.email,
+      type: "order_collection",
+      // expires_at: { $gt: new Date() },
+    });
+    getIO()
+      .to(`${orderDetails?.assigned_to?.distributor}`)
+      .emit("start_order_collection_process", {
+        type: "otp",
+        order_id: order?._id,
+      });
+
+    getIO()
+      .to(`${orderDetails?.user_id?._id}`)
+      .emit("start_order_collection_process", {
+        type: "otp",
+        otp: otpRecord?.code,
+        order_id: order?._id,
+      });
+  }
 
   successResponse(res, 200, "Order retrieved successfully", {
     order: {
@@ -277,7 +301,7 @@ export const createNewOrder = (req: Request, res: Response) => {
       return;
     }
 
-    console.log("Products :", Products);
+    // console.log("Products :", Products);
 
     // return;
 

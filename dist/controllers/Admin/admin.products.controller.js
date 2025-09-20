@@ -183,8 +183,7 @@ const updateProductOptions = async (_req, res) => {
         const updated_product_options = productOptionLength >= 1
             ? [...product.options, ...body?.options]
             : body?.options;
-        product.options =
-            updated_product_options;
+        product.options = updated_product_options;
         product.variants = (0, util_1.generateVariants)(updated_product_options ?? []);
         product?.save();
         return;
@@ -217,7 +216,6 @@ const patchProductOptions = async (_req, res) => {
     const former_options = req.body?.former_options;
     const new_options = req.body?.new_options;
     const product = await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product);
-    console.log("product?.options :", product?.options);
     const body = req.body;
     if (!product)
         return;

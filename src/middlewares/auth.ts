@@ -24,6 +24,8 @@ export const appAuth = async (
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1]?.replace(/"/g, "");
   }
+
+
   if (!token) {
     errorResponse(res, 403, "Not authorized, token missing", {
       message: "Not authorized, token missing",

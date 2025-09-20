@@ -18,6 +18,8 @@ const Office_1 = __importDefault(require("../models/Admin/Office"));
 const dayjs_1 = __importDefault(require("dayjs"));
 const StockLog_1 = __importDefault(require("../models/StockLog"));
 const SalesAgentOrders_1 = __importDefault(require("../models/SalesAgentOrders"));
+const Otp_1 = __importDefault(require("../models/Otp"));
+const socket_1 = require("../utils/socket");
 const getAllOrders = (req, res) => {
     const _req = req;
     const user = _req.user;
@@ -85,7 +87,9 @@ const getAllOrders = (req, res) => {
             return { orders: salesOrders };
         }
         if (user?.is_sales_agent) {
-            const salesOrders = await SalesAgentOrders_1.default.find({ user_id: user?._id }).populate("products.product_id");
+            const salesOrders = await SalesAgentOrders_1.default.find({
+                user_id: user?._id,
+            }).populate("products.product_id");
             return { orders: salesOrders };
         }
         return Order_1.default.find({ user_id: user?._id }).populate("products.product_id");
@@ -128,6 +132,26 @@ const getSingleOrder = async (req, res) => {
             path: "user_id",
             select: "first_name user_id last_name email phone_number user_role",
         });
+    if (orderDetails?.order_number?.includes("SAO")) {
+        const otpRecord = await Otp_1.default.findOne({
+            email: orderDetails.user_id?.email,
+            type: "order_collection",
+            // expires_at: { $gt: new Date() },
+        });
+        (0, socket_1.getIO)()
+            .to(`${orderDetails?.assigned_to?.distributor}`)
+            .emit("start_order_collection_process", {
+            type: "otp",
+            order_id: order?._id,
+        });
+        (0, socket_1.getIO)()
+            .to(`${orderDetails?.user_id?._id}`)
+            .emit("start_order_collection_process", {
+            type: "otp",
+            otp: otpRecord?.code,
+            order_id: order?._id,
+        });
+    }
     (0, response_1.successResponse)(res, 200, "Order retrieved successfully", {
         order: {
             ...orderDetails?.toObject(),
@@ -233,7 +257,7 @@ const createNewOrder = (req, res) => {
             });
             return;
         }
-        console.log("Products :", Products);
+        // console.log("Products :", Products);
         // return;
         const order = user?.is_distributor
             ? await Order_1.default.create({

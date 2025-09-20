@@ -22,7 +22,6 @@ const initiatePayment = async (req, res) => {
         const user = _req.user;
         const order = _req.order;
         const order_id = _req.params.id;
-        console.log("order :", order.payment_status);
         if (order.payment_status === "initiated") {
             (0, response_1.successResponse)(res, 200, "Payment initiated successfully", {
                 order_id,

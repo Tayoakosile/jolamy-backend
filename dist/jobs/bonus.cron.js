@@ -15,14 +15,14 @@ dayjs_1.default.extend(isBetween_1.default);
 dayjs_1.default.tz.setDefault("Africa/Lagos");
 // Runs every Sunday at 11:59 PM
 node_cron_1.default.schedule("*/1 * * * *", () => {
-    console.log(" working on bonus update:");
+    // console.log(" working on bonus update:");
     const timeZonedDayjs = dayjs_1.default.tz();
     // call your bonus calculation service here
     const calculateBonuses = async () => {
         const lastFriday = timeZonedDayjs.day(5).subtract(1, "week").startOf("day");
         const thisThursday = timeZonedDayjs.day(4).startOf("day");
-        console.log("lastFriday :", lastFriday.format("YYYY-MM-DD"));
-        console.log("thisThursday :", thisThursday.format());
+        // console.log("lastFriday :", lastFriday.format("YYYY-MM-DD"));
+        // console.log("thisThursday :", thisThursday.format());
         const pendingBonuses = await Bonus_1.default.find({
             status: "pending",
         });

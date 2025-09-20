@@ -21,7 +21,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
     const user = _req.user as IUser;
     const order = _req.order as IOrder;
     const order_id = _req.params.id;
-    console.log("order :", order.payment_status);
+
     if (order.payment_status === "initiated") {
       successResponse(res, 200, "Payment initiated successfully", {
         order_id,

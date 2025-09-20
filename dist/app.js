@@ -3,27 +3,29 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const http_1 = __importDefault(require("http"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
 const db_1 = __importDefault(require("./config/db"));
+const stats_controller_1 = require("./controllers/stats.controller");
+const auth_1 = require("./middlewares/auth");
 const rate_limiter_1 = require("./middlewares/rate-limiter");
 const admin_routes_1 = __importDefault(require("./routes/Admin/admin.routes"));
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
-const finance_routes_1 = __importDefault(require("./routes/finance.routes"));
-const order_routes_1 = __importDefault(require("./routes/order.routes"));
-const transactions_routes_1 = __importDefault(require("./routes/transactions.routes"));
-const products_route_1 = __importDefault(require("./routes/products.route"));
-const carts_route_1 = __importDefault(require("./routes/carts.route"));
 const banks_route_1 = __importDefault(require("./routes/banks.route"));
+const carts_route_1 = __importDefault(require("./routes/carts.route"));
+const finance_routes_1 = __importDefault(require("./routes/finance.routes"));
+const office_routes_1 = __importDefault(require("./routes/office.routes"));
+const order_routes_1 = __importDefault(require("./routes/order.routes"));
+const products_route_1 = __importDefault(require("./routes/products.route"));
 const sales_agent_route_1 = __importDefault(require("./routes/sales_agent/sales_agent.route"));
+const transactions_routes_1 = __importDefault(require("./routes/transactions.routes"));
 const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
-const office_routes_1 = __importDefault(require("./routes/office.routes"));
-const auth_1 = require("./middlewares/auth");
-const stats_controller_1 = require("./controllers/stats.controller");
-require("./jobs/birthday.cron");
-require("./jobs/bonus.cron");
+const socket_1 = require("./utils/socket");
+// import "./jobs/birthday.cron";
+// import "./jobs/bonus.cron";
 const app = (0, express_1.default)();
 // Middleware
 app.use((0, cors_1.default)());
@@ -44,9 +46,12 @@ app.use("/api/sales_agent", sales_agent_route_1.default);
 app.use("/api/stats", auth_1.appAuth, stats_controller_1.getStats);
 app.use("/api/banks", banks_route_1.default);
 // app.get("/api/banks", appAuth, getBanks);
+const server = http_1.default.createServer(app);
+// ✅ Initialize socket.io in a reusable way
+(0, socket_1.initSocket)(server);
 const PORT = process.env.PORT || 5000;
 (0, db_1.default)(() => {
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
     });
 });

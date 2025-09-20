@@ -19,16 +19,16 @@ const ProductItemSchema = new mongoose_1.Schema({
 const DeliveryStepSchema = new mongoose_1.Schema({
     label: {
         type: String,
-        enum: [
-            "order_placed",
-            "order_paid_for",
-            "order_processing",
-            "on_the_way",
-            "order_delivered",
-            "order_on_hold",
-            "order_cancelled",
-            "order_failed",
-        ],
+        // enum: [
+        //   "order_placed",
+        //   "order_paid_for",
+        //   "order_processing",
+        //   "on_the_way",
+        //   "order_delivered","order_ready_for_pickup",
+        //   "order_on_hold",
+        //   "order_cancelled",
+        //   "order_failed",
+        // ],
     },
     description: { type: String },
     is_confirmed: { type: Boolean, default: false },
@@ -49,7 +49,6 @@ const SalesAgentOrderSchema = new mongoose_1.Schema({
     user_id: { type: mongoose_1.Types.ObjectId, ref: "User", required: true },
     priority_level: {
         type: String,
-        enum: ["normal", "urgent"],
         default: "normal",
     },
     confirmation: {
@@ -99,8 +98,12 @@ const SalesAgentOrderSchema = new mongoose_1.Schema({
     },
     delivery_status: {
         type: String,
-        enum: ["not_assigned", "pending", "in_transit", "delivered"],
+        // enum: ["not_assigned", "pending", "in_transit", "delivered","order_ready_for_pickup"],
         default: "not_assigned",
+    },
+    collection_otp: { type: String, default: "" },
+    collection_otp_expiry: {
+        type: Date,
     },
     pickup: {
         date: { type: Date },
@@ -108,8 +111,6 @@ const SalesAgentOrderSchema = new mongoose_1.Schema({
         address: { type: String },
         city: { type: String },
         state: { type: String },
-        otp: { type: String },
-        otpExpiry: { type: Date },
         country: { type: String },
         // coordinates?: {
         //   // optional for map-based pickup
@@ -146,7 +147,7 @@ const SalesAgentOrderSchema = new mongoose_1.Schema({
     },
     payment_method: {
         type: String,
-        enum: ["bank_transfer", "cash", "pos", "mobile_money", "paystack", null],
+        // enum: ["bank_transfer", "cash", "pos", "mobile_money", "paystack", null],
         default: null,
     },
     payment_reference: { type: String },
