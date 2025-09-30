@@ -52,6 +52,6 @@ router.patch("/products/:id/archive", auth_1.appAuth, auth_1.isAdmin, admin_prod
 // users
 router.get("/pending-users", auth_1.appAuth, auth_1.isAdmin, users_controllers_1.getPendingUsers);
 router.get("/inventory", auth_1.appAuth, auth_1.isAdmin, admin_inventory_controller_1.getAllInventory);
-router.get("/bonus", auth_1.appAuth, auth_1.isAdmin, bonus_controllers_1.runBonuses);
+router.get("/bonus", auth_1.appAuth, auth_1.isAdmin, bonus_controllers_1.runBonusPayment);
 // users
 exports.default = router;

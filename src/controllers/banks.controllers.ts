@@ -28,7 +28,6 @@ export const verifyBankAccount = async (req: Request, res: Response) => {
     // const getBanks = await JOL_Paystack_API.get(
     //   `/bank/resolve?account_number=${body?.account_number}&bank_code=${body?.bank_code}`
     // );
-
     successResponse(res, 200, "Bank account verified successfully", {
       account: getBanks.data?.data,
     });

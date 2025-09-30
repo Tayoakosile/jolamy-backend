@@ -10,6 +10,7 @@ import { apiLimiter } from "./middlewares/rate-limiter";
 import adminRoutes from "./routes/Admin/admin.routes";
 import authRoutes from "./routes/auth.routes";
 import bankRoutes from "./routes/banks.route";
+import bonusRoutes from "./routes/bonus.route";
 import cartRoutes from "./routes/carts.route";
 import financesRoutes from "./routes/finance.routes";
 import officeRoutes from "./routes/office.routes";
@@ -20,7 +21,7 @@ import transactionRoutes from "./routes/transactions.routes";
 import uploadRoutes from "./routes/upload.routes";
 import userRoutes from "./routes/user.routes";
 import { initSocket } from "./utils/socket";
-// import "./jobs/birthday.cron";
+import "./jobs/birthday.cron";
 // import "./jobs/bonus.cron";
 
 const app = express();
@@ -28,6 +29,11 @@ const app = express();
 // Middleware
 
 app.use(cors());
+app.use((req, res, next) => {
+  res.setHeader("ngrok-skip-browser-warning", "true");
+  next();
+});
+
 app.use(express.json());
 dotenv.config();
 app.use("/api/auth", authRoutes);
@@ -44,7 +50,7 @@ app.use("/api/carts", cartRoutes);
 app.use("/api/sales_agent", salesAgentRoute);
 app.use("/api/stats", appAuth, getStats);
 app.use("/api/banks", bankRoutes);
-// app.get("/api/banks", appAuth, getBanks);
+app.use("/api/bonus", bonusRoutes);
 
 const server = http.createServer(app);
 

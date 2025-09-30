@@ -9,5 +9,6 @@ const router = (0, express_1.Router)();
 router.get("/", auth_1.appAuth, sales_agent_controllers_1.getAllDistributors);
 router.get("/:id", auth_1.appAuth, sales_agent_controllers_1.getSingleDistributorDetails);
 router.post("/:id/start-order-collection", auth_1.appAuth, util_1.removeSensitiveFields, order_1.validateOrder, sales_agent_controllers_1.startOrderCollectionProcess);
+router.post("/:id/start-order-collection/verify-otp", auth_1.appAuth, util_1.removeSensitiveFields, order_1.validateOrder, sales_agent_controllers_1.verifyOrderCollectionOtp);
 // router.get("/orders/:id/status", appAuth, getSingleSalesAgentOrder);
 exports.default = router;

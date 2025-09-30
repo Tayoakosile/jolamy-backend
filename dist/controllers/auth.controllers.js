@@ -19,6 +19,7 @@ const response_1 = require("../utils/response");
 const trend_util_1 = require("../utils/trend.util");
 const util_1 = require("../utils/util");
 const SalesAgentOrders_1 = __importDefault(require("../models/SalesAgentOrders"));
+const paystack_1 = require("../utils/paystack");
 const createAccount = async (req, res, next) => {
     if (!req.body) {
         (0, response_1.errorResponse)(res, 400, "Request body is required");
@@ -102,6 +103,25 @@ const updateAccountOnSignUp = async (req, res) => {
                 (0, response_1.successResponse)(res, 200, "Payment verified and account updated");
                 return;
             }
+        }
+        if (req.body?.account_details?.bank_name?.length >= 1) {
+            delete req.body.bank_code;
+            const paymentAccountDetails = {
+                type: "nuban",
+                ...req.body?.account_details,
+                bank_code: "044",
+                currency: "NGN",
+                metadata: {
+                    user_id: user?.user_id,
+                    email: user?.email,
+                    name: `${user?.first_name} ${user?.last_name}`,
+                    phone: user?.phone_number,
+                    role: user?.user_role,
+                },
+            };
+            const transferRecipient = await paystack_1.JOL_Paystack_API.post("/transferrecipient", JSON.stringify(paymentAccountDetails));
+            req.body.account_details.paystack_payment_reference =
+                transferRecipient.data?.data.recipient_code;
         }
         await User_1.default.findOneAndUpdate({ email: user?.email }, {
             ...req.body,
@@ -188,6 +208,11 @@ const loginAccount = async (req, res, next) => {
             });
             return;
         }
+        const comparePassword = await (0, bcrypt_util_1.isMatch)(password, user.password);
+        if (!comparePassword) {
+            (0, response_1.errorResponse)(res, 400, "invalid Email or Password");
+            return;
+        }
         const error = {
             is_verified: user.is_verified,
             email: user.email,
@@ -210,11 +235,6 @@ const loginAccount = async (req, res, next) => {
                 status: user.status,
                 user,
             });
-            return;
-        }
-        const comparePassword = await (0, bcrypt_util_1.isMatch)(password, user.password);
-        if (!comparePassword) {
-            (0, response_1.errorResponse)(res, 400, "invalid Email or Password");
             return;
         }
         const token = (0, jwt_1.generateToken)(user.user_id);
@@ -432,6 +452,29 @@ const getUserProfile = async (_req, res) => {
                 select: "name price images",
             },
         });
+        const bonus = user?.bonus?.map((bonus) => {
+            return user?.is_distributor
+                ? {
+                    ...bonus.toObject(),
+                    user_id: bonus?.recipients?.distributor,
+                    is_paid: bonus?.is_paid?.distributor || false,
+                    total_bonus_earned: bonus?.total_bonus_earned?.distributor_bonus_per_box || 0,
+                    total_amount: bonus?.total_amount?.distributor || 0,
+                    payment_status: bonus?.payment_status?.distributor || "pending",
+                    period: `${bonus?.period?.start_date?.toDateString()} - ${bonus?.period?.end_date?.toDateString()}`,
+                    payment_confirmed: bonus?.payment_confirmed?.distributor || false,
+                }
+                : {
+                    ...bonus.toObject(),
+                    user_id: bonus?.recipients?.sales_agent,
+                    is_paid: bonus?.is_paid?.sales_agent || false,
+                    payment_confirmed: bonus?.payment_confirmed?.sales_agent || false,
+                    total_bonus_earned: bonus?.total_bonus_earned?.sales_agent_bonus_per_box || 0,
+                    total_amount: bonus?.total_amount?.sales_agent || 0,
+                    payment_status: bonus?.payment_status?.sales_agent || "pending",
+                    period: `${bonus?.period?.start_date?.toDateString()} - ${bonus?.period?.end_date?.toDateString()}`,
+                };
+        });
         const worker = await OfficeWorker_1.default.findById(userId).select("-password -__v -_id");
         if (!user && !worker) {
             (0, response_1.errorResponse)(res, 400, "User not found ");
@@ -505,6 +548,7 @@ const getUserProfile = async (_req, res) => {
             totalBoxesInStock;
             (0, response_1.successResponse)(res, 200, `${user ? "User's" : "Worker's"} profile retrieved successfully`, {
                 ...user?.toObject(),
+                bonus,
                 stats: [
                     {
                         title: "Total Orders Delivered",
@@ -540,7 +584,8 @@ const getUserProfile = async (_req, res) => {
         }
         (0, response_1.successResponse)(res, 200, `${user ? "User's" : "Worker's"} profile retrieved successfully`, user
             ? {
-                ...user.toObject(),
+                ...user?.toObject(),
+                bonus,
                 is_admin: user?.user_role?.includes("admin"),
                 is_distributor: user?.user_role?.includes("distributor"),
                 is_sales_agent: user?.user_role?.includes("sales_agent"),

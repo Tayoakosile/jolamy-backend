@@ -3,6 +3,7 @@ import {
   getAllDistributors,
   getSingleDistributorDetails,
   startOrderCollectionProcess,
+  verifyOrderCollectionOtp,
 } from "../../controllers/Sales_agent/sales_agent.controllers";
 import { appAuth } from "../../middlewares/auth";
 import { validateOrder } from "../../middlewares/order";
@@ -18,6 +19,13 @@ router.post(
   removeSensitiveFields,
   validateOrder,
   startOrderCollectionProcess
+);
+router.post(
+  "/:id/start-order-collection/verify-otp",
+  appAuth,
+  removeSensitiveFields,
+  validateOrder,
+  verifyOrderCollectionOtp
 );
 
 // router.get("/orders/:id/status", appAuth, getSingleSalesAgentOrder);

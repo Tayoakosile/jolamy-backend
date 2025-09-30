@@ -17,6 +17,7 @@ export const validateOrder = async (
   const worker = _req.worker;
   const orderID = _req.params?.id;
 
+  const populated_fields = ["user_id", "products"];
   const order =
     !user?.is_sales_agent && !orderID?.includes("SAO")
       ? await checkIfDocumentExistsById<IOrder>(
@@ -24,14 +25,14 @@ export const validateOrder = async (
           "order_number",
           res,
           Order,
-          ["user_id"]
+          populated_fields
         )
       : await checkIfDocumentExistsById<ISalesAgentOrder>(
           orderID,
           Types.ObjectId.isValid(orderID) ? "_id" : "order_number",
           res,
           SalesAgentOrder,
-          ["user_id"]
+          [...populated_fields, "assigned_to.distributor"]
         );
 
   const isOrderAssignedToThisWorkerOffice =
@@ -54,8 +55,6 @@ export const validateOrder = async (
       return;
     }
   }
-
-
 
   if (
     (isOrderAssignedToThisWorkerOffice && worker?.worker_id) ||

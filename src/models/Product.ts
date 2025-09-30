@@ -32,7 +32,12 @@ interface Variant extends Document {
 
 export interface IProduct extends Document {
   name: string;
+  _id: string;
   sales_agent_price_per_box: number;
+  unit_type: string;
+  units_per_box: string;
+  created_at: string;
+  updated_at: string;
   distributor_price_per_box: number;
   total_boxes_in_stock: number;
   total_boxes_sold: number;

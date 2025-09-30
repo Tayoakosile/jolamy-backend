@@ -81,6 +81,8 @@ interface Pickup {
 export interface IOrder extends Document {
   collection_otp: string;
   collection_otp_expiry: Date;
+  updated_at: string;
+  created_at: string;
   sales_agent_id: Types.ObjectId; // who placed the order
   distributor_id: Types.ObjectId; // distributor supplying
   order_total: number; // total order cost

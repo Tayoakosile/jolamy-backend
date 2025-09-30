@@ -6,20 +6,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.confirmOrder = exports.cancelOrder = exports.updateOrderStatus = exports.updateOrder = exports.createNewOrder = exports.getSingleOrder = exports.getAllOrders = void 0;
 const mongoose_1 = require("mongoose");
 const Order_1 = __importDefault(require("../models/Order"));
+const dayjs_1 = __importDefault(require("dayjs"));
+const Office_1 = __importDefault(require("../models/Admin/Office"));
+const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
 const Product_1 = require("../models/Product");
+const SalesAgentOrders_1 = __importDefault(require("../models/SalesAgentOrders"));
+const StockLog_1 = __importDefault(require("../models/StockLog"));
 const Transaction_1 = __importDefault(require("../models/Transaction"));
 const User_1 = __importDefault(require("../models/User"));
 const activityLog_1 = require("../utils/activityLog");
 const response_1 = require("../utils/response");
 const trend_util_1 = require("../utils/trend.util");
 const util_1 = require("../utils/util");
-const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
-const Office_1 = __importDefault(require("../models/Admin/Office"));
-const dayjs_1 = __importDefault(require("dayjs"));
-const StockLog_1 = __importDefault(require("../models/StockLog"));
-const SalesAgentOrders_1 = __importDefault(require("../models/SalesAgentOrders"));
-const Otp_1 = __importDefault(require("../models/Otp"));
-const socket_1 = require("../utils/socket");
+const Cart_1 = require("../models/Cart");
 const getAllOrders = (req, res) => {
     const _req = req;
     const user = _req.user;
@@ -92,7 +91,9 @@ const getAllOrders = (req, res) => {
             }).populate("products.product_id");
             return { orders: salesOrders };
         }
-        return Order_1.default.find({ user_id: user?._id }).populate("products.product_id");
+        return {
+            orders: await Order_1.default.find({ user_id: user?._id }).populate("products.product_id"),
+        };
     };
     (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Orders retrieved successfully",
@@ -104,7 +105,7 @@ exports.getAllOrders = getAllOrders;
 const getSingleOrder = async (req, res) => {
     const _req = req;
     const order = _req?.order;
-    const orderDetails = !_req?.user?.is_sales_agent && !order?.order_number?.includes("SAO")
+    let orderDetails = !_req?.user?.is_sales_agent && !order?.order_number?.includes("SAO")
         ? await Order_1.default.findById(order && order._id)
             .populate("products")
             .populate("logs")
@@ -132,31 +133,47 @@ const getSingleOrder = async (req, res) => {
             path: "user_id",
             select: "first_name user_id last_name email phone_number user_role",
         });
-    if (orderDetails?.order_number?.includes("SAO")) {
-        const otpRecord = await Otp_1.default.findOne({
-            email: orderDetails.user_id?.email,
-            type: "order_collection",
-            // expires_at: { $gt: new Date() },
-        });
-        (0, socket_1.getIO)()
-            .to(`${orderDetails?.assigned_to?.distributor}`)
-            .emit("start_order_collection_process", {
-            type: "otp",
-            order_id: order?._id,
-        });
-        (0, socket_1.getIO)()
-            .to(`${orderDetails?.user_id?._id}`)
-            .emit("start_order_collection_process", {
-            type: "otp",
-            otp: otpRecord?.code,
-            order_id: order?._id,
+    // if (orderDetails?.order_number?.includes("SAO")) {
+    //   const otpRecord = await Otp.findOne({
+    //     email: orderDetails.user_id?.email,
+    //     type: "order_collection",
+    //     // expires_at: { $gt: new Date() },
+    //   });
+    //   if (!otpRecord?.code) return;
+    //   getIO()
+    //     .to(`${orderDetails?.assigned_to?.distributor}`)
+    //     .emit("start_order_collection_process", {
+    //       type: "otp",
+    //       order_id: order?._id,
+    //     });
+    //   getIO()
+    //     .to(`${orderDetails?.user_id?._id}`)
+    //     .emit("start_order_collection_process", {
+    //       type: "otp",
+    //       otp: otpRecord?.code,
+    //       order_id: order?._id,
+    //     });
+    // }
+    const isAtLeast5MinuteAhead = (0, dayjs_1.default)().isAfter((0, dayjs_1.default)(orderDetails?.collection_otp_expiry));
+    if (isAtLeast5MinuteAhead) {
+        await SalesAgentOrders_1.default.findByIdAndUpdate(order?._id, {
+            collection_otp: "",
+            collection_otp_expiry: null,
         });
     }
     (0, response_1.successResponse)(res, 200, "Order retrieved successfully", {
-        order: {
-            ...orderDetails?.toObject(),
-            is_delivered: order?.delivery_steps?.some((step) => step.label.includes("delivered")),
-        },
+        order: _req?.user?.is_sales_agent
+            ? {
+                ...orderDetails?.toObject(),
+                is_delivered: order?.delivery_steps?.some((step) => step.label.includes("delivered")),
+            }
+            : {
+                ...orderDetails?.toObject(),
+                is_delivered: order?.delivery_steps?.some((step) => step.label.includes("delivered")),
+                collection_otp: "",
+                collection_otp_expiry: "",
+                collection_otp_length: orderDetails?.collection_otp?.length,
+            },
     });
     // }
 };
@@ -241,6 +258,7 @@ const createNewOrder = (req, res) => {
                 product_id: productInfo?._id,
                 name: productInfo?.name || "Unknown Product",
                 quantity: quantity_ordered || 0,
+                price: productInfo.distributor_price_per_box,
                 variants: theVariant,
                 total_amount: isProductVariantEmpty
                     ? productFromPostAPi?.quantity * productInfo.distributor_price_per_box
@@ -580,6 +598,14 @@ const updateOrderStatus = async (req, res) => {
         if (user?.is_admin && delivery_status?.includes("order_delivered")) {
             if (!order)
                 return;
+            const cart = await Cart_1.Cart.findOne({ user: order.user_id?._id });
+            order.products.map(async (product) => {
+                await Product_1.Product.findByIdAndUpdate(product?.product_id, {
+                    $push: {
+                        orders: order._id,
+                    },
+                });
+            });
             const allVariants = order.products.flatMap((p) => p.variants.map((v) => ({
                 ...(typeof v.toObject === "function"
                     ? v.toObject()
@@ -631,6 +657,10 @@ const updateOrderStatus = async (req, res) => {
                     stock_logs: stocklog._id,
                 },
             });
+            if (!cart)
+                return;
+            cart.items = (0, util_1.deleteCartComp)(order.products, cart);
+            cart.save();
         }
         await Order_1.default.findByIdAndUpdate(order?._id, {
             estimated_delivery_date: body.estimated_delivery_date,
@@ -653,18 +683,19 @@ const updateOrderStatus = async (req, res) => {
             $push: {
                 delivery_steps: delivery_step,
                 delivery_steps_logs: delivery_step,
+                logs: log._id,
             },
         });
     }
     if (worker?.worker_id) {
         await OfficeWorker_1.default.findByIdAndUpdate(worker?.id, {
             $push: {
-                logs: order?._id,
+                logs: log?._id,
             },
         });
         await Office_1.default.findByIdAndUpdate(worker?.office, {
             $push: {
-                logs: order?._id,
+                logs: log?._id,
             },
         });
     }

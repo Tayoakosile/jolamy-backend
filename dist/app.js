@@ -14,6 +14,7 @@ const rate_limiter_1 = require("./middlewares/rate-limiter");
 const admin_routes_1 = __importDefault(require("./routes/Admin/admin.routes"));
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const banks_route_1 = __importDefault(require("./routes/banks.route"));
+const bonus_route_1 = __importDefault(require("./routes/bonus.route"));
 const carts_route_1 = __importDefault(require("./routes/carts.route"));
 const finance_routes_1 = __importDefault(require("./routes/finance.routes"));
 const office_routes_1 = __importDefault(require("./routes/office.routes"));
@@ -24,11 +25,15 @@ const transactions_routes_1 = __importDefault(require("./routes/transactions.rou
 const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
 const socket_1 = require("./utils/socket");
-// import "./jobs/birthday.cron";
+require("./jobs/birthday.cron");
 // import "./jobs/bonus.cron";
 const app = (0, express_1.default)();
 // Middleware
 app.use((0, cors_1.default)());
+app.use((req, res, next) => {
+    res.setHeader("ngrok-skip-browser-warning", "true");
+    next();
+});
 app.use(express_1.default.json());
 dotenv_1.default.config();
 app.use("/api/auth", auth_routes_1.default);
@@ -45,7 +50,7 @@ app.use("/api/carts", carts_route_1.default);
 app.use("/api/sales_agent", sales_agent_route_1.default);
 app.use("/api/stats", auth_1.appAuth, stats_controller_1.getStats);
 app.use("/api/banks", banks_route_1.default);
-// app.get("/api/banks", appAuth, getBanks);
+app.use("/api/bonus", bonus_route_1.default);
 const server = http_1.default.createServer(app);
 // ✅ Initialize socket.io in a reusable way
 (0, socket_1.initSocket)(server);

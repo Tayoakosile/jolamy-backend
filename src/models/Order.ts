@@ -1,11 +1,11 @@
-import { Document, model, Schema, Types } from "mongoose";
-import { Counter } from "./counter";
-import { generateRandom, timestamp } from "../utils/util";
+import { model, Schema, Types } from "mongoose";
 import {
   IDeliveryDetails,
   IOrder,
   IShippingDetails,
 } from "../types/order.type";
+import { generateRandom, timestamp } from "../utils/util";
+import { Counter } from "./counter";
 
 const ProductItemSchema = new Schema({
   product_id: { type: Types.ObjectId, ref: "Product", required: true },
@@ -157,6 +157,7 @@ const OrderSchema = new Schema<IOrder>(
     admin_notes_to_customer: { type: String },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number, default: 0 },
+    amount: { type: Number, default: 0 },
     grand_total: { type: Number, default: 0 }, // total_amount + delivery_fee
     total_quantity: { type: Number, default: 0 },
     estimated_delivery_date: {

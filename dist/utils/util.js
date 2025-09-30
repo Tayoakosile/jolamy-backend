@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.paystackVerification = exports.transactions = exports.statusMap = exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
+exports.deleteCartComp = exports.paystackVerification = exports.transactions = exports.statusMap = exports.removeSensitiveFields = exports.timestamp = exports.customReqResHandler = exports.generateRandom = exports.checkIfDocumentExistsById = void 0;
 exports.generateEntityNumber = generateEntityNumber;
 exports.customIDGenerator = customIDGenerator;
 exports.generateVariants = generateVariants;
@@ -281,17 +281,19 @@ exports.paystackVerification = paystackVerification;
 function generateVariants(options) {
     if (!options.length)
         return [];
-    const cartesian = (arr) => arr.reduce((acc, val) => acc.flatMap((x) => val.map((y) => [...x, y])), [[]]);
+    const cartesian = (arr) => arr.reduce((acc, val) => acc.flatMap((x) => val.map((y) => [...x, y])), [
+        [],
+    ]);
     const valuesArrays = options.map((opt) => opt.values);
     const combos = cartesian(valuesArrays);
-    console.log('combos :', combos);
+    console.log("combos :", combos);
     // build variants with "name" and "attributes"
     return combos.map((combo) => {
         const attributes = combo.map((value, idx) => ({
             key: options[idx].name,
             value,
         }));
-        console.log('attributes :', attributes);
+        console.log("attributes :", attributes);
         const name = combo.join(" / "); // 👉 Small / Red
         return {
             name,
@@ -299,3 +301,22 @@ function generateVariants(options) {
         };
     });
 }
+const deleteCartComp = (products, cart) => {
+    const newItems = cart.items.map((cartItem) => {
+        const allProducts = products
+            .map((product) => {
+            if (cartItem.variants.length > 1) {
+                return;
+            }
+            if (product.product_id.toString() === cartItem.product.toString()) {
+                return undefined;
+            }
+            return cartItem;
+        })
+            ?.filter((item) => item !== undefined);
+        return allProducts;
+    });
+    console.log("newItems :", newItems);
+    return newItems?.flat(2);
+};
+exports.deleteCartComp = deleteCartComp;

@@ -75,8 +75,10 @@ const userSchema = new mongoose_1.Schema({
     change_request: { type: mongoose_1.Schema.Types.ObjectId, ref: "ChangeRequest" },
     account_details: {
         bank_name: { type: String, default: "" },
+        bank_code: { type: String, default: "" },
         account_number: { type: String, default: "" },
         account_name: { type: String, default: "" },
+        paystack_payment_reference: { type: String, default: "" },
     },
     paid_registration_fee: { type: Boolean, default: false },
     documents: mongoose_1.Schema.Types.Mixed,

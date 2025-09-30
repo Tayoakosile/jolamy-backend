@@ -16,8 +16,23 @@ const BonusSchema = new mongoose_1.Schema({
             required: true,
         },
     },
-    date: { type: Date, default: Date.now },
     internal_sequence: { type: Number, immutable: true },
+    payment_account_details: {
+        distributor: {
+            bank_name: { type: String, required: true },
+            bank_code: { type: String, required: true },
+            account_number: { type: String, required: true },
+            // account_name: { type: String, required: true },
+            paystack_payment_reference: { type: String },
+        },
+        sales_agent: {
+            bank_name: { type: String, required: true },
+            bank_code: { type: String, required: true },
+            account_number: { type: String, required: true },
+            // account_name: { type: String, required: true },
+            paystack_payment_reference: { type: String },
+        },
+    },
     bonus_type: {
         type: String,
         enum: ["sales_target", "referral", "performance"],
@@ -34,11 +49,10 @@ const BonusSchema = new mongoose_1.Schema({
     bonus_per_box: { distributor: Number, sales_agent: Number },
     payment_receipt: { type: String },
     payment_reference: { distributor: String, sales_agent: String },
-    paystack_payment_reference: {
-        distributor: { type: String },
-        sales_agent: { type: String },
+    total_bonus_earned: {
+        sales_agent_bonus_per_box: { type: Number, required: 0 },
+        distributor_bonus_per_box: { type: Number, required: 0 },
     },
-    total_bonus_earned: { type: Number, required: true },
     total_amount: {
         distributor: {
             type: Number,

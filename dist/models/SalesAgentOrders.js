@@ -98,7 +98,7 @@ const SalesAgentOrderSchema = new mongoose_1.Schema({
     },
     delivery_status: {
         type: String,
-        // enum: ["not_assigned", "pending", "in_transit", "delivered","order_ready_for_pickup"],
+        enum: ["not_assigned", "pending", "in_transit", "delivered", "order_ready_for_pickup", "order_collected"],
         default: "not_assigned",
     },
     collection_otp: { type: String, default: "" },

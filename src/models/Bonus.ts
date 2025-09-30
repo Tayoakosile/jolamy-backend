@@ -8,22 +8,40 @@ export interface IBonus extends Document {
   role: "distributor" | "sales_agent";
   bonus_type: "sales_target" | "referral" | "performance";
   internal_sequence: number;
-  payment_status: "unpaid" | "paid" | "failed" | "reversed";
+  payment_status: {
+    distributor: "unpaid" | "paid" | "failed" | "reversed";
+    sales_agent: "unpaid" | "paid" | "failed" | "reversed";
+  };
   status: "pending" | "processing" | "completed" | ""; // Status of the bonus
+  total_bonus_earned: {
+    sales_agent_bonus_per_box: number;
+    distributor_bonus_per_box: number;
+  };
   payment_account_details: {
     bank_name: string;
     account_number: string;
     account_name: string;
+    payment_reference: string;
+  };
+  total_amount: {
+    distributor: number;
+    sales_agent: number;
   };
   payment_receipt?: string; // URL or path to payment receipt
   payment_reference?: string; // URL or path to payment receipt
-  payment_confirmed?: boolean;
+  payment_confirmed?: {
+    distributor: boolean;
+    sales_agent: boolean;
+  };
   no_of_boxes_sold: number;
   bonus_per_box: number;
-  total_bonus_earned: number;
+  order: string;
   description?: string;
   amount: number; // In lowest currency unit (e.g., kobo, cents)
-  is_paid: boolean;
+  is_paid: {
+    distributor: boolean;
+    sales_agent: boolean;
+  };
   recipients: {
     distributor: String;
     sales_agent: String;
@@ -53,8 +71,24 @@ const BonusSchema = new Schema<IBonus>(
         required: true,
       },
     },
-    date: { type: Date, default: Date.now },
+
     internal_sequence: { type: Number, immutable: true },
+    payment_account_details: {
+      distributor: {
+        bank_name: { type: String, required: true },
+        bank_code: { type: String, required: true },
+        account_number: { type: String, required: true },
+        // account_name: { type: String, required: true },
+        paystack_payment_reference: { type: String },
+      },
+      sales_agent: {
+        bank_name: { type: String, required: true },
+        bank_code: { type: String, required: true },
+        account_number: { type: String, required: true },
+        // account_name: { type: String, required: true },
+        paystack_payment_reference: { type: String },
+      },
+    },
     bonus_type: {
       type: String,
       enum: ["sales_target", "referral", "performance"],
@@ -71,11 +105,10 @@ const BonusSchema = new Schema<IBonus>(
     bonus_per_box: { distributor: Number, sales_agent: Number },
     payment_receipt: { type: String },
     payment_reference: { distributor: String, sales_agent: String },
-    paystack_payment_reference: {
-      distributor: { type: String },
-      sales_agent: { type: String },
+    total_bonus_earned: {
+      sales_agent_bonus_per_box: { type: Number, required: 0 },
+      distributor_bonus_per_box: { type: Number, required: 0 },
     },
-    total_bonus_earned: { type: Number, required: true },
     total_amount: {
       distributor: {
         type: Number,
@@ -104,7 +137,7 @@ const BonusSchema = new Schema<IBonus>(
       distributor: { type: Date },
       sales_agent: { type: Date },
     },
-    payment_status:{
+    payment_status: {
       distributor: {
         type: String,
         enum: ["unpaid", "processing", "paid", "failed", "reversed"],

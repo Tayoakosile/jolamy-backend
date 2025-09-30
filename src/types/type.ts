@@ -2,6 +2,7 @@ import { Request } from "express";
 import { Document, Types } from "mongoose";
 import { IOfficeWorker } from "../models/Admin/OfficeWorker";
 import { IOrder } from "./order.type";
+import { IBonus } from "../models/Bonus";
 
 export type ApprovalStatus =
   | "inactive"
@@ -63,6 +64,7 @@ export interface IUser extends IOfficeWorker {
   has_accepted_terms: boolean;
   is_factory_worker: boolean;
   is_verified: boolean;
+
   disabled_reason?: string;
   change_requests?: [];
   cart?: [];
@@ -112,7 +114,7 @@ export interface IUser extends IOfficeWorker {
   orders: Types.ObjectId[]; // refs to Order model
   sales_agent_orders: Types.ObjectId[]; // refs to Order model
   products: { type: Types.ObjectId[]; ref: "Products" }; // refs to Product model
-  bonus: { type: Types.ObjectId[]; ref: "Bonus" }; // refs to Bonus model
+  bonus: IBonus[]; // refs to Bonus model
   transaction_history: { type: Types.ObjectId[]; ref: "TransactionHistory" }; // refs to Transaction model
   change_request: { type: Types.ObjectId; ref: "ChangeRequest" }; // refs to ChangeRequest model
   warehouse_location: string;
@@ -124,6 +126,11 @@ export interface IUser extends IOfficeWorker {
   warehouse_verified: boolean;
   account_details: {
     type: Object;
+    bank_name: string;
+    bank_code: string;
+    account_number: string;
+    account_name: string;
+    paystack_payment_reference: string;
   };
   paid_registration_fee: boolean;
   documents: [

@@ -2,22 +2,25 @@ import { Request, Response } from "express";
 import { Types } from "mongoose";
 import Order from "../models/Order";
 
+import dayjs from "dayjs";
+import Offices from "../models/Admin/Office";
+import OfficeWorker from "../models/Admin/OfficeWorker";
 import { IProduct, Product } from "../models/Product";
+import SalesAgentOrder from "../models/SalesAgentOrders";
+import StockLog from "../models/StockLog";
 import Transaction from "../models/Transaction";
 import User from "../models/User";
+import { IOrder, ProductVariant } from "../types/order.type";
 import { AuthRequest } from "../types/type";
 import { logActivity } from "../utils/activityLog";
 import { errorResponse, successResponse } from "../utils/response";
 import { getTrend } from "../utils/trend.util";
-import { customReqResHandler, generateRandom } from "../utils/util";
-import OfficeWorker from "../models/Admin/OfficeWorker";
-import Offices from "../models/Admin/Office";
-import dayjs from "dayjs";
-import { IOrder, ProductVariant } from "../types/order.type";
-import StockLog from "../models/StockLog";
-import SalesAgentOrder from "../models/SalesAgentOrders";
-import Otp from "../models/Otp";
-import { getIO } from "../utils/socket";
+import {
+  customReqResHandler,
+  deleteCartComp,
+  generateRandom,
+} from "../utils/util";
+import { Cart } from "../models/Cart";
 
 export const getAllOrders = (req: Request, res: Response) => {
   const _req = req as AuthRequest;
@@ -96,7 +99,11 @@ export const getAllOrders = (req: Request, res: Response) => {
       }).populate("products.product_id");
       return { orders: salesOrders };
     }
-    return Order.find({ user_id: user?._id }).populate("products.product_id");
+    return {
+      orders: await Order.find({ user_id: user?._id }).populate(
+        "products.product_id"
+      ),
+    };
   };
 
   customReqResHandler(res, request, undefined, {
@@ -110,7 +117,7 @@ export const getSingleOrder = async (req: Request, res: Response) => {
   const _req = req as AuthRequest;
   const order = _req?.order;
 
-  const orderDetails =
+  let orderDetails =
     !_req?.user?.is_sales_agent && !order?.order_number?.includes("SAO")
       ? await Order.findById(order && order._id)
           .populate("products")
@@ -140,35 +147,57 @@ export const getSingleOrder = async (req: Request, res: Response) => {
             select: "first_name user_id last_name email phone_number user_role",
           });
 
-  if (orderDetails?.order_number?.includes("SAO")) {
-    const otpRecord = await Otp.findOne({
-      email: orderDetails.user_id?.email,
-      type: "order_collection",
-      // expires_at: { $gt: new Date() },
-    });
-    getIO()
-      .to(`${orderDetails?.assigned_to?.distributor}`)
-      .emit("start_order_collection_process", {
-        type: "otp",
-        order_id: order?._id,
-      });
+  // if (orderDetails?.order_number?.includes("SAO")) {
+  //   const otpRecord = await Otp.findOne({
+  //     email: orderDetails.user_id?.email,
+  //     type: "order_collection",
+  //     // expires_at: { $gt: new Date() },
+  //   });
+  //   if (!otpRecord?.code) return;
+  //   getIO()
+  //     .to(`${orderDetails?.assigned_to?.distributor}`)
+  //     .emit("start_order_collection_process", {
+  //       type: "otp",
+  //       order_id: order?._id,
+  //     });
 
-    getIO()
-      .to(`${orderDetails?.user_id?._id}`)
-      .emit("start_order_collection_process", {
-        type: "otp",
-        otp: otpRecord?.code,
-        order_id: order?._id,
-      });
+  //   getIO()
+  //     .to(`${orderDetails?.user_id?._id}`)
+  //     .emit("start_order_collection_process", {
+  //       type: "otp",
+  //       otp: otpRecord?.code,
+  //       order_id: order?._id,
+  //     });
+  // }
+
+  const isAtLeast5MinuteAhead = dayjs().isAfter(
+    dayjs(orderDetails?.collection_otp_expiry)
+  );
+
+  if (isAtLeast5MinuteAhead) {
+    await SalesAgentOrder.findByIdAndUpdate(order?._id, {
+      collection_otp: "",
+      collection_otp_expiry: null,
+    });
   }
 
   successResponse(res, 200, "Order retrieved successfully", {
-    order: {
-      ...orderDetails?.toObject(),
-      is_delivered: order?.delivery_steps?.some((step) =>
-        step.label.includes("delivered")
-      ),
-    },
+    order: _req?.user?.is_sales_agent
+      ? {
+          ...orderDetails?.toObject(),
+          is_delivered: order?.delivery_steps?.some((step) =>
+            step.label.includes("delivered")
+          ),
+        }
+      : {
+          ...orderDetails?.toObject(),
+          is_delivered: order?.delivery_steps?.some((step) =>
+            step.label.includes("delivered")
+          ),
+          collection_otp: "",
+          collection_otp_expiry: "",
+          collection_otp_length: orderDetails?.collection_otp?.length,
+        },
   });
 
   // }
@@ -279,6 +308,7 @@ export const createNewOrder = (req: Request, res: Response) => {
         product_id: productInfo?._id,
         name: productInfo?.name || "Unknown Product",
         quantity: quantity_ordered || 0,
+        price: productInfo.distributor_price_per_box,
         variants: theVariant,
         total_amount: isProductVariantEmpty
           ? productFromPostAPi?.quantity * productInfo.distributor_price_per_box
@@ -693,6 +723,16 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
   } else {
     if (user?.is_admin && delivery_status?.includes("order_delivered")) {
       if (!order) return;
+      const cart = await Cart.findOne({ user: order.user_id?._id });
+
+      order.products.map(async (product) => {
+        await Product.findByIdAndUpdate(product?.product_id, {
+          $push: {
+            orders: order._id,
+          },
+        });
+      });
+
       const allVariants = order.products.flatMap((p) =>
         p.variants.map((v: ProductVariant) => ({
           ...(typeof (v as any).toObject === "function"
@@ -752,6 +792,10 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
           stock_logs: stocklog._id,
         },
       });
+
+      if (!cart) return;
+      cart.items = deleteCartComp(order.products, cart);
+      cart.save();
     }
 
     await Order.findByIdAndUpdate(order?._id, {
@@ -776,6 +820,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       $push: {
         delivery_steps: delivery_step,
         delivery_steps_logs: delivery_step,
+        logs: log._id,
       },
     });
   }
@@ -783,12 +828,12 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
   if (worker?.worker_id) {
     await OfficeWorker.findByIdAndUpdate(worker?.id, {
       $push: {
-        logs: order?._id,
+        logs: log?._id,
       },
     });
     await Offices.findByIdAndUpdate(worker?.office, {
       $push: {
-        logs: order?._id,
+        logs: log?._id,
       },
     });
   }

@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
-const counter_1 = require("./counter");
 const util_1 = require("../utils/util");
+const counter_1 = require("./counter");
 const ProductItemSchema = new mongoose_1.Schema({
     product_id: { type: mongoose_1.Types.ObjectId, ref: "Product", required: true },
     name: { type: String },
@@ -147,6 +147,7 @@ const OrderSchema = new mongoose_1.Schema({
     admin_notes_to_customer: { type: String },
     internal_sequence: { type: Number, default: 0 },
     total_amount: { type: Number, default: 0 },
+    amount: { type: Number, default: 0 },
     grand_total: { type: Number, default: 0 }, // total_amount + delivery_fee
     total_quantity: { type: Number, default: 0 },
     estimated_delivery_date: {

@@ -11,7 +11,6 @@ const userSchema = new Schema<IUser>(
     last_name: { type: String, required: true },
     business_name: { type: String },
     user_id: { type: String, unique: true },
-
     username: String,
     date_joined: { type: Date, default: Date.now() },
     last_login: { type: Date, default: null },
@@ -36,7 +35,6 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     cart: [{ type: Schema.Types.ObjectId, ref: "Cart" }],
     warehouse_location: { type: String },
-
     warehouse_verified: { type: Boolean, default: false },
     inventory_obligations_accepted: { type: Boolean, default: false },
     status: {
@@ -70,6 +68,7 @@ const userSchema = new Schema<IUser>(
     token_version: { type: Number, default: 0 },
     total_boxes_in_stock: { type: Number, default: 0 },
     stock_logs: [{ type: Schema.Types.ObjectId, ref: "StockLog" }],
+
     orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     sales_agent_orders: [{ type: Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: Schema.Types.ObjectId, ref: "Product" }],
@@ -78,8 +77,10 @@ const userSchema = new Schema<IUser>(
     change_request: { type: Schema.Types.ObjectId, ref: "ChangeRequest" },
     account_details: {
       bank_name: { type: String, default: "" },
+      bank_code: { type: String, default: "" },
       account_number: { type: String, default: "" },
       account_name: { type: String, default: "" },
+      paystack_payment_reference: { type: String, default: "" },
     },
     paid_registration_fee: { type: Boolean, default: false },
     documents: Schema.Types.Mixed,

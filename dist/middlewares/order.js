@@ -14,9 +14,10 @@ const validateOrder = async (req, res, next) => {
     const user = _req.user;
     const worker = _req.worker;
     const orderID = _req.params?.id;
+    const populated_fields = ["user_id", "products"];
     const order = !user?.is_sales_agent && !orderID?.includes("SAO")
-        ? await (0, util_1.checkIfDocumentExistsById)(orderID, "order_number", res, Order_1.default, ["user_id"])
-        : await (0, util_1.checkIfDocumentExistsById)(orderID, mongoose_1.Types.ObjectId.isValid(orderID) ? "_id" : "order_number", res, SalesAgentOrders_1.default, ["user_id"]);
+        ? await (0, util_1.checkIfDocumentExistsById)(orderID, "order_number", res, Order_1.default, populated_fields)
+        : await (0, util_1.checkIfDocumentExistsById)(orderID, mongoose_1.Types.ObjectId.isValid(orderID) ? "_id" : "order_number", res, SalesAgentOrders_1.default, [...populated_fields, "assigned_to.distributor"]);
     const isOrderAssignedToThisWorkerOffice = order?.assigned_to?.office?._id?.toString() === worker?.office?.toString();
     // Ensure both IDs are strings for comparison
     const checkIfOrderBelongsToUser = user?.orders.some((singleOrder) => String(singleOrder._id) === String(order?._id));

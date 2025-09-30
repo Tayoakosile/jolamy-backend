@@ -1,4 +1,3 @@
-
 import { NextFunction } from "express";
 // utils/checkIfExists.ts
 
@@ -9,6 +8,9 @@ import randomatic from "randomatic";
 import { Counter } from "../models/counter";
 import { sendEmail } from "../services/mail.service";
 import { errorResponse, successResponse } from "./response";
+import { Cart, ICart } from "../models/Cart";
+import { IProduct } from "../models/Product";
+import { ProductItem } from "../types/order.type";
 
 /**
  * Checks if a user exists by ID.
@@ -369,16 +371,13 @@ export function generateVariants(options: Option[]) {
   if (!options.length) return [];
 
   const cartesian = (arr: string[][]): string[][] =>
-    arr.reduce(
-      (acc, val) => acc.flatMap((x) => val.map((y) => [...x, y])),
-      [[]] as string[][]
-    );
+    arr.reduce((acc, val) => acc.flatMap((x) => val.map((y) => [...x, y])), [
+      [],
+    ] as string[][]);
 
   const valuesArrays = options.map((opt) => opt.values);
   const combos = cartesian(valuesArrays);
-  console.log('combos :', combos);
-
-
+  console.log("combos :", combos);
 
   // build variants with "name" and "attributes"
   return combos.map((combo) => {
@@ -386,8 +385,7 @@ export function generateVariants(options: Option[]) {
       key: options[idx].name,
       value,
     }));
-    console.log('attributes :', attributes);
-
+    console.log("attributes :", attributes);
 
     const name = combo.join(" / "); // 👉 Small / Red
 
@@ -397,3 +395,23 @@ export function generateVariants(options: Option[]) {
     };
   });
 }
+
+export const deleteCartComp = (products: ProductItem[], cart: ICart) => {
+  const newItems = cart.items.map((cartItem) => {
+    const allProducts = products
+      .map((product) => {
+        if (cartItem.variants.length > 1) {
+          return;
+        }
+        if (product.product_id.toString() === cartItem.product.toString()) {
+          return undefined;
+        }
+        return cartItem;
+      })
+      ?.filter((item) => item !== undefined);
+    return allProducts;
+  });
+  console.log("newItems :", newItems);
+
+  return newItems?.flat(2);
+};

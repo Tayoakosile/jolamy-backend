@@ -16,6 +16,7 @@ import { errorResponse, successResponse } from "../utils/response";
 import { getTrend } from "../utils/trend.util";
 import { generateRandom, paystackVerification } from "../utils/util";
 import SalesAgentOrder from "../models/SalesAgentOrders";
+import { JOL_Paystack_API } from "../utils/paystack";
 
 export const createAccount = async (
   req: Request,
@@ -118,6 +119,30 @@ export const updateAccountOnSignUp = async (req: Request, res: Response) => {
         successResponse(res, 200, "Payment verified and account updated");
         return;
       }
+    }
+    if (req.body?.account_details?.bank_name?.length >= 1) {
+      delete req.body.bank_code;
+      const paymentAccountDetails = {
+        type: "nuban",
+        ...req.body?.account_details,
+        bank_code: "044",
+        currency: "NGN",
+        metadata: {
+          user_id: user?.user_id,
+          email: user?.email,
+          name: `${user?.first_name} ${user?.last_name}`,
+          phone: user?.phone_number,
+          role: user?.user_role,
+        },
+      };
+
+      const transferRecipient = await JOL_Paystack_API.post(
+        "/transferrecipient",
+        JSON.stringify(paymentAccountDetails)
+      );
+
+      req.body.account_details.paystack_payment_reference =
+        transferRecipient.data?.data.recipient_code;
     }
 
     await User.findOneAndUpdate(
@@ -230,6 +255,13 @@ export const loginAccount = async (
       });
       return;
     }
+    const comparePassword = await isMatch(password, user.password);
+
+    if (!comparePassword) {
+      errorResponse(res, 400, "invalid Email or Password");
+      return;
+    }
+
     const error = {
       is_verified: user.is_verified,
       email: user.email,
@@ -259,13 +291,6 @@ export const loginAccount = async (
         status: user.status,
         user,
       });
-      return;
-    }
-
-    const comparePassword = await isMatch(password, user.password);
-
-    if (!comparePassword) {
-      errorResponse(res, 400, "invalid Email or Password");
       return;
     }
 
@@ -560,6 +585,31 @@ export const getUserProfile = async (_req: Request, res: Response) => {
         select: "name price images",
       },
     });
+    const bonus = user?.bonus?.map((bonus) => {
+      return user?.is_distributor
+        ? {
+            ...bonus.toObject(),
+            user_id: bonus?.recipients?.distributor,
+            is_paid: bonus?.is_paid?.distributor || false,
+            total_bonus_earned:
+              bonus?.total_bonus_earned?.distributor_bonus_per_box || 0,
+            total_amount: bonus?.total_amount?.distributor || 0,
+            payment_status: bonus?.payment_status?.distributor || "pending",
+            period: `${bonus?.period?.start_date?.toDateString()} - ${bonus?.period?.end_date?.toDateString()}`,
+            payment_confirmed: bonus?.payment_confirmed?.distributor || false,
+          }
+        : {
+            ...bonus.toObject(),
+            user_id: bonus?.recipients?.sales_agent,
+            is_paid: bonus?.is_paid?.sales_agent || false,
+            payment_confirmed: bonus?.payment_confirmed?.sales_agent || false,
+            total_bonus_earned:
+              bonus?.total_bonus_earned?.sales_agent_bonus_per_box || 0,
+            total_amount: bonus?.total_amount?.sales_agent || 0,
+            payment_status: bonus?.payment_status?.sales_agent || "pending",
+            period: `${bonus?.period?.start_date?.toDateString()} - ${bonus?.period?.end_date?.toDateString()}`,
+          };
+    });
     const worker = await OfficeWorker.findById(userId).select(
       "-password -__v -_id"
     );
@@ -649,6 +699,7 @@ export const getUserProfile = async (_req: Request, res: Response) => {
         `${user ? "User's" : "Worker's"} profile retrieved successfully`,
         {
           ...user?.toObject(),
+          bonus,
           stats: [
             {
               title: "Total Orders Delivered",
@@ -693,7 +744,8 @@ export const getUserProfile = async (_req: Request, res: Response) => {
       `${user ? "User's" : "Worker's"} profile retrieved successfully`,
       user
         ? {
-            ...user.toObject(),
+            ...user?.toObject(),
+            bonus,
             is_admin: user?.user_role?.includes("admin"),
             is_distributor: user?.user_role?.includes("distributor"),
             is_sales_agent: user?.user_role?.includes("sales_agent"),
