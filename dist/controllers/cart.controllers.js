@@ -15,6 +15,7 @@ const addToCart = (req, res) => {
     const _req = req;
     const user_id = _req.user._id;
     const product_id = _req.body?.product_id;
+    const user = _req.user;
     if (!product_id) {
         (0, response_1.errorResponse)(res, 400, "Product ID is required");
         return;
@@ -27,15 +28,29 @@ const addToCart = (req, res) => {
         const cart = (await Cart_1.Cart.findOne({
             user: user_id,
         }));
+        const cartDetails = user?.orders && user?.orders?.length > 0
+            ? [
+                {
+                    ..._req.body?.variants,
+                    product: product._id,
+                },
+            ]
+            : [
+                {
+                    ..._req.body?.variants,
+                    product: product._id,
+                },
+                {
+                    ..._req.body?.variants,
+                    product: product._id,
+                    is_bonus: true,
+                    quantity: 50,
+                },
+            ];
         if (!cart) {
             const cart = (await Cart_1.Cart.create({
                 user: user_id,
-                items: [
-                    {
-                        ..._req.body?.variants,
-                        product: product._id,
-                    },
-                ],
+                items: cartDetails,
             }));
             const log = await (0, activityLog_1.logActivity)({
                 req: _req,

@@ -33,6 +33,7 @@ const userSchema = new mongoose_1.Schema({
     is_first_login: { type: Boolean, default: true },
     email: { type: String, required: true, unique: true },
     cart: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Cart" }],
+    notifications: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Notification" }],
     warehouse_location: { type: String },
     warehouse_verified: { type: Boolean, default: false },
     inventory_obligations_accepted: { type: Boolean, default: false },

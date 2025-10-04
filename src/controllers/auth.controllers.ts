@@ -5,18 +5,18 @@ import { Types } from "mongoose";
 import OfficeWorker, { IOfficeWorker } from "../models/Admin/OfficeWorker";
 import Order from "../models/Order";
 import Otp from "../models/Otp";
+import SalesAgentOrder from "../models/SalesAgentOrders";
 import Transaction from "../models/Transaction";
 import { signupService } from "../services/auth.service";
 import { sendEmail } from "../services/mail.service";
 import { AuthRequest, IUser } from "../types/type";
 import { logActivity } from "../utils/activityLog";
-import { isMatch } from "../utils/bcrypt.util";
-import { generateToken } from "../utils/jwt";
+import { encrypt, isMatch } from "../utils/bcrypt.util";
+import { decodeToken, generateToken } from "../utils/jwt";
+import { JOL_Paystack_API } from "../utils/paystack";
 import { errorResponse, successResponse } from "../utils/response";
 import { getTrend } from "../utils/trend.util";
 import { generateRandom, paystackVerification } from "../utils/util";
-import SalesAgentOrder from "../models/SalesAgentOrders";
-import { JOL_Paystack_API } from "../utils/paystack";
 
 export const createAccount = async (
   req: Request,
@@ -56,7 +56,7 @@ export const createAccount = async (
     await sendVerificationOtpToMail(req as AuthRequest, res, next, user.email);
     successResponse(res, 201, "User created successfully", {
       user: {
-        id: user.user_id,
+        id: user._id,
         email: user.email,
         is_verified: user.is_verified,
       },
@@ -265,7 +265,7 @@ export const loginAccount = async (
     const error = {
       is_verified: user.is_verified,
       email: user.email,
-      user_id: user.user_id,
+      user_id: user._id,
     };
     if (!user?.is_admin && !user.is_verified) {
       await sendVerificationOtpToMail(
@@ -324,7 +324,7 @@ export const loginAccount = async (
     successResponse(res, 200, "Login successful", {
       token,
       user: {
-        id: user.user_id,
+        id: user._id,
         email: user.email,
         role: user.user_role,
       },
@@ -482,18 +482,43 @@ export const forgotPassword = async (req: Request, res: Response) => {
       errorResponse(res, 400, "Email is required");
     const { email } = req.body;
     const user = await User.findOne({ email });
+    if (["admin", "worker", "office_manager"].includes(user?.user_role || "")) {
+      errorResponse(
+        res,
+        400,
+        "Password reset not allowed for this user, please contact support"
+      );
+      return;
+    }
     if (!user) {
-      errorResponse(res, 401, "No user found with that email");
+      errorResponse(res, 400, "No user found with that email");
       return;
     }
 
+    // how else can
+    const email_crypted = await generateToken(user?.email);
+    if (user.forgot_password_token && user.forgot_password_expires) {
+      const resetURL = `http://localhost:3002/reset-password/${
+        user.forgot_password_token
+      }?id=${encodeURIComponent(email_crypted)}`;
+
+      await sendEmail(
+        user.email,
+        "Password Reset Request",
+        "To reset your password, please click the link below:\n\n" + resetURL
+      );
+      successResponse(res, 200, "Reset link sent to your email");
+      return;
+    }
     // Generate reset token
     const resetToken = generateRandom();
     user.forgot_password_token = resetToken;
     user.forgot_password_expires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
     await user.save();
 
-    const resetURL = `https://your-frontend.com/reset-password/${resetToken}`;
+    const resetURL = `http://localhost:3002/reset-password/${
+      user.forgot_password_token
+    }?id=${encodeURIComponent(email_crypted)}`;
 
     await sendEmail(
       user.email,
@@ -511,15 +536,57 @@ export const forgotPassword = async (req: Request, res: Response) => {
     );
   }
 };
+export const verifyResetToken = async (req: Request, res: Response) => {
+  try {
+    const token = req.params?.token;
+    const email = decodeToken(req.query?.id as string);
+    console.log("email :", email);
+
+    if (!token) {
+      errorResponse(res, 400, "Reset token is required");
+      return;
+    }
+
+    const user = await User.findOne({
+      email: email?.id,
+    });
+
+    if (!user) {
+      errorResponse(res, 400, "Invalid or expired reset token", {
+        is_user: false,
+      });
+      return;
+    }
+    if (user?.forgot_password_token !== token) {
+      errorResponse(res, 400, "Invalid or expired reset token", {
+        is_user: true,
+        email: email?.id,
+      });
+      return;
+    }
+
+    successResponse(res, 200, "Reset token is valid");
+  } catch (error) {
+    console.log("error :", error);
+
+    errorResponse(
+      res,
+      500,
+      "An error occurred while verifying the reset token",
+      error
+    );
+    return;
+  }
+};
 export const resetPassword = async (req: Request, res: Response) => {
   try {
     const token = req.params?.token;
     const password = req.body?.password;
+
     // Debugging information removed for production
 
     const user = await User.findOne({
       forgot_password_token: token,
-      forgot_password_expires: { $gt: new Date() },
     });
 
     if (!user) {
@@ -529,15 +596,15 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     const activityLog = await logActivity({
       req,
-      user_id: user.user_id,
-      sender: user.user_id,
-      receiver: user.user_id,
+      user_id: user._id,
+      sender: user._id,
+      receiver: user._id,
       action: "PASSWORD_RESET",
       description: "User password reset successfully",
 
       metadata: {
         email: user.email,
-        user_id: user.user_id,
+        user_id: user._id,
       },
     });
     await User.findOneAndUpdate(
@@ -545,7 +612,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       {
         forgot_password_expires: "",
         forgot_password_token: "",
-        password,
+        password: await encrypt(password),
         $push: { logs: activityLog._id },
       }
     );
@@ -575,16 +642,18 @@ export const getUserProfile = async (_req: Request, res: Response) => {
       .select("-password -__v ")
       .populate("transaction_history")
       .populate("change_request")
-      .populate("bonus");
-
-    user?.populate({
-      path: "orders",
-      model: user?.user_role?.includes("sales_agent") ? SalesAgentOrder : Order,
-      populate: {
-        path: "products.product_id",
-        select: "name price images",
-      },
-    });
+      .populate("bonus")
+      .populate("notifications")
+      .populate({
+        path: "orders",
+        model: req.user?.user_role?.includes("sales_agent")
+          ? SalesAgentOrder
+          : Order,
+        populate: {
+          path: "products.product_id",
+          select: "name price images",
+        },
+      });
     const bonus = user?.bonus?.map((bonus) => {
       return user?.is_distributor
         ? {
@@ -632,11 +701,12 @@ export const getUserProfile = async (_req: Request, res: Response) => {
         status: "pending",
       },
     });
+
     const totalOrders = await getTrend(Order, {
-      period: "week",
+      period: "month",
       filter: {
-        user_id: user ? user._id : worker ? worker._id : null,
-        delivery_status: "delivered",
+        user_id: user?._id ? user._id : worker ? worker._id : null,
+        delivery_status: "order_delivered",
       },
     });
 
@@ -664,14 +734,14 @@ export const getUserProfile = async (_req: Request, res: Response) => {
               percentageChange: 0,
               trend: "no-change",
             },
-            {
-              title: "Total Earnings",
-              currentTotal: 0,
-              previousTotal: 0,
-              percentageChange: 0,
-              trend: "no-change",
-              type: "currency",
-            },
+            // {
+            //   title: "Total Earnings",
+            //   currentTotal: 0,
+            //   previousTotal: 0,
+            //   percentageChange: 0,
+            //   trend: "no-change",
+            //   type: "currency",
+            // },
 
             {
               title: "Total Bonus This Week",

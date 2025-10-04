@@ -24,19 +24,18 @@ import {
   addNewProducts,
   archiveProduct,
   getProducts,
-  getSingleProducts,
+  getSingleProduct,
   updateProduct,
-  updateProductOptions,
+  updateProductOptions
 } from "../../controllers/Admin/admin.products.controller";
 
 import { getAllInventory } from "../../controllers/Admin/admin.inventory.controller";
+import {
+  runBonusPayment
+} from "../../controllers/bonus.controllers";
+import { getPendingUsers } from "../../controllers/general/Users/users.controllers";
 import { appAuth, isAdmin } from "../../middlewares/auth";
 import { removeSensitiveFields } from "../../utils/util";
-import { getPendingUsers } from "../../controllers/general/Users/users.controllers";
-import {
-  runBonuses,
-  runBonusPayment,
-} from "../../controllers/bonus.controllers";
 
 const router = Router();
 
@@ -112,10 +111,9 @@ router.post(
   "/products",
   appAuth,
   isAdmin,
-  // upload.array("files"),
   addNewProducts
 );
-router.get("/products/:id", appAuth, isAdmin, getSingleProducts);
+router.get("/products/:id", appAuth, isAdmin, getSingleProduct);
 router.put("/products/:id", appAuth, isAdmin, updateProduct);
 router.put("/products/:id/options", appAuth, isAdmin, updateProductOptions);
 router.patch("/products/:id/options", appAuth, isAdmin, updateProductOptions);

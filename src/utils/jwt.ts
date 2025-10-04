@@ -13,6 +13,6 @@ export const generateToken = (user_id: string, secret?: string): string => {
 export const decodeToken = (
   token: string,
   secret?: string
-): string | JwtPayload => {
+): any | JwtPayload => {
   return jwt.verify(token, secret || (process.env.JWT_SECRET as string));
 };

@@ -34,6 +34,7 @@ const userSchema = new Schema<IUser>(
     is_first_login: { type: Boolean, default: true },
     email: { type: String, required: true, unique: true },
     cart: [{ type: Schema.Types.ObjectId, ref: "Cart" }],
+    notifications: [{ type: Schema.Types.ObjectId, ref: "Notification" }],
     warehouse_location: { type: String },
     warehouse_verified: { type: Boolean, default: false },
     inventory_obligations_accepted: { type: Boolean, default: false },

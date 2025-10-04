@@ -3,23 +3,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserProfile = exports.resetPassword = exports.forgotPassword = exports.verifySignUpDetails = exports.sendVerificationOtpToMail = exports.loginAccount = exports.updateAccountOnSignUp = exports.createAccount = void 0;
+exports.getUserProfile = exports.resetPassword = exports.verifyResetToken = exports.forgotPassword = exports.verifySignUpDetails = exports.sendVerificationOtpToMail = exports.loginAccount = exports.updateAccountOnSignUp = exports.createAccount = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const mongoose_1 = require("mongoose");
 const OfficeWorker_1 = __importDefault(require("../models/Admin/OfficeWorker"));
 const Order_1 = __importDefault(require("../models/Order"));
 const Otp_1 = __importDefault(require("../models/Otp"));
+const SalesAgentOrders_1 = __importDefault(require("../models/SalesAgentOrders"));
 const Transaction_1 = __importDefault(require("../models/Transaction"));
 const auth_service_1 = require("../services/auth.service");
 const mail_service_1 = require("../services/mail.service");
 const activityLog_1 = require("../utils/activityLog");
 const bcrypt_util_1 = require("../utils/bcrypt.util");
 const jwt_1 = require("../utils/jwt");
+const paystack_1 = require("../utils/paystack");
 const response_1 = require("../utils/response");
 const trend_util_1 = require("../utils/trend.util");
 const util_1 = require("../utils/util");
-const SalesAgentOrders_1 = __importDefault(require("../models/SalesAgentOrders"));
-const paystack_1 = require("../utils/paystack");
 const createAccount = async (req, res, next) => {
     if (!req.body) {
         (0, response_1.errorResponse)(res, 400, "Request body is required");
@@ -46,7 +46,7 @@ const createAccount = async (req, res, next) => {
         await (0, exports.sendVerificationOtpToMail)(req, res, next, user.email);
         (0, response_1.successResponse)(res, 201, "User created successfully", {
             user: {
-                id: user.user_id,
+                id: user._id,
                 email: user.email,
                 is_verified: user.is_verified,
             },
@@ -216,7 +216,7 @@ const loginAccount = async (req, res, next) => {
         const error = {
             is_verified: user.is_verified,
             email: user.email,
-            user_id: user.user_id,
+            user_id: user._id,
         };
         if (!user?.is_admin && !user.is_verified) {
             await (0, exports.sendVerificationOtpToMail)(req, res, next, user?.email);
@@ -260,7 +260,7 @@ const loginAccount = async (req, res, next) => {
         (0, response_1.successResponse)(res, 200, "Login successful", {
             token,
             user: {
-                id: user.user_id,
+                id: user._id,
                 email: user.email,
                 role: user.user_role,
             },
@@ -377,8 +377,20 @@ const forgotPassword = async (req, res) => {
             (0, response_1.errorResponse)(res, 400, "Email is required");
         const { email } = req.body;
         const user = await User_1.default.findOne({ email });
+        if (["admin", "worker", "office_manager"].includes(user?.user_role || "")) {
+            (0, response_1.errorResponse)(res, 400, "Password reset not allowed for this user, please contact support");
+            return;
+        }
         if (!user) {
-            (0, response_1.errorResponse)(res, 401, "No user found with that email");
+            (0, response_1.errorResponse)(res, 400, "No user found with that email");
+            return;
+        }
+        // how else can
+        const email_crypted = await (0, jwt_1.generateToken)(user?.email);
+        if (user.forgot_password_token && user.forgot_password_expires) {
+            const resetURL = `http://localhost:3002/reset-password/${user.forgot_password_token}?id=${encodeURIComponent(email_crypted)}`;
+            await (0, mail_service_1.sendEmail)(user.email, "Password Reset Request", "To reset your password, please click the link below:\n\n" + resetURL);
+            (0, response_1.successResponse)(res, 200, "Reset link sent to your email");
             return;
         }
         // Generate reset token
@@ -386,7 +398,7 @@ const forgotPassword = async (req, res) => {
         user.forgot_password_token = resetToken;
         user.forgot_password_expires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
         await user.save();
-        const resetURL = `https://your-frontend.com/reset-password/${resetToken}`;
+        const resetURL = `http://localhost:3002/reset-password/${user.forgot_password_token}?id=${encodeURIComponent(email_crypted)}`;
         await (0, mail_service_1.sendEmail)(user.email, "Password Reset Request", "To reset your password, please click the link below:\n\n" + resetURL);
         (0, response_1.successResponse)(res, 200, "Reset link sent to your email");
     }
@@ -395,6 +407,40 @@ const forgotPassword = async (req, res) => {
     }
 };
 exports.forgotPassword = forgotPassword;
+const verifyResetToken = async (req, res) => {
+    try {
+        const token = req.params?.token;
+        const email = (0, jwt_1.decodeToken)(req.query?.id);
+        console.log("email :", email);
+        if (!token) {
+            (0, response_1.errorResponse)(res, 400, "Reset token is required");
+            return;
+        }
+        const user = await User_1.default.findOne({
+            email: email?.id,
+        });
+        if (!user) {
+            (0, response_1.errorResponse)(res, 400, "Invalid or expired reset token", {
+                is_user: false,
+            });
+            return;
+        }
+        if (user?.forgot_password_token !== token) {
+            (0, response_1.errorResponse)(res, 400, "Invalid or expired reset token", {
+                is_user: true,
+                email: email?.id,
+            });
+            return;
+        }
+        (0, response_1.successResponse)(res, 200, "Reset token is valid");
+    }
+    catch (error) {
+        console.log("error :", error);
+        (0, response_1.errorResponse)(res, 500, "An error occurred while verifying the reset token", error);
+        return;
+    }
+};
+exports.verifyResetToken = verifyResetToken;
 const resetPassword = async (req, res) => {
     try {
         const token = req.params?.token;
@@ -402,7 +448,6 @@ const resetPassword = async (req, res) => {
         // Debugging information removed for production
         const user = await User_1.default.findOne({
             forgot_password_token: token,
-            forgot_password_expires: { $gt: new Date() },
         });
         if (!user) {
             (0, response_1.errorResponse)(res, 400, "Invalid or expired reset token");
@@ -410,20 +455,20 @@ const resetPassword = async (req, res) => {
         }
         const activityLog = await (0, activityLog_1.logActivity)({
             req,
-            user_id: user.user_id,
-            sender: user.user_id,
-            receiver: user.user_id,
+            user_id: user._id,
+            sender: user._id,
+            receiver: user._id,
             action: "PASSWORD_RESET",
             description: "User password reset successfully",
             metadata: {
                 email: user.email,
-                user_id: user.user_id,
+                user_id: user._id,
             },
         });
         await User_1.default.findOneAndUpdate({ _id: user._id }, {
             forgot_password_expires: "",
             forgot_password_token: "",
-            password,
+            password: await (0, bcrypt_util_1.encrypt)(password),
             $push: { logs: activityLog._id },
         });
         await (0, mail_service_1.sendEmail)("" + user.email, "Password Reset Confirmation", "Your password has been reset successfully.");
@@ -443,10 +488,13 @@ const getUserProfile = async (_req, res) => {
             .select("-password -__v ")
             .populate("transaction_history")
             .populate("change_request")
-            .populate("bonus");
-        user?.populate({
+            .populate("bonus")
+            .populate("notifications")
+            .populate({
             path: "orders",
-            model: user?.user_role?.includes("sales_agent") ? SalesAgentOrders_1.default : Order_1.default,
+            model: req.user?.user_role?.includes("sales_agent")
+                ? SalesAgentOrders_1.default
+                : Order_1.default,
             populate: {
                 path: "products.product_id",
                 select: "name price images",
@@ -494,10 +542,10 @@ const getUserProfile = async (_req, res) => {
             },
         });
         const totalOrders = await (0, trend_util_1.getTrend)(Order_1.default, {
-            period: "week",
+            period: "month",
             filter: {
-                user_id: user ? user._id : worker ? worker._id : null,
-                delivery_status: "delivered",
+                user_id: user?._id ? user._id : worker ? worker._id : null,
+                delivery_status: "order_delivered",
             },
         });
         if (user?.is_distributor) {
@@ -520,14 +568,14 @@ const getUserProfile = async (_req, res) => {
                         percentageChange: 0,
                         trend: "no-change",
                     },
-                    {
-                        title: "Total Earnings",
-                        currentTotal: 0,
-                        previousTotal: 0,
-                        percentageChange: 0,
-                        trend: "no-change",
-                        type: "currency",
-                    },
+                    // {
+                    //   title: "Total Earnings",
+                    //   currentTotal: 0,
+                    //   previousTotal: 0,
+                    //   percentageChange: 0,
+                    //   trend: "no-change",
+                    //   type: "currency",
+                    // },
                     {
                         title: "Total Bonus This Week",
                         currentTotal: 0,

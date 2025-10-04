@@ -3,6 +3,7 @@ import { Document, Types } from "mongoose";
 import { IOfficeWorker } from "../models/Admin/OfficeWorker";
 import { IOrder } from "./order.type";
 import { IBonus } from "../models/Bonus";
+import { INotification } from "../models/Notification";
 
 export type ApprovalStatus =
   | "inactive"
@@ -41,6 +42,7 @@ export interface IUser extends IOfficeWorker {
   total_boxes_ordered: number;
   total_boxes_sold: number;
   celebrations: string[];
+  notifications: INotification[];
   name: string;
   user_id: string;
   business_name: string;

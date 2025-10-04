@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 import { timestamp } from "../utils/util";
 
 export interface ICartItem {
+  is_bonus?: boolean;
   product: Types.ObjectId;
   variants: {
     _id: Types.ObjectId;
@@ -16,6 +17,7 @@ export interface ICartItem {
 export interface ICart extends Document {
   user: Types.ObjectId;
   items: ICartItem[];
+
   total: { type: number; required: true }; // total price for this item;
 }
 
@@ -23,6 +25,7 @@ const CartItemSchema: Schema = new Schema<ICartItem>(
   {
     product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
     quantity: { type: Number, default: 150 },
+    is_bonus: { type: Boolean, default: false },
     variants: [
       {
         _id: {

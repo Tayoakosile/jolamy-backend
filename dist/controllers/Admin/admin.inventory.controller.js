@@ -50,8 +50,8 @@ const getAllInventory = async (req, res) => {
                 product_image: product.product_images,
                 product_description: product.description,
                 category: product.category,
+                quantity_in_stock: product.total_boxes_in_stock || "unlimited",
                 pricing: {
-                    quantity_in_stock: product.total_boxes_in_stock || "unlimited",
                     distributor_bonus_per_box: product.distributor_bonus_per_box,
                     sales_agent_bonus_per_box: product.sales_agent_bonus_per_box,
                     unit_type: product.unit_type,
@@ -129,10 +129,10 @@ const getAllInventory = async (req, res) => {
                 status: (currentStockLog?.new_stock ?? 0) < 50
                     ? "critical"
                     : (currentStockLog?.new_stock ?? 0) <= 70
-                        ? "Low"
-                        : "Healthy",
+                        ? "low"
+                        : "healthy",
             };
-        });
+        }).filter((dist) => !!dist);
         console.log("all_distributors_stock :", all_distributors_stock);
         res.json({
             products: productsForInventory,

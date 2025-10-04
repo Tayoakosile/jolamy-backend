@@ -16,22 +16,39 @@ import { logActivity } from "../utils/activityLog";
 import { errorResponse, successResponse } from "../utils/response";
 import { getTrend } from "../utils/trend.util";
 import {
+  brand_colors,
   customReqResHandler,
   deleteCartComp,
   generateRandom,
 } from "../utils/util";
 import { Cart } from "../models/Cart";
+import Notification from "../models/Notification";
 
 export const getAllOrders = (req: Request, res: Response) => {
   const _req = req as AuthRequest;
   const user = _req.user;
+  const search = _req.query.search as string;
   const worker = _req.worker;
   const param = _req.query.type;
+  const searchFields = [
+    "order_number",
+    "status",
+    "payment_status",
+    "priority_level",
+    "delivery_status",
+    "tracking_number",
+  ];
+  let query: any = {};
+  if (search?.length >= 1) {
+    query.$or = searchFields.map((field) => ({
+      [field]: { $regex: search?.toLocaleLowerCase() },
+    }));
+  }
 
   const request = async () => {
     if (user?.user_role === "admin") {
       const allOrders = await Order.find({})
-        .sort({ created_at: -1 })
+        .sort({ updated_at: -1 })
         .populate("products.product_id");
 
       const allOrdersStat = await getTrend(Order, {
@@ -90,19 +107,24 @@ export const getAllOrders = (req: Request, res: Response) => {
     if (typeof param === "string" && param.includes("sales_agent")) {
       const salesOrders = await SalesAgentOrder.find({
         "assigned_to.distributor": user?._id,
-      }).populate("products.product_id");
+      })
+        .sort({ updated_at: -1 })
+        .populate("products.product_id");
       return { orders: salesOrders };
     }
     if (user?.is_sales_agent) {
       const salesOrders = await SalesAgentOrder.find({
         user_id: user?._id,
-      }).populate("products.product_id");
+      })
+        .sort({ updated_at: -1 })
+        .populate("products.product_id");
       return { orders: salesOrders };
     }
+
     return {
-      orders: await Order.find({ user_id: user?._id }).populate(
-        "products.product_id"
-      ),
+      orders: await Order.find({ user_id: user?._id, ...query })
+        .sort({ updated_at: -1 })
+        .populate("products.product_id"),
     };
   };
 
@@ -185,12 +207,15 @@ export const getSingleOrder = async (req: Request, res: Response) => {
     order: _req?.user?.is_sales_agent
       ? {
           ...orderDetails?.toObject(),
+          is_cancelled: order?.status?.includes("cancel"),
+
           is_delivered: order?.delivery_steps?.some((step) =>
             step.label.includes("delivered")
           ),
         }
       : {
           ...orderDetails?.toObject(),
+          is_cancelled: order?.status?.includes("cancel"),
           is_delivered: order?.delivery_steps?.some((step) =>
             step.label.includes("delivered")
           ),
@@ -311,7 +336,8 @@ export const createNewOrder = (req: Request, res: Response) => {
         price: productInfo.distributor_price_per_box,
         variants: theVariant,
         total_amount: isProductVariantEmpty
-          ? productFromPostAPi?.quantity * productInfo.distributor_price_per_box
+          ? productFromPostAPi?.quantity &&
+            productFromPostAPi?.quantity * productInfo.distributor_price_per_box
           : theVariant.reduce((sum, item) => sum + item.total_amount, 0),
         total_quantity: isProductVariantEmpty
           ? productFromPostAPi?.quantity
@@ -456,12 +482,32 @@ export const createNewOrder = (req: Request, res: Response) => {
     await transaction.updateOne({
       $push: { logs: log._id },
     });
-
+    product_items.map(
+      async (product: IProduct) =>
+        await Product.findByIdAndUpdate(product.id, {
+          $push: {
+            orders: order._id,
+          },
+        })
+    );
+    const notification = await Notification.create({
+      user: user?._id,
+      type: "order",
+      title: "Order Created",
+      link: `/orders/${order.order_number}`,
+      message: `Your order with ID <span style="color:${brand_colors?.brand[500]}; font-weight:700;">#${order.order_number}</span> has been created successfully.`,
+      metadata: {
+        order_id: order._id,
+        user_id: user?._id,
+        total_amount: order.total_amount,
+      },
+    });
     await User.findByIdAndUpdate(new Types.ObjectId(user?.id), {
       $push: {
         orders: order._id,
         transaction_history: transaction._id,
         logs: log._id,
+        notifications: notification._id,
       },
     });
 
@@ -491,6 +537,7 @@ export const updateOrder = async (req: Request, res: Response) => {
   const _req = req as AuthRequest;
   const body = _req.body;
   const user = _req.user;
+
   const orderID = _req.params?.id;
   const order = _req.order;
   const request = async () => {
@@ -571,11 +618,25 @@ export const updateOrder = async (req: Request, res: Response) => {
 export const updateOrderStatus = async (req: Request, res: Response) => {
   const _req = req as AuthRequest;
   const body = _req.body;
+  console.log("body?.status :", body?.status);
+  const should_cancel_order = body?.should_cancel_order;
 
+  // return;
+  const order = _req.order;
   const user = _req.user;
+  const delivery_status = body?.delivery_status || order?.delivery_status;
   const worker = _req.worker;
-  const delivery_status = body?.delivery_status;
 
+  const order_status = should_cancel_order
+    ? "cancelled"
+    : body?.status
+    ? body?.status
+    : delivery_status.includes("delivered")
+    ? "delivered"
+    : "processing";
+  console.log("order_status :", order_status);
+
+  // return;
   if (!body) {
     errorResponse(res, 400, "Body is required", {
       message: `Body is required `,
@@ -583,15 +644,13 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     return;
   }
 
-  const order = _req.order;
-
   const isOrderStatusAlreadyIn = order?.delivery_steps.find(
     (step) => step.label === delivery_status
   );
 
   const isOrderDelivered =
     order?.delivery_steps[order?.delivery_steps?.length - 1].label?.includes(
-      delivery_status
+      "order_delivered"
     );
 
   if (isOrderDelivered && !user?.is_admin) {
@@ -707,6 +766,59 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     },
   });
 
+  if (should_cancel_order && order?.payment_status !== "paid" && order) {
+    const cancel_log = await logActivity({
+      req: _req,
+      user_id: worker?.id || user?._id,
+      action: "CANCEL_ORDER",
+      sender: worker?.id || user?._id,
+      receiver: order?._id as Types.ObjectId,
+      description: `Order cancelled by ${worker?.id ? "worker" : "admin"} ${
+        worker?.first_name || user?.first_name
+      } ${worker?.last_name || user?.last_name}`,
+      metadata: {
+        order_id: order?._id as Types.ObjectId,
+        user_id: worker?.id || user?._id,
+        cancelled_by: worker?.id ? "worker" : "admin",
+        sender: user?.first_name + " " + user?.last_name,
+        receiver: user?.first_name + " " + user?.last_name,
+      },
+    });
+    const order_details = await Order.findByIdAndUpdate(order?._id, {
+      status: "cancelled",
+      delivery_status: "order_cancelled",
+      payment_status: "cancelled",
+      $push: {
+        logs: log._id,
+        delivery_steps: {
+          label: "order_cancelled",
+          date: new Date(),
+          updated_by: {
+            type: "user",
+            name: user?.first_name + " " + user?.last_name,
+            role: user?.user_role,
+          },
+        },
+        delivery_steps_logs: {
+          label: "order_cancelled",
+          date: new Date(),
+          updated_by: {
+            type: "user",
+            name: user?.first_name + " " + user?.last_name,
+            role: user?.user_role,
+          },
+        },
+      },
+    });
+    console.log(" :");
+
+    successResponse(res, 200, "Order status updated successfully", {
+      message: " Order status updated successfully",
+    });
+
+    return;
+  }
+
   if (isOrderStatusAlreadyIn) {
     await Order.findByIdAndUpdate(order?._id, {
       estimated_delivery_date: body.estimated_delivery_date,
@@ -800,7 +912,9 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 
     await Order.findByIdAndUpdate(order?._id, {
       estimated_delivery_date: body.estimated_delivery_date,
-      delivery_status: delivery_status,
+      delivery_status: should_cancel_order
+        ? "order_cancelled"
+        : delivery_status,
       assigned_to: {
         worker_handling_order:
           order?.assigned_to?.worker_handling_order ||
@@ -812,11 +926,8 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
           ? dayjs().add(2, "days").toDate()
           : null,
       },
-      status: body?.status
-        ? body?.status
-        : delivery_status.includes("delivered")
-        ? "delivered"
-        : "processing",
+
+      status: order_status,
       $push: {
         delivery_steps: delivery_step,
         delivery_steps_logs: delivery_step,

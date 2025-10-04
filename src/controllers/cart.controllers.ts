@@ -14,6 +14,7 @@ export const addToCart = (req: Request, res: Response) => {
   const _req = req as AuthRequest;
   const user_id = (_req as any).user._id;
   const product_id = _req.body?.product_id;
+  const user = _req.user;
 
   if (!product_id) {
     errorResponse(res, 400, "Product ID is required");
@@ -38,15 +39,30 @@ export const addToCart = (req: Request, res: Response) => {
       user: user_id,
     })) as any;
 
+    const cartDetails =
+      user?.orders && user?.orders?.length > 0
+        ? [
+            {
+              ..._req.body?.variants,
+              product: product._id,
+            },
+          ]
+        : [
+            {
+              ..._req.body?.variants,
+              product: product._id,
+            },
+            {
+              ..._req.body?.variants,
+              product: product._id,
+              is_bonus: true,
+              quantity: 50,
+            },
+          ];
     if (!cart) {
       const cart = (await Cart.create({
         user: user_id,
-        items: [
-          {
-            ..._req.body?.variants,
-            product: product._id,
-          },
-        ],
+        items: cartDetails,
       })) as ICart;
 
       const log = await logActivity({
@@ -54,7 +70,7 @@ export const addToCart = (req: Request, res: Response) => {
         user_id: user_id,
         action: "ADD_TO_CART",
         sender: user_id,
-        receiver: product?._id as Types.ObjectId,
+        receiver: product?._id,
         description: `User with ID ${user_id} added product with ID ${product_id} to cart`,
         metadata: {
           cart_id: cart._id,

@@ -1,12 +1,11 @@
 import dayjs from "dayjs";
 
+import { Request, Response } from "express";
 import Bonus from "../models/Bonus";
 import { Product } from "../models/Product";
 import SalesAgentOrder from "../models/SalesAgentOrders";
 import { IOrder } from "../types/order.type";
 import { AuthRequest, IUser } from "../types/type";
-import { JOL_Paystack_API } from "../utils/paystack";
-import { Request, Response } from "express";
 import { successResponse } from "../utils/response";
 import { generateRandom } from "../utils/util";
 
@@ -80,16 +79,9 @@ export const runBonuses = async () => {
     if (!order) return;
     // console.log('paymentAccountDetails :', paymentAccountDetails);
 
-    const transferRecipient = await JOL_Paystack_API.post(
-      "/transferrecipient/bulk",
-      JSON.stringify(paymentAccountDetails)
-    );
-
-    const transferRecipientCode = transferRecipient.data.data?.success;
-    console.log("transferRecipientCode :", transferRecipientCode);
-    return;
     const orderQuantity = order.total_quantity ?? 0;
     const distributor_bonus_per_box = product.distributor_bonus_per_box;
+    const sales_agent_bonus_per_box = product.sales_agent_bonus_per_box;
 
     let update = {
       recipients: {
@@ -109,18 +101,17 @@ export const runBonuses = async () => {
         },
       },
       total_bonus_earned: {
-        distributor: 3000,
-        sales_agent: 3000,
+        distributor: distributor_bonus_per_box * orderQuantity,
+        sales_agent: sales_agent_bonus_per_box * orderQuantity,
       },
       bonus_type: "sales_target",
       role: distributorInfo?.user_role,
       description: " Bonus for order " + order.order_number,
       no_of_boxes_sold: orderQuantity,
       bonus_per_box: distributor_bonus_per_box,
-      total_bonus_earned: distributor_bonus_per_box * orderQuantity,
       total_amount: {
         distributor: distributor_bonus_per_box * orderQuantity,
-        sales_agent: distributor_bonus_per_box * orderQuantity,
+        sales_agent: sales_agent_bonus_per_box * orderQuantity,
       },
       period: {
         start_date: lastFriday.toDate(),
@@ -133,7 +124,37 @@ export const runBonuses = async () => {
     console.log("error :", error?.response.data);
   }
 };
+export const getBonuses = async (req: Request, res: Response) => {
+  const _req = req as AuthRequest;
+  const user = _req?.user;
+  const user_id = user?.id;
 
+  const bonuses = user?.is_admin
+    ? await Bonus.find({})
+        .populate({
+          path: "recipients.distributor",
+          select: "first_name last_name email phone_number user_role",
+        })
+        .populate({
+          path: "recipients.sales_agent",
+          select: "first_name last_name email phone_number user_role",
+        })
+    : await Bonus.find({
+        $or: [
+          { "recipients.distributor": user_id },
+          { "recipients.sales_agent": user_id },
+        ],
+      })
+        .populate({
+          path: "recipients.distributor",
+          select: "first_name last_name email phone_number user_role",
+        })
+        .populate({
+          path: "recipients.sales_agent",
+          select: "first_name last_name email phone_number user_role",
+        });
+  successResponse(res, 200, "bonuses_fetched_successfully", { bonuses });
+};
 export const getSingleBonus = async (req: Request, res: Response) => {
   try {
     const _req = req as AuthRequest;
@@ -182,10 +203,10 @@ export const getSingleBonus = async (req: Request, res: Response) => {
           // period: `${bonus?.period?.start_date?.toDateString()} - ${bonus?.period?.end_date?.toDateString()}`,
         };
 
-    delete updatedBonus.recipients;
+    const { recipients, ...rest } = updatedBonus;
 
     successResponse(res, 200, "bonus_fetched_sucessfully", {
-      bonus: updatedBonus,
+      bonus: rest,
     });
   } catch (error) {}
 };
@@ -277,7 +298,9 @@ export const runBonusPayment = () => {
       })
       .flat()
       .forEach((item) => {
-        const existing = result.find((r) => r.recipient === item.recipient);
+        const existing = result.find(
+          (r: any) => r.recipient === item.recipient
+        );
         if (existing) {
           existing.amount += item.amount; // update the amount if recipient already exists
         } else {
@@ -287,21 +310,6 @@ export const runBonusPayment = () => {
     console.log("result :", result);
 
     return;
-
-    const merged = Object.values(
-      transactions.reduce((acc: any, curr: any) => {
-        if (!acc[curr.recipient]) {
-          acc[curr.recipient] = { ...curr };
-        } else {
-          acc[curr.recipient].amount += curr.amount;
-        }
-        return acc;
-      }, {})
-    );
-
-    console.log("merged :", merged);
-
-    console.log("transactions :", transactions.flat(2));
   };
   calculateBonuses();
 };

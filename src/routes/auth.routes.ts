@@ -8,6 +8,7 @@ import {
   resetPassword,
   sendVerificationOtpToMail,
   updateAccountOnSignUp,
+  verifyResetToken,
   verifySignUpDetails,
 } from "../controllers/auth.controllers";
 import {
@@ -18,8 +19,8 @@ import { appAuth, appAuthForInactiveUsers } from "../middlewares/auth";
 import { removeSensitiveFields } from "../utils/util";
 
 const authApiLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  max: 20,
+  windowMs: 10* 60 * 1000,
+  max: 30,
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   message: {
@@ -64,6 +65,12 @@ router.post(
   authApiLimiter,
   removeSensitiveFields,
   resetPassword
+);
+router.get(
+  "/reset-password/:token",
+  authApiLimiter,
+  removeSensitiveFields,
+  verifyResetToken
 );
 router.post("/verify-documents", appAuthForInactiveUsers, verifyDocuments);
 router.post(

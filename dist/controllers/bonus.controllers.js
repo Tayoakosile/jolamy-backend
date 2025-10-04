@@ -3,12 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runBonusPayment = exports.getSingleBonus = exports.runBonuses = void 0;
+exports.runBonusPayment = exports.getSingleBonus = exports.getBonuses = exports.runBonuses = void 0;
 const dayjs_1 = __importDefault(require("dayjs"));
 const Bonus_1 = __importDefault(require("../models/Bonus"));
 const Product_1 = require("../models/Product");
 const SalesAgentOrders_1 = __importDefault(require("../models/SalesAgentOrders"));
-const paystack_1 = require("../utils/paystack");
 const response_1 = require("../utils/response");
 const util_1 = require("../utils/util");
 const isBetween_1 = __importDefault(require("dayjs/plugin/isBetween"));
@@ -74,12 +73,9 @@ const runBonuses = async () => {
         if (!order)
             return;
         // console.log('paymentAccountDetails :', paymentAccountDetails);
-        const transferRecipient = await paystack_1.JOL_Paystack_API.post("/transferrecipient/bulk", JSON.stringify(paymentAccountDetails));
-        const transferRecipientCode = transferRecipient.data.data?.success;
-        console.log("transferRecipientCode :", transferRecipientCode);
-        return;
         const orderQuantity = order.total_quantity ?? 0;
         const distributor_bonus_per_box = product.distributor_bonus_per_box;
+        const sales_agent_bonus_per_box = product.sales_agent_bonus_per_box;
         let update = {
             recipients: {
                 distributor: order?.assigned_to?.distributor?._id,
@@ -98,18 +94,17 @@ const runBonuses = async () => {
                 },
             },
             total_bonus_earned: {
-                distributor: 3000,
-                sales_agent: 3000,
+                distributor: distributor_bonus_per_box * orderQuantity,
+                sales_agent: sales_agent_bonus_per_box * orderQuantity,
             },
             bonus_type: "sales_target",
             role: distributorInfo?.user_role,
             description: " Bonus for order " + order.order_number,
             no_of_boxes_sold: orderQuantity,
             bonus_per_box: distributor_bonus_per_box,
-            total_bonus_earned: distributor_bonus_per_box * orderQuantity,
             total_amount: {
                 distributor: distributor_bonus_per_box * orderQuantity,
-                sales_agent: distributor_bonus_per_box * orderQuantity,
+                sales_agent: sales_agent_bonus_per_box * orderQuantity,
             },
             period: {
                 start_date: lastFriday.toDate(),
@@ -124,6 +119,37 @@ const runBonuses = async () => {
     }
 };
 exports.runBonuses = runBonuses;
+const getBonuses = async (req, res) => {
+    const _req = req;
+    const user = _req?.user;
+    const user_id = user?.id;
+    const bonuses = user?.is_admin
+        ? await Bonus_1.default.find({})
+            .populate({
+            path: "recipients.distributor",
+            select: "first_name last_name email phone_number user_role",
+        })
+            .populate({
+            path: "recipients.sales_agent",
+            select: "first_name last_name email phone_number user_role",
+        })
+        : await Bonus_1.default.find({
+            $or: [
+                { "recipients.distributor": user_id },
+                { "recipients.sales_agent": user_id },
+            ],
+        })
+            .populate({
+            path: "recipients.distributor",
+            select: "first_name last_name email phone_number user_role",
+        })
+            .populate({
+            path: "recipients.sales_agent",
+            select: "first_name last_name email phone_number user_role",
+        });
+    (0, response_1.successResponse)(res, 200, "bonuses_fetched_successfully", { bonuses });
+};
+exports.getBonuses = getBonuses;
 const getSingleBonus = async (req, res) => {
     try {
         const _req = req;
@@ -167,9 +193,9 @@ const getSingleBonus = async (req, res) => {
                 payment_status: bonus?.payment_status?.sales_agent || "pending",
                 // period: `${bonus?.period?.start_date?.toDateString()} - ${bonus?.period?.end_date?.toDateString()}`,
             };
-        delete updatedBonus.recipients;
+        const { recipients, ...rest } = updatedBonus;
         (0, response_1.successResponse)(res, 200, "bonus_fetched_sucessfully", {
-            bonus: updatedBonus,
+            bonus: rest,
         });
     }
     catch (error) { }
@@ -249,17 +275,6 @@ const runBonusPayment = () => {
         });
         console.log("result :", result);
         return;
-        const merged = Object.values(transactions.reduce((acc, curr) => {
-            if (!acc[curr.recipient]) {
-                acc[curr.recipient] = { ...curr };
-            }
-            else {
-                acc[curr.recipient].amount += curr.amount;
-            }
-            return acc;
-        }, {}));
-        console.log("merged :", merged);
-        console.log("transactions :", transactions.flat(2));
     };
     calculateBonuses();
 };

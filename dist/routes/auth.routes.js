@@ -10,8 +10,8 @@ const verify_document_controllers_1 = require("../controllers/verify-document.co
 const auth_1 = require("../middlewares/auth");
 const util_1 = require("../utils/util");
 const authApiLimiter = (0, express_rate_limit_1.default)({
-    windowMs: 5 * 60 * 1000,
-    max: 20,
+    windowMs: 10 * 60 * 1000,
+    max: 30,
     standardHeaders: true, // Return rate limit info in headers
     legacyHeaders: false, // Disable `X-RateLimit-*` headers
     message: {
@@ -29,6 +29,7 @@ auth_controllers_1.verifySignUpDetails);
 router.post("/login", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.loginAccount);
 router.post("/forgot-password", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.forgotPassword);
 router.post("/reset-password/:token", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.resetPassword);
+router.get("/reset-password/:token", authApiLimiter, util_1.removeSensitiveFields, auth_controllers_1.verifyResetToken);
 router.post("/verify-documents", auth_1.appAuthForInactiveUsers, verify_document_controllers_1.verifyDocuments);
 router.post("/verify-documents/:id", auth_1.appAuth, verify_document_controllers_1.verifyDocuments);
 router.get("/verify-documents/:id", auth_1.appAuth, verify_document_controllers_1.getUserInfo);

@@ -103,7 +103,7 @@ BonusSchema.pre("save", async function (next) {
     if (this.isNew) {
         const today = new Date().toISOString().split("T")[0];
         // Increment sequence for today
-        const counter = await counter_1.Counter.findOneAndUpdate({ name: "bonus", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
+        const counter = await counter_1.Counter.findOneAndUpdate({ name: "product", date: today }, { $inc: { sequence: 1 } }, { new: true, upsert: true });
         const seq = counter.sequence;
         this.internal_sequence = seq;
         // Random 5-character alphanumeric

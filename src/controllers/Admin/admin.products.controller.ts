@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
-import { Product } from "../../models/Product";
+import { IProduct, Product } from "../../models/Product";
 import User from "../../models/User";
 import { AuthRequest } from "../../types/type";
 import { logActivity } from "../../utils/activityLog";
@@ -9,25 +9,14 @@ import {
   checkIfDocumentExistsById,
   customReqResHandler,
   generateVariants,
+  getLocationCounts,
+  getProductAnalytics,
 } from "../../utils/util";
 
 type Option = {
   name: string;
   values: string[];
 };
-
-function updateProductOptionsFunc(
-  existingOptions: Option[],
-  formerOptions: Option[],
-  newOptions: Option[]
-): Option[] {
-  existingOptions.forEach((existingOption) => {
-    const formerOption = formerOptions.find(
-      (opt) => opt.name.toLowerCase() === existingOption.name.toLowerCase()
-    );
-    console.log("formerOption :", formerOption);
-  });
-}
 
 export const addNewProducts = async (req: Request, res: Response) => {
   const _req = req as AuthRequest;
@@ -107,24 +96,35 @@ export const getProducts = (req: Request, res: Response) => {
   };
   customReqResHandler(res, request);
 };
-export const getSingleProducts = async (req: Request, res: Response) => {
+export const getSingleProduct = async (req: Request, res: Response) => {
   const _req = req as AuthRequest;
   const id = _req.params.id;
   const request = async () => {
-    const product = await checkIfDocumentExistsById(
+    const product = (await checkIfDocumentExistsById(
       id,
       "product_id",
       res,
       Product,
       ["orders"]
-    );
+    )) as IProduct;
+
+    const analytics = getProductAnalytics([product])[0];
+    const totalOrders = product.orders.length;
+    const locations = getLocationCounts(product.orders);
+
+    console.log("locations :", locations);
+
+    const statusCount = product.orders.reduce((acc: any, order: any) => {
+      acc[order.status] = (acc[order.status] || 0) + 1;
+      return acc;
+    }, {});
 
     const logs = await logActivity({
       req: _req,
       user_id: new Types.ObjectId(_req.user?._id),
       action: "GET_PRODUCT",
       sender: new Types.ObjectId(_req.user?._id),
-      receiver: product?._id as Types.ObjectId,
+      receiver: product?._id,
       description: `Product fetched: ${id}`,
       metadata: {
         product_id: product?._id,
@@ -135,7 +135,17 @@ export const getSingleProducts = async (req: Request, res: Response) => {
       $push: { logs: logs.id },
     });
 
-    return product;
+    const statusPercentages = Object.entries(statusCount).map(
+      ([status, count]) => ({
+        status,
+        percentage: ((Number(count) / totalOrders) * 100).toFixed(2), // keep 2 decimals
+      })
+    );
+
+    return {
+      product,
+      analytics: { ...analytics, status_count: statusCount, locations },
+    };
   };
 
   customReqResHandler(res, request, undefined, {
@@ -237,7 +247,16 @@ export const updateProductOptions = async (_req: Request, res: Response) => {
 
     product.options = updated_product_options;
 
-    product.variants = generateVariants(updated_product_options ?? []);
+    // Ensure each variant has all required Variant properties
+    const rawVariants = generateVariants(updated_product_options ?? []);
+    product.variants = rawVariants.map((variant: any) => ({
+      ...variant,
+      sku: "", // Provide default or generated values as needed
+      barcode: "",
+      is_active: true,
+      available_weight: 0,
+      // Add other required Variant properties here with default values
+    }));
     product?.save();
 
     return;

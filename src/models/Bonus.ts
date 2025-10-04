@@ -18,10 +18,20 @@ export interface IBonus extends Document {
     distributor_bonus_per_box: number;
   };
   payment_account_details: {
-    bank_name: string;
-    account_number: string;
-    account_name: string;
-    payment_reference: string;
+    distributor: {
+      bank_name: string;
+      account_number: string;
+      account_name: string;
+      payment_reference: string;
+      paystack_payment_reference: string;
+    };
+    sales_agent: {
+      bank_name: string;
+      account_number: string;
+      account_name: string;
+      payment_reference: string;
+      paystack_payment_reference: string;
+    };
   };
   total_amount: {
     distributor: number;
@@ -166,7 +176,7 @@ BonusSchema.pre(
 
       // Increment sequence for today
       const counter = await Counter.findOneAndUpdate(
-        { name: "product", date: today },
+        { name: "bonus", date: today },
         { $inc: { sequence: 1 } },
         { new: true, upsert: true }
       );

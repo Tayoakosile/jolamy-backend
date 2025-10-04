@@ -3,19 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.archiveProduct = exports.patchProductOptions = exports.updateProductOptions = exports.updateProduct = exports.getSingleProducts = exports.getProducts = exports.addNewProducts = void 0;
+exports.archiveProduct = exports.patchProductOptions = exports.updateProductOptions = exports.updateProduct = exports.getSingleProduct = exports.getProducts = exports.addNewProducts = void 0;
 const mongoose_1 = require("mongoose");
 const Product_1 = require("../../models/Product");
 const User_1 = __importDefault(require("../../models/User"));
 const activityLog_1 = require("../../utils/activityLog");
 const response_1 = require("../../utils/response");
 const util_1 = require("../../utils/util");
-function updateProductOptionsFunc(existingOptions, formerOptions, newOptions) {
-    existingOptions.forEach((existingOption) => {
-        const formerOption = formerOptions.find((opt) => opt.name.toLowerCase() === existingOption.name.toLowerCase());
-        console.log("formerOption :", formerOption);
-    });
-}
 const addNewProducts = async (req, res) => {
     const _req = req;
     const user = _req.user;
@@ -81,11 +75,19 @@ const getProducts = (req, res) => {
     (0, util_1.customReqResHandler)(res, request);
 };
 exports.getProducts = getProducts;
-const getSingleProducts = async (req, res) => {
+const getSingleProduct = async (req, res) => {
     const _req = req;
     const id = _req.params.id;
     const request = async () => {
-        const product = await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product, ["orders"]);
+        const product = (await (0, util_1.checkIfDocumentExistsById)(id, "product_id", res, Product_1.Product, ["orders"]));
+        const analytics = (0, util_1.getProductAnalytics)([product])[0];
+        const totalOrders = product.orders.length;
+        const locations = (0, util_1.getLocationCounts)(product.orders);
+        console.log("locations :", locations);
+        const statusCount = product.orders.reduce((acc, order) => {
+            acc[order.status] = (acc[order.status] || 0) + 1;
+            return acc;
+        }, {});
         const logs = await (0, activityLog_1.logActivity)({
             req: _req,
             user_id: new mongoose_1.Types.ObjectId(_req.user?._id),
@@ -101,14 +103,21 @@ const getSingleProducts = async (req, res) => {
         await User_1.default.findByIdAndUpdate(_req.user?._id, {
             $push: { logs: logs.id },
         });
-        return product;
+        const statusPercentages = Object.entries(statusCount).map(([status, count]) => ({
+            status,
+            percentage: ((Number(count) / totalOrders) * 100).toFixed(2), // keep 2 decimals
+        }));
+        return {
+            product,
+            analytics: { ...analytics, status_count: statusCount, locations },
+        };
     };
     (0, util_1.customReqResHandler)(res, request, undefined, {
         successMessage: "Product Fetched Successfully",
         statusCode: 200,
     });
 };
-exports.getSingleProducts = getSingleProducts;
+exports.getSingleProduct = getSingleProduct;
 const updateProduct = async (_req, res) => {
     const req = _req;
     const id = req.params.id;
@@ -184,7 +193,16 @@ const updateProductOptions = async (_req, res) => {
             ? [...product.options, ...body?.options]
             : body?.options;
         product.options = updated_product_options;
-        product.variants = (0, util_1.generateVariants)(updated_product_options ?? []);
+        // Ensure each variant has all required Variant properties
+        const rawVariants = (0, util_1.generateVariants)(updated_product_options ?? []);
+        product.variants = rawVariants.map((variant) => ({
+            ...variant,
+            sku: "", // Provide default or generated values as needed
+            barcode: "",
+            is_active: true,
+            available_weight: 0,
+            // Add other required Variant properties here with default values
+        }));
         product?.save();
         return;
         const updatedProduct = await Product_1.Product.findOneAndUpdate({ product_id: id }, {
